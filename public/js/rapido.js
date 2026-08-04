@@ -9,7 +9,7 @@ import {
 const $ = (id) => document.getElementById(id);
 const SEGUNDOS_DESHACER = 12;
 
-let datos, usuario, canalId;
+let datos, usuario, puestoActual;
 let ultima = null;      // consulta recien registrada (para deshacer o completar)
 let temporizador = null;
 
@@ -24,31 +24,40 @@ async function inicio() {
 
 async function recargar() {
   datos = await get('/api/tablero');
-  canalId = elegirCanal();
-  pintarCanales();
+  puestoActual = localStorage.getItem('puesto') || usuario.puesto || 'call_center';
+  pintarPuestos();
   pintarFrecuentes();
   pintarSectores();
   pintarContador();
 }
 
-/** El canal queda fijo entre llamadas: el call center casi siempre es el mismo. */
-function elegirCanal() {
-  const guardado = Number(localStorage.getItem('canal'));
-  if (datos.canales.some((c) => c.id === guardado)) return guardado;
-  const preferido = usuario.puesto === 'mesa_informes' ? 'Presencial' : 'Telefonico';
-  const c = datos.canales.find((x) => x.nombre === preferido) || datos.canales[0];
+const PUESTOS = [
+  { id: 'call_center', nombre: 'Call center', canal: 'telefonico' },
+  { id: 'mesa_informes', nombre: 'Mesa de informes', canal: 'presencial' },
+];
+
+const sinAcentos = (t) => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+/**
+ * El operador elige una sola vez dónde está atendiendo y no lo toca más.
+ * El canal se deduce del puesto (call center → telefónico, mesa → presencial);
+ * si la consulta entró por WhatsApp o mail se corrige desde "Agregar datos".
+ */
+function canalDelPuesto(puesto = puestoActual) {
+  const buscado = (PUESTOS.find((p) => p.id === puesto) || PUESTOS[0]).canal;
+  const c = datos.canales.find((x) => sinAcentos(x.nombre) === buscado) || datos.canales[0];
   return c ? c.id : null;
 }
 
-function pintarCanales() {
-  $('canales').innerHTML = datos.canales.map((c) => `
-    <button type="button" data-canal="${c.id}"${c.id === canalId ? ' aria-pressed="true"' : ''}>
-      ${escapar(c.nombre)}</button>`).join('');
-  $('canales').querySelectorAll('[data-canal]').forEach((b) => {
+function pintarPuestos() {
+  $('puestos').innerHTML = PUESTOS.map((p) => `
+    <button type="button" data-puesto="${p.id}"${p.id === puestoActual ? ' aria-pressed="true"' : ''}>
+      ${escapar(p.nombre)}</button>`).join('');
+  $('puestos').querySelectorAll('[data-puesto]').forEach((b) => {
     b.onclick = () => {
-      canalId = Number(b.dataset.canal);
-      localStorage.setItem('canal', canalId);
-      pintarCanales();
+      puestoActual = b.dataset.puesto;
+      localStorage.setItem('puesto', puestoActual);
+      pintarPuestos();
     };
   });
 }
@@ -121,6 +130,7 @@ function atajos(e) {
 // -------------------------------------------------------------- registrar ---
 
 async function registrar(motivoId, sectorId, ficha) {
+  const canalId = canalDelPuesto();
   if (!canalId) return brindis('Cargá al menos un canal de contacto en Administración', 'error');
   const motivo = motivoId ? datos.motivos.find((m) => m.id === motivoId) : null;
   const sector = sectorId || (motivo && motivo.sector_id);
@@ -138,7 +148,7 @@ async function registrar(motivoId, sectorId, ficha) {
       motivo_id: motivoId,
       estado: 'resuelta',
       primer_contacto: true,
-      puesto: usuario.puesto,
+      puesto: puestoActual,
     });
     ultima = creada;
 
@@ -268,6 +278,10 @@ function abrirDetalle() {
         <div class="campo corto"><label for="d-socio">N° de socio</label>
           <input id="d-socio" inputmode="numeric" autofocus></div>
         <div class="campo"><label for="d-nombre">Nombre del socio</label><input id="d-nombre"></div>
+        <div class="campo corto"><label for="d-canal">Canal</label>
+          <select id="d-canal">${datos.canales.map((x) => `
+            <option value="${x.id}"${x.id === c.canal_id ? ' selected' : ''}>${escapar(x.nombre)}</option>`).join('')}
+          </select></div>
         <div class="campo corto"><label for="d-reclamo">N° de reclamo / OT</label><input id="d-reclamo"></div>
         <div class="campo corto"><label for="d-duracion">Duración (min)</label>
           <input id="d-duracion" type="number" min="0" step="1"></div>
@@ -292,6 +306,7 @@ function abrirDetalle() {
     e.preventDefault();
     try {
       await put(`/api/consultas/${c.id}`, {
+        canal_id: $('d-canal').value,
         socio_nro: $('d-socio').value,
         socio_nombre: $('d-nombre').value,
         reclamo_nro: $('d-reclamo').value,

@@ -412,7 +412,11 @@ function estadisticasEncuestas() {
 
 // ------------------------------------------------------ pantalla rápida ---
 
-let canalId = 1;
+const PUESTOS_ATENCION = [
+  { id: 'call_center', nombre: 'Call center', canal: 1 },       // canal telefónico
+  { id: 'mesa_informes', nombre: 'Mesa de informes', canal: 2 }, // canal presencial
+];
+let puestoActual = 'call_center';
 let ultima = null;
 let temporizador = null;
 const SEGUNDOS_DESHACER = 12;
@@ -437,12 +441,18 @@ function fichaHTML(motivo, { atajo = null, conSector = false } = {}) {
     </button>`;
 }
 
+/**
+ * El operador elige una sola vez dónde atiende. El canal se deduce del puesto;
+ * si la consulta entró por WhatsApp o mail se corrige desde "Agregar datos".
+ */
+const canalDelPuesto = () => (PUESTOS_ATENCION.find((p) => p.id === puestoActual) || PUESTOS_ATENCION[0]).canal;
+
 function pintarRapido() {
-  $('canales').innerHTML = CANALES.map((c) => `
-    <button type="button" data-canal="${c.id}"${c.id === canalId ? ' aria-pressed="true"' : ''}>
-      ${escapar(c.nombre)}</button>`).join('');
-  $('canales').querySelectorAll('[data-canal]').forEach((b) => {
-    b.onclick = () => { canalId = Number(b.dataset.canal); pintarRapido(); };
+  $('puestos').innerHTML = PUESTOS_ATENCION.map((p) => `
+    <button type="button" data-puesto="${p.id}"${p.id === puestoActual ? ' aria-pressed="true"' : ''}>
+      ${escapar(p.nombre)}</button>`).join('');
+  $('puestos').querySelectorAll('[data-puesto]').forEach((b) => {
+    b.onclick = () => { puestoActual = b.dataset.puesto; pintarRapido(); };
   });
 
   $('frecuentes').innerHTML = frecuentesDelOperador()
@@ -490,7 +500,7 @@ function registrar(motivoId, sectorId, ficha) {
   const consulta = {
     id: Math.max(...CONSULTAS.map((c) => c.id)) + 1,
     ts: `${HOY}T${hhmm}:00`, fecha: HOY, hora: ahora.getHours(), dow: diaSemana(HOY),
-    operador_id: USUARIO.id, puesto: USUARIO.puesto, canal_id: canalId,
+    operador_id: USUARIO.id, puesto: puestoActual, canal_id: canalDelPuesto(),
     sector_id: sector, motivo_id: motivoId, localidad_id: null,
     socio_nro: '', estado: 'resuelta', primer_contacto: 1, duracion_seg: 0, observaciones: '',
   };
@@ -590,6 +600,10 @@ function abrirDetalle() {
         <div class="campo corto"><label for="d-socio">N° de socio</label>
           <input id="d-socio" inputmode="numeric"></div>
         <div class="campo"><label for="d-nombre">Nombre del socio</label><input id="d-nombre"></div>
+        <div class="campo corto"><label for="d-canal">Canal</label>
+          <select id="d-canal">${CANALES.map((x) => `
+            <option value="${x.id}"${x.id === c.canal_id ? ' selected' : ''}>${escapar(x.nombre)}</option>`).join('')}
+          </select></div>
         <div class="campo corto"><label for="d-duracion">Duración (min)</label>
           <input id="d-duracion" type="number" min="0" step="1"></div>
       </div>
@@ -606,6 +620,7 @@ function abrirDetalle() {
   $('d-cerrar').onclick = () => { $('detalle').close(); cerrarConfirmacion(); };
   $('form-detalle').onsubmit = (e) => {
     e.preventDefault();
+    c.canal_id = Number($('d-canal').value);
     c.socio_nro = $('d-socio').value.trim();
     c.socio_nombre = $('d-nombre').value.trim();
     c.duracion_seg = Math.round(Number($('d-duracion').value || 0) * 60);

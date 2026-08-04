@@ -82,8 +82,10 @@ registrada. Sin formulario, sin guardar, sin confirmar.
 - Tablero de botones grandes con los motivos agrupados por sector, más una fila
   **"Los que más usás"** con los nueve motivos que ese operador más registra, con
   atajos de teclado **1 a 9**.
-- El **canal** (Telefónico, Presencial, WhatsApp…) se elige una vez y queda fijo:
-  el call center no vuelve a tocarlo en todo el turno.
+- Arriba, una sola decisión: **Call center** o **Mesa de informes**. Se elige al
+  empezar el turno y queda fija. De ahí se deduce el canal (call center →
+  telefónico, mesa → presencial); si la consulta entró por WhatsApp o mail, el
+  canal se corrige desde *Agregar datos*.
 - Cada botón muestra cuántas veces se usó hoy, así el operador ve su propio ritmo.
 - Al registrar aparece un aviso de 12 segundos con las salidas de excepción, todas
   a un clic: **Derivada · Pendiente · Reclamo · Agregar datos · Deshacer** (`Esc`).
