@@ -457,18 +457,11 @@ function pintarRapido() {
       <header><h2>${escapar(s.nombre)}</h2><p>${escapar(s.detalle)}</p></header>
       <div class="botonera">
         ${MOTIVOS.filter((m) => m.sector_id === s.id).map((m) => fichaHTML(m)).join('')}
-        <button type="button" class="ficha otra" data-sector="${s.id}">
-          <span class="titulo">Otra consulta</span>
-          <span class="sector">sin motivo específico</span>
-        </button>
       </div>
     </section>`).join('');
 
   document.querySelectorAll('#p-rapido [data-motivo]').forEach((b) => {
-    b.onclick = () => registrar(Number(b.dataset.motivo), null, b);
-  });
-  document.querySelectorAll('#p-rapido [data-sector]').forEach((b) => {
-    b.onclick = () => registrar(null, Number(b.dataset.sector), b);
+    b.onclick = () => registrar(Number(b.dataset.motivo), b);
   });
   pintarContador();
 }
@@ -479,10 +472,9 @@ function pintarContador() {
     cargadas hoy por vos · <b>${num(deHoy.length)}</b> en total`;
 }
 
-function registrar(motivoId, sectorId, ficha) {
-  const motivo = motivoId ? motivoDe(motivoId) : null;
-  const sector = sectorId || (motivo && motivo.sector_id);
-  if (!sector) return;
+function registrar(motivoId, ficha) {
+  const motivo = motivoDe(motivoId);
+  if (!motivo) return;
 
   if (ficha) {
     ficha.classList.add('marcada');
@@ -495,21 +487,19 @@ function registrar(motivoId, sectorId, ficha) {
     id: Math.max(...CONSULTAS.map((c) => c.id)) + 1,
     ts: `${HOY}T${hhmm}:00`, fecha: HOY, hora: ahora.getHours(), dow: diaSemana(HOY),
     operador_id: USUARIO.id, puesto: puestoActual, canal_id: canalDelPuesto(),
-    sector_id: sector, motivo_id: motivoId, localidad_id: null,
+    sector_id: motivo.sector_id, motivo_id: motivo.id, localidad_id: null,
     socio_nro: '', estado: 'resuelta', primer_contacto: 1, duracion_seg: 0, observaciones: '',
   };
   CONSULTAS.push(consulta);
   ultima = consulta;
 
-  if (motivoId) {
-    const n = hoyPorMotivo(motivoId);
-    document.querySelectorAll(`[data-veces="${motivoId}"]`).forEach((s) => {
-      s.textContent = `${n} hoy`;
-      s.classList.remove('oculto');
-    });
-  }
+  const n = hoyPorMotivo(motivoId);
+  document.querySelectorAll(`[data-veces="${motivoId}"]`).forEach((s) => {
+    s.textContent = `${n} hoy`;
+    s.classList.remove('oculto');
+  });
   pintarContador();
-  mostrarConfirmacion(motivo ? motivo.nombre : sectorDe(sector).nombre);
+  mostrarConfirmacion(motivo.nombre);
 }
 
 function mostrarConfirmacion(titulo) {

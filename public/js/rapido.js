@@ -93,10 +93,6 @@ function pintarSectores() {
       <header><h2>${escapar(s.nombre)}</h2><p>${escapar(s.detalle || '')}</p></header>
       <div class="botonera">
         ${datos.motivos.filter((m) => m.sector_id === s.id).map((m) => boton(m)).join('')}
-        <button type="button" class="ficha otra" data-sector="${s.id}">
-          <span class="titulo">Otra consulta</span>
-          <span class="sector">sin motivo específico</span>
-        </button>
       </div>
     </section>`).join('');
   enlazarFichas($('sectores'));
@@ -104,10 +100,7 @@ function pintarSectores() {
 
 function enlazarFichas(contenedor) {
   contenedor.querySelectorAll('[data-motivo]').forEach((b) => {
-    b.onclick = () => registrar(Number(b.dataset.motivo), null, b);
-  });
-  contenedor.querySelectorAll('[data-sector]').forEach((b) => {
-    b.onclick = () => registrar(null, Number(b.dataset.sector), b);
+    b.onclick = () => registrar(Number(b.dataset.motivo), b);
   });
 }
 
@@ -129,12 +122,11 @@ function atajos(e) {
 
 // -------------------------------------------------------------- registrar ---
 
-async function registrar(motivoId, sectorId, ficha) {
+async function registrar(motivoId, ficha) {
   const canalId = canalDelPuesto();
   if (!canalId) return brindis('Cargá al menos un canal de contacto en Administración', 'error');
-  const motivo = motivoId ? datos.motivos.find((m) => m.id === motivoId) : null;
-  const sector = sectorId || (motivo && motivo.sector_id);
-  if (!sector) return;
+  const motivo = datos.motivos.find((m) => m.id === motivoId);
+  if (!motivo) return;
 
   if (ficha) {
     ficha.classList.add('marcada');
@@ -144,8 +136,8 @@ async function registrar(motivoId, sectorId, ficha) {
   try {
     const creada = await post('/api/consultas', {
       canal_id: canalId,
-      sector_id: sector,
-      motivo_id: motivoId,
+      sector_id: motivo.sector_id,
+      motivo_id: motivo.id,
       estado: 'resuelta',
       primer_contacto: true,
       puesto: puestoActual,
@@ -155,15 +147,13 @@ async function registrar(motivoId, sectorId, ficha) {
     // Contadores al instante, sin volver a pedir el tablero.
     datos.hoy.mias++;
     datos.hoy.total++;
-    if (motivoId) {
-      datos.hoy_por_motivo[motivoId] = (datos.hoy_por_motivo[motivoId] || 0) + 1;
-      document.querySelectorAll(`[data-veces="${motivoId}"]`).forEach((s) => {
-        s.textContent = `${datos.hoy_por_motivo[motivoId]} hoy`;
-        s.classList.remove('oculto');
-      });
-    }
+    datos.hoy_por_motivo[motivoId] = (datos.hoy_por_motivo[motivoId] || 0) + 1;
+    document.querySelectorAll(`[data-veces="${motivoId}"]`).forEach((s) => {
+      s.textContent = `${datos.hoy_por_motivo[motivoId]} hoy`;
+      s.classList.remove('oculto');
+    });
     pintarContador();
-    mostrarConfirmacion(creada, motivo ? motivo.nombre : nombreSector(sector));
+    mostrarConfirmacion(creada, motivo.nombre);
   } catch (err) {
     brindis(err.message, 'error');
   }
