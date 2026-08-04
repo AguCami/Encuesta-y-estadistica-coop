@@ -34,7 +34,7 @@ function pintar(d) {
     <div class="kpi"><div class="etiqueta">Promedio por día</div>
       <div class="valor">${dec(r.promedio_dia)}</div>
       <div class="pie">${d.periodo.dias} días del período</div></div>
-    <div class="kpi"><div class="etiqueta">Resueltas al 1er contacto</div>
+    <div class="kpi"><div class="etiqueta">Solucionadas al 1er contacto</div>
       <div class="valor">${pct(r.pct_primer_contacto)}</div>
       <div class="pie">${num(r.resueltas)} cerradas en el acto</div></div>
     <div class="kpi"><div class="etiqueta">Pendientes</div>
@@ -67,7 +67,7 @@ function pintar(d) {
   apiladas($('g-estado-sector'), d.por_sector.map((s) => ({
     etiqueta: s.nombre,
     partes: [
-      { nombre: 'Resuelta', valor: s.total - s.derivadas - s.pendientes - s.reclamos, color: p.estado.resuelta },
+      { nombre: 'Solucionada', valor: s.total - s.derivadas - s.pendientes - s.reclamos, color: p.estado.resuelta },
       { nombre: 'Derivada', valor: s.derivadas, color: p.estado.derivada },
       { nombre: 'Pendiente', valor: s.pendientes, color: p.estado.pendiente },
       { nombre: 'Reclamo generado', valor: s.reclamos, color: p.estado.reclamo },

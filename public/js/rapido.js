@@ -65,11 +65,10 @@ function pintarPuestos() {
 const nombreSector = (id) => (datos.sectores.find((s) => s.id === id) || {}).nombre || '';
 
 /** `conSector` solo hace falta en la fila de frecuentes, donde se mezclan. */
-function boton(motivo, { atajo = null, conSector = false } = {}) {
+function boton(motivo, { conSector = false } = {}) {
   const hoy = datos.hoy_por_motivo[motivo.id] || 0;
   return `
     <button type="button" class="ficha" data-motivo="${motivo.id}">
-      ${atajo ? `<span class="atajo">${atajo}</span>` : ''}
       <span class="titulo">${escapar(motivo.nombre)}</span>
       ${conSector ? `<span class="sector">${escapar(nombreSector(motivo.sector_id))}</span>` : ''}
       <span class="veces${hoy ? '' : ' oculto'}" data-veces="${motivo.id}">${hoy} hoy</span>
@@ -81,7 +80,7 @@ function pintarFrecuentes() {
     .map((id) => datos.motivos.find((m) => m.id === id))
     .filter(Boolean);
   $('caja-frecuentes').classList.toggle('oculto', !lista.length);
-  $('frecuentes').innerHTML = lista.map((m, i) => boton(m, { atajo: i + 1, conSector: true })).join('');
+  $('frecuentes').innerHTML = lista.map((m) => boton(m, { conSector: true })).join('');
   enlazarFichas($('frecuentes'));
 }
 
@@ -109,15 +108,9 @@ function pintarContador() {
     <b>${num(datos.hoy.total)}</b> en total`;
 }
 
-/** Atajos 1..9 sobre la fila de frecuentes. */
+/** Escape deshace el ultimo registro mientras el aviso sigue en pantalla. */
 function atajos(e) {
-  if (e.ctrlKey || e.altKey || e.metaKey) return;
-  if (/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
-  if (e.key === 'Escape' && ultima) return deshacer();
-  const n = Number(e.key);
-  if (!n || n < 1 || n > 9) return;
-  const ficha = $('frecuentes').querySelectorAll('.ficha')[n - 1];
-  if (ficha) { e.preventDefault(); ficha.click(); }
+  if (e.key === 'Escape' && ultima) deshacer();
 }
 
 // -------------------------------------------------------------- registrar ---
@@ -174,10 +167,8 @@ function mostrarConfirmacion(consulta, titulo) {
       <span class="cuenta" id="cuenta">${SEGUNDOS_DESHACER}</span>
     </div>
     <div class="acciones">
+      <button type="button" data-estado="resuelta" aria-pressed="true">Solucionada</button>
       <button type="button" data-estado="derivada">Derivada</button>
-      <button type="button" data-estado="pendiente">Pendiente</button>
-      <button type="button" data-estado="reclamo">Reclamo</button>
-      <button type="button" id="mas-datos">Agregar datos</button>
       <button type="button" id="deshacer">Deshacer <small>(Esc)</small></button>
     </div>`;
 
@@ -185,7 +176,6 @@ function mostrarConfirmacion(consulta, titulo) {
     b.onclick = () => cambiarEstado(b.dataset.estado, b);
   });
   caja.querySelector('#deshacer').onclick = deshacer;
-  caja.querySelector('#mas-datos').onclick = abrirDetalle;
 
   clearInterval(temporizador);
   let restante = SEGUNDOS_DESHACER;
@@ -226,7 +216,7 @@ async function cambiarEstado(estado, boton) {
     caja.querySelectorAll('[data-estado]').forEach((b) => b.removeAttribute('aria-pressed'));
     if (boton) boton.setAttribute('aria-pressed', 'true');
     const marca = caja.querySelector('#marca-estado');
-    if (marca) marca.textContent = `· ${etiquetaEstado(estado)}`;
+    if (marca) marca.textContent = estado === 'resuelta' ? '' : `· ${etiquetaEstado(estado)}`;
   } catch (err) {
     brindis(err.message, 'error');
   }
@@ -254,67 +244,3 @@ async function deshacer() {
   }
 }
 
-// ---------------------------------------------------- datos complementarios ---
-
-function abrirDetalle() {
-  const c = ultima;
-  if (!c) return;
-  clearInterval(temporizador);
-  $('detalle-cuerpo').innerHTML = `
-    <h2>Consulta #${c.id}</h2>
-    <p class="solo-lectura">${escapar(c.sector || '')}${c.motivo ? ` · ${escapar(c.motivo)}` : ''}</p>
-    <form id="form-detalle">
-      <div class="fila" style="margin-top:.6rem">
-        <div class="campo corto"><label for="d-socio">N° de socio</label>
-          <input id="d-socio" inputmode="numeric" autofocus></div>
-        <div class="campo"><label for="d-nombre">Nombre del socio</label><input id="d-nombre"></div>
-        <div class="campo corto"><label for="d-canal">Canal</label>
-          <select id="d-canal">${datos.canales.map((x) => `
-            <option value="${x.id}"${x.id === c.canal_id ? ' selected' : ''}>${escapar(x.nombre)}</option>`).join('')}
-          </select></div>
-        <div class="campo corto"><label for="d-reclamo">N° de reclamo / OT</label><input id="d-reclamo"></div>
-        <div class="campo corto"><label for="d-duracion">Duración (min)</label>
-          <input id="d-duracion" type="number" min="0" step="1"></div>
-      </div>
-      <div style="margin-top:.6rem">
-        <label for="d-obs">Observaciones</label>
-        <textarea id="d-obs" placeholder="Qué se le informó al socio, a quién se derivó…"></textarea>
-      </div>
-      <label style="display:flex;gap:.4rem;align-items:center;margin-top:.6rem;font-size:.85rem">
-        <input type="checkbox" id="d-encuesta" style="width:auto"> Generar encuesta de satisfacción
-      </label>
-      <p class="aviso" id="d-aviso"></p>
-      <div class="pie" style="border:0;padding:.6rem 0 0">
-        <button type="button" id="d-cerrar">Cancelar</button>
-        <button type="submit" class="primario">Guardar</button>
-      </div>
-    </form>`;
-  $('detalle').showModal();
-  $('d-cerrar').onclick = () => { $('detalle').close(); cerrarConfirmacion(); };
-
-  $('form-detalle').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    try {
-      await put(`/api/consultas/${c.id}`, {
-        canal_id: $('d-canal').value,
-        socio_nro: $('d-socio').value,
-        socio_nombre: $('d-nombre').value,
-        reclamo_nro: $('d-reclamo').value,
-        duracion_seg: Math.round(Number($('d-duracion').value || 0) * 60),
-        observaciones: $('d-obs').value,
-      });
-      let mensaje = `Consulta #${c.id} completada`;
-      if ($('d-encuesta').checked) {
-        const { url } = await post('/api/encuestas/link', { sector_id: c.sector_id, consulta_id: c.id });
-        await navigator.clipboard.writeText(location.origin + url).catch(() => {});
-        mensaje += ' · enlace de encuesta copiado';
-      }
-      $('detalle').close();
-      cerrarConfirmacion();
-      brindis(mensaje);
-    } catch (err) {
-      $('d-aviso').className = 'aviso error';
-      $('d-aviso').textContent = err.message;
-    }
-  });
-}

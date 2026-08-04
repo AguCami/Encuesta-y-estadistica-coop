@@ -80,18 +80,16 @@ Entra la llamada, el operador toca **un solo botón** y la consulta ya quedó
 registrada. Sin formulario, sin guardar, sin confirmar.
 
 - Tablero de botones grandes con los motivos agrupados por sector, más una fila
-  **"Los que más usás"** con los nueve motivos que ese operador más registra, con
-  atajos de teclado **1 a 9**.
+  **"Los que más usás"** que se arma sola con los nueve motivos que ese operador
+  más registra.
 - Arriba, una sola decisión: **Call center** o **Mesa de informes**. Se elige al
   empezar el turno y queda fija. De ahí se deduce el canal (call center →
   telefónico, mesa → presencial); si la consulta entró por WhatsApp o mail, el
   canal se corrige desde *Agregar datos*.
 - Cada botón muestra cuántas veces se usó hoy, así el operador ve su propio ritmo.
-- Al registrar aparece un aviso de 12 segundos con las salidas de excepción, todas
-  a un clic: **Derivada · Pendiente · Reclamo · Agregar datos · Deshacer** (`Esc`).
-  El camino normal es un clic; la excepción, dos.
-- *Agregar datos* abre el socio, el N° de reclamo, la duración, las observaciones y
-  la encuesta de satisfacción **sobre la consulta ya guardada** — nada se recarga.
+- Al registrar aparece un aviso de 12 segundos con el resultado y la corrección a
+  un clic: **Solucionada · Derivada · Deshacer** (`Esc`). Toda consulta entra como
+  solucionada; si hubo que derivarla, es un clic más.
 - Cada botón deja igual el sector, el motivo, el canal, el operador, el puesto, la
   fecha y la hora: la estadística sale completa aunque nadie escriba una palabra.
 

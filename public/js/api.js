@@ -84,7 +84,7 @@ const PUESTOS = { call_center: 'Call center', mesa_informes: 'Mesa de informes',
 export const etiquetaRol = (r) => ROLES[r] || r;
 export const etiquetaPuesto = (p) => PUESTOS[p] || p;
 
-const ESTADOS = { resuelta: 'Resuelta', derivada: 'Derivada', pendiente: 'Pendiente', reclamo: 'Reclamo generado' };
+const ESTADOS = { resuelta: 'Solucionada', derivada: 'Derivada', pendiente: 'Pendiente', reclamo: 'Reclamo generado' };
 export const etiquetaEstado = (e) => ESTADOS[e] || e;
 
 // ------------------------------------------------------------- formato ---

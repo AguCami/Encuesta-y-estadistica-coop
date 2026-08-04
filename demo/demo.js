@@ -124,7 +124,7 @@ const fechaCorta = (isoTexto) => `${isoTexto.slice(8, 10)}/${isoTexto.slice(5, 7
   (isoTexto.length > 10 ? ` ${isoTexto.slice(11, 16)}` : '');
 const minutos = (seg) => (seg ? `${Math.round(seg / 60)} min` : '—');
 
-const ESTADOS = { resuelta: 'Resuelta', derivada: 'Derivada', pendiente: 'Pendiente', reclamo: 'Reclamo generado' };
+const ESTADOS = { resuelta: 'Solucionada', derivada: 'Derivada', pendiente: 'Pendiente', reclamo: 'Reclamo generado' };
 const PUESTOS = { call_center: 'Call center', mesa_informes: 'Mesa de informes', otro: 'Otro' };
 const etiquetaEstado = (e) => ESTADOS[e] || e;
 const etiquetaPuesto = (p) => PUESTOS[p] || p;
@@ -424,11 +424,10 @@ function frecuentesDelOperador() {
 const hoyPorMotivo = (motivoId) =>
   CONSULTAS.filter((c) => c.fecha === HOY && c.operador_id === USUARIO.id && c.motivo_id === motivoId).length;
 
-function fichaHTML(motivo, { atajo = null, conSector = false } = {}) {
+function fichaHTML(motivo, { conSector = false } = {}) {
   const hoy = hoyPorMotivo(motivo.id);
   return `
     <button type="button" class="ficha" data-motivo="${motivo.id}">
-      ${atajo ? `<span class="atajo">${atajo}</span>` : ''}
       <span class="titulo">${escapar(motivo.nombre)}</span>
       ${conSector ? `<span class="sector">${escapar(sectorDe(motivo.sector_id).nombre)}</span>` : ''}
       <span class="veces${hoy ? '' : ' oculto'}" data-veces="${motivo.id}">${hoy} hoy</span>
@@ -450,7 +449,7 @@ function pintarRapido() {
   });
 
   $('frecuentes').innerHTML = frecuentesDelOperador()
-    .map((m, i) => fichaHTML(m, { atajo: i + 1, conSector: true })).join('');
+    .map((m) => fichaHTML(m, { conSector: true })).join('');
 
   $('sectores').innerHTML = SECTORES.map((s) => `
     <section class="tarjeta" style="margin-top:1rem">
@@ -512,10 +511,8 @@ function mostrarConfirmacion(titulo) {
       <span class="cuenta" id="cuenta">${SEGUNDOS_DESHACER}</span>
     </div>
     <div class="acciones">
+      <button type="button" data-estado="resuelta" aria-pressed="true">Solucionada</button>
       <button type="button" data-estado="derivada">Derivada</button>
-      <button type="button" data-estado="pendiente">Pendiente</button>
-      <button type="button" data-estado="reclamo">Reclamo</button>
-      <button type="button" id="mas-datos">Agregar datos</button>
       <button type="button" id="deshacer">Deshacer <small>(Esc)</small></button>
     </div>`;
 
@@ -526,11 +523,10 @@ function mostrarConfirmacion(titulo) {
       ultima.primer_contacto = b.dataset.estado === 'resuelta' ? 1 : 0;
       caja.querySelectorAll('[data-estado]').forEach((x) => x.removeAttribute('aria-pressed'));
       b.setAttribute('aria-pressed', 'true');
-      $('marca-estado').textContent = `· ${etiquetaEstado(b.dataset.estado)}`;
+      $('marca-estado').textContent = b.dataset.estado === 'resuelta' ? '' : `· ${etiquetaEstado(b.dataset.estado)}`;
     };
   });
   caja.querySelector('#deshacer').onclick = deshacer;
-  caja.querySelector('#mas-datos').onclick = abrirDetalle;
 
   clearInterval(temporizador);
   let restante = SEGUNDOS_DESHACER;
@@ -570,49 +566,6 @@ function deshacer() {
   }
   pintarContador();
   aviso('Registro deshecho');
-}
-
-function abrirDetalle() {
-  const c = ultima;
-  if (!c) return;
-  clearInterval(temporizador);
-  $('detalle-cuerpo').innerHTML = `
-    <h2>Consulta #${c.id}</h2>
-    <p class="solo-lectura">${escapar(sectorDe(c.sector_id).nombre)}${c.motivo_id ? ` · ${escapar(motivoDe(c.motivo_id).nombre)}` : ''}</p>
-    <form id="form-detalle">
-      <div class="fila" style="margin-top:.6rem">
-        <div class="campo corto"><label for="d-socio">N° de socio</label>
-          <input id="d-socio" inputmode="numeric"></div>
-        <div class="campo"><label for="d-nombre">Nombre del socio</label><input id="d-nombre"></div>
-        <div class="campo corto"><label for="d-canal">Canal</label>
-          <select id="d-canal">${CANALES.map((x) => `
-            <option value="${x.id}"${x.id === c.canal_id ? ' selected' : ''}>${escapar(x.nombre)}</option>`).join('')}
-          </select></div>
-        <div class="campo corto"><label for="d-duracion">Duración (min)</label>
-          <input id="d-duracion" type="number" min="0" step="1"></div>
-      </div>
-      <div style="margin-top:.6rem">
-        <label for="d-obs">Observaciones</label>
-        <textarea id="d-obs" placeholder="Qué se le informó al socio, a quién se derivó…"></textarea>
-      </div>
-      <div class="pie" style="border:0;padding:.8rem 0 0">
-        <button type="button" id="d-cerrar">Cancelar</button>
-        <button type="submit" class="primario">Guardar</button>
-      </div>
-    </form>`;
-  $('detalle').showModal();
-  $('d-cerrar').onclick = () => { $('detalle').close(); cerrarConfirmacion(); };
-  $('form-detalle').onsubmit = (e) => {
-    e.preventDefault();
-    c.canal_id = Number($('d-canal').value);
-    c.socio_nro = $('d-socio').value.trim();
-    c.socio_nombre = $('d-nombre').value.trim();
-    c.duracion_seg = Math.round(Number($('d-duracion').value || 0) * 60);
-    c.observaciones = $('d-obs').value.trim();
-    $('detalle').close();
-    cerrarConfirmacion();
-    aviso(`Consulta #${c.id} completada`);
-  };
 }
 
 // --------------------------------------------------- pantalla consultas ---
@@ -671,7 +624,7 @@ function pintarPanel() {
     <div class="kpi"><div class="etiqueta">Promedio por día</div>
       <div class="valor">${dec(r.promedio_dia)}</div>
       <div class="pie">${d.periodo.dias} días del período</div></div>
-    <div class="kpi"><div class="etiqueta">Resueltas al 1er contacto</div>
+    <div class="kpi"><div class="etiqueta">Solucionadas al 1er contacto</div>
       <div class="valor">${pct(r.pct_primer_contacto)}</div>
       <div class="pie">${num(r.resueltas)} cerradas en el acto</div></div>
     <div class="kpi"><div class="etiqueta">Pendientes</div>
@@ -701,7 +654,7 @@ function pintarPanel() {
   apiladas($('g-estado-sector'), d.por_sector.map((s) => ({
     etiqueta: s.nombre,
     partes: [
-      { nombre: 'Resuelta', valor: s.total - s.derivadas - s.pendientes - s.reclamos, color: p.estado.resuelta },
+      { nombre: 'Solucionada', valor: s.total - s.derivadas - s.pendientes - s.reclamos, color: p.estado.resuelta },
       { nombre: 'Derivada', valor: s.derivadas, color: p.estado.derivada },
       { nombre: 'Pendiente', valor: s.pendientes, color: p.estado.pendiente },
       { nombre: 'Reclamo generado', valor: s.reclamos, color: p.estado.reclamo },
@@ -918,15 +871,9 @@ $('btn-reiniciar').onclick = () => {
   aviso('Datos de ejemplo regenerados');
 };
 
+// Escape deshace el ultimo registro mientras el aviso sigue en pantalla.
 document.addEventListener('keydown', (e) => {
-  if (e.ctrlKey || e.altKey || e.metaKey) return;
-  if (!$('p-rapido').classList.contains('activa')) return;
-  if (/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
-  if (e.key === 'Escape' && ultima) return deshacer();
-  const n = Number(e.key);
-  if (!n || n < 1 || n > 9) return;
-  const ficha = $('frecuentes').querySelectorAll('.ficha')[n - 1];
-  if (ficha) { e.preventDefault(); ficha.click(); }
+  if (e.key === 'Escape' && ultima) deshacer();
 });
 
 // Los gráficos se redibujan cuando el lector cambia el tema de la página.

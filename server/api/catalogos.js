@@ -13,7 +13,7 @@ function catalogos({ res }) {
     localidades: all('SELECT id, nombre, activo FROM localidades ORDER BY nombre'),
     operadores: all("SELECT id, usuario, nombre, rol, puesto, activo FROM usuarios ORDER BY nombre"),
     estados: [
-      { id: 'resuelta', nombre: 'Resuelta' },
+      { id: 'resuelta', nombre: 'Solucionada' },
       { id: 'derivada', nombre: 'Derivada' },
       { id: 'pendiente', nombre: 'Pendiente' },
       { id: 'reclamo', nombre: 'Reclamo generado' },

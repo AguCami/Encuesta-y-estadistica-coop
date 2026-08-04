@@ -285,11 +285,6 @@ dialog .pie { padding: .7rem 1rem; border-top: 1px solid var(--border); display:
   position: absolute; right: .5rem; bottom: .45rem;
   font-size: .7rem; color: var(--ink-2); font-variant-numeric: tabular-nums;
 }
-.ficha .atajo {
-  position: absolute; right: .5rem; top: .45rem;
-  font-size: .68rem; font-weight: 700; color: var(--muted);
-  border: 1px solid var(--grid); border-radius: 4px; padding: 0 .25rem;
-}
 /* destello al registrar: confirma el toque sin frenar la atencion */
 .ficha.marcada { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, var(--surface-1)); }
 
