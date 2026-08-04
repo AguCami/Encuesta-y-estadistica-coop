@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Encuesta de satisfacción</title>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="encuesta-publica">
+  <div class="tarjeta">
+    <h1 id="titulo">Encuesta de satisfacción</h1>
+    <p style="color:var(--ink-2);margin:.3rem 0 1rem" id="intro">
+      Nos ayuda a mejorar la atención. Son 30 segundos y es anónima.
+    </p>
+
+    <form id="form">
+      <div id="campo-sector" class="oculto" style="margin-bottom:1rem">
+        <label for="sector">¿Qué sector te atendió?</label>
+        <select id="sector"></select>
+      </div>
+      <div id="campo-canal" class="oculto" style="margin-bottom:1rem">
+        <label for="canal">¿Por dónde te comunicaste?</label>
+        <select id="canal"></select>
+      </div>
+
+      <div id="preguntas"></div>
+
+      <div style="margin:1.1rem 0 .3rem">
+        <label for="recomendaria">¿Qué tan probable es que recomiendes la atención de la cooperativa? (0 a 10)</label>
+        <input type="range" id="recomendaria" min="0" max="10" step="1" value="8" style="padding:0">
+        <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted)">
+          <span>0 · nada probable</span><b id="valor-nps" style="color:var(--ink)">8</b><span>10 · muy probable</span>
+        </div>
+      </div>
+
+      <div style="margin-top:1rem">
+        <label for="comentario">¿Querés contarnos algo más? (opcional)</label>
+        <textarea id="comentario" maxlength="1000" placeholder="Tu comentario nos sirve para corregir lo que haga falta"></textarea>
+      </div>
+
+      <button class="primario" type="submit" style="width:100%;justify-content:center;margin-top:1rem">
+        Enviar respuesta
+      </button>
+      <p class="aviso" id="aviso"></p>
+    </form>
+
+    <div id="gracias" class="oculto" style="text-align:center;padding:1.5rem 0">
+      <h2>¡Gracias por responder!</h2>
+      <p style="color:var(--ink-2)">Tu opinión llega directo al área de atención al socio.</p>
+    </div>
+  </div>
+  <p style="text-align:center;font-size:.78rem;color:var(--muted);margin-top:.8rem" id="pie"></p>
+</div>
+
+<script type="module">
+import { get, post, avisar, escapar, aplicarTemaGuardado } from '/js/api.js';
+aplicarTemaGuardado();
+
+const $ = (id) => document.getElementById(id);
+const token = new URLSearchParams(location.search).get('t') || '';
+
+const PREGUNTAS = [
+  { id: 'satisfaccion', texto: '¿Cómo calificás la atención que recibiste?', requerida: true },
+  { id: 'resolucion', texto: '¿Se resolvió lo que necesitabas?' },
+  { id: 'atencion', texto: '¿Te explicaron con claridad?' },
+  { id: 'espera', texto: '¿Cómo fue el tiempo de espera?' },
+];
+const ESCALA = ['Muy malo', 'Malo', 'Regular', 'Bueno', 'Muy bueno'];
+
+$('preguntas').innerHTML = PREGUNTAS.map((p) => `
+  <fieldset style="margin-bottom:1.1rem">
+    <label>${p.texto}${p.requerida ? ' *' : ''}</label>
+    <div class="escala">
+      ${[1, 2, 3, 4, 5].map((v) => `
+        <input type="radio" name="${p.id}" id="${p.id}-${v}" value="${v}">
+        <label for="${p.id}-${v}">${v}<small>${ESCALA[v - 1]}</small></label>`).join('')}
+    </div>
+  </fieldset>`).join('');
+
+$('recomendaria').addEventListener('input', (e) => { $('valor-nps').textContent = e.target.value; });
+
+const config = await get(`/api/publico/encuesta?t=${encodeURIComponent(token)}`).catch((e) => {
+  avisar($('aviso'), e.message, 'error');
+  return null;
+});
+
+if (config) {
+  document.title = `Encuesta — ${config.org}`;
+  $('titulo').textContent = `¿Cómo te atendimos en ${config.org}?`;
+  $('pie').textContent = `${config.org} · Atención al socio`;
+
+  if (config.encuesta && config.encuesta.ya_respondida) {
+    $('form').classList.add('oculto');
+    $('gracias').classList.remove('oculto');
+    $('intro').textContent = 'Esta encuesta ya fue respondida. ¡Gracias!';
+  } else if (config.encuesta) {
+    $('intro').textContent = `Sobre tu consulta a ${config.encuesta.sector || 'la cooperativa'}. Es anónima y son 30 segundos.`;
+  } else {
+    // Formulario abierto (QR en el mostrador o enlace general).
+    $('campo-sector').classList.remove('oculto');
+    $('campo-canal').classList.remove('oculto');
+    $('sector').innerHTML = config.sectores.map((s) => `<option value="${s.id}">${escapar(s.nombre)}</option>`).join('');
+    $('canal').innerHTML = '<option value="">—</option>' +
+      config.canales.map((c) => `<option value="${c.id}">${escapar(c.nombre)}</option>`).join('');
+  }
+}
+
+$('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const boton = e.target.querySelector('button');
+  const valor = (nombre) => {
+    const marcado = document.querySelector(`input[name="${nombre}"]:checked`);
+    return marcado ? Number(marcado.value) : null;
+  };
+  if (!valor('satisfaccion')) return avisar($('aviso'), 'Elegí una calificación para la primera pregunta', 'error');
+
+  boton.disabled = true;
+  try {
+    await post('/api/publico/encuesta', {
+      token,
+      sector_id: token ? null : $('sector').value,
+      canal_id: token ? null : ($('canal').value || null),
+      satisfaccion: valor('satisfaccion'),
+      resolucion: valor('resolucion'),
+      atencion: valor('atencion'),
+      espera: valor('espera'),
+      recomendaria: $('recomendaria').value,
+      comentario: $('comentario').value,
+    });
+    $('form').classList.add('oculto');
+    $('gracias').classList.remove('oculto');
+  } catch (err) {
+    avisar($('aviso'), err.message, 'error');
+    boton.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

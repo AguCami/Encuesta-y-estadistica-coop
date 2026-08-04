@@ -1,0 +1,17 @@
+{
+  "name": "encuesta-y-estadistica-coop",
+  "version": "1.0.0",
+  "description": "Registro y estadistica de consultas para Mesa de Informes y Call Center de la cooperativa",
+  "private": true,
+  "type": "commonjs",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node --no-warnings server/index.js",
+    "dev": "node --no-warnings --watch server/index.js",
+    "seed:demo": "node --no-warnings scripts/seed-demo.js",
+    "reset": "node --no-warnings scripts/reset-db.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}

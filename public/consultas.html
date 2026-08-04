@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consultas registradas</title>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<main>
+  <h1>Consultas registradas</h1>
+  <div id="filtros"></div>
+
+  <section class="tarjeta" style="margin-top:1rem">
+    <header>
+      <h2 id="titulo-tabla">Listado</h2>
+      <p id="resumen"></p>
+      <span style="flex:1"></span>
+      <div class="fila" style="gap:.4rem">
+        <input id="buscar" placeholder="Buscar socio, N° o texto…" style="width:230px">
+        <button id="btn-buscar" class="chico">Buscar</button>
+        <a id="btn-export" class="boton chico" href="#">Exportar CSV</a>
+      </div>
+    </header>
+    <div class="tabla-scroll" id="tabla"></div>
+    <div class="fila" style="justify-content:center;margin-top:.8rem">
+      <button id="mas" class="oculto">Cargar más</button>
+    </div>
+  </section>
+</main>
+
+<dialog id="detalle">
+  <div class="cuerpo" id="detalle-cuerpo"></div>
+  <div class="pie">
+    <button id="cerrar-detalle">Cerrar</button>
+  </div>
+</dialog>
+
+<script type="module" src="/js/consultas.js"></script>
+</body>
+</html>

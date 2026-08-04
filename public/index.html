@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ingreso — Consultas y encuestas</title>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="ingreso">
+  <form class="tarjeta" id="form">
+    <h1 id="titulo">Consultas y encuestas</h1>
+    <p style="color:var(--muted);margin:.2rem 0 1rem;font-size:.9rem">
+      Mesa de informes y call center
+    </p>
+    <div style="margin-bottom:.7rem">
+      <label for="usuario">Usuario</label>
+      <input id="usuario" name="usuario" autocomplete="username" autofocus required>
+    </div>
+    <div style="margin-bottom:.9rem">
+      <label for="clave">Clave</label>
+      <input id="clave" name="clave" type="password" autocomplete="current-password" required>
+    </div>
+    <button class="primario" style="width:100%;justify-content:center" type="submit">Ingresar</button>
+    <p class="aviso" id="aviso"></p>
+    <p style="margin:.8rem 0 0;font-size:.82rem;color:var(--muted)">
+      ¿Sos socio y querés dejar tu opinión? <a href="/encuesta.html">Responder la encuesta</a>
+    </p>
+  </form>
+</div>
+
+<script type="module">
+import { post, get, avisar, aplicarTemaGuardado } from '/js/api.js';
+aplicarTemaGuardado();
+
+const aviso = document.getElementById('aviso');
+
+get('/api/config').then((c) => { document.getElementById('titulo').textContent = c.org; }).catch(() => {});
+get('/api/yo').then((u) => { if (u) location.href = destino(); }).catch(() => {});
+
+function destino() {
+  const volver = new URLSearchParams(location.search).get('volver');
+  return volver && volver.startsWith('/') ? volver : '/carga.html';
+}
+
+document.getElementById('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const boton = e.target.querySelector('button');
+  boton.disabled = true;
+  try {
+    await post('/api/login', {
+      usuario: document.getElementById('usuario').value,
+      clave: document.getElementById('clave').value,
+    });
+    location.href = destino();
+  } catch (err) {
+    avisar(aviso, err.message, 'error');
+    boton.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

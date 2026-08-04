@@ -1,0 +1,132 @@
+'use strict';
+
+/**
+ * Carga datos de ejemplo para poder ver la aplicacion funcionando.
+ *   npm run seed:demo
+ * No se usa en produccion: genera consultas y encuestas ficticias.
+ */
+
+const crypto = require('node:crypto');
+const { all, get, run } = require('../server/db');
+const { hashPassword } = require('../server/auth-hash');
+const { partesFecha, sumarDias, hoy } = require('../server/util');
+
+const DIAS = Number(process.argv[2] || 90);
+const POR_DIA = Number(process.argv[3] || 28);
+
+const OPERADORES = [
+  ['mlopez', 'Marina Lopez', 'call_center'],
+  ['jperez', 'Julian Perez', 'call_center'],
+  ['rgomez', 'Rocio Gomez', 'mesa_informes'],
+  ['dsosa', 'Diego Sosa', 'mesa_informes'],
+  ['svera', 'Silvia Vera', 'call_center'],
+];
+
+const LOCALIDADES = ['Centro', 'Barrio Norte', 'Villa Elisa', 'Colonia San Jose', 'Zona rural'];
+
+const azar = (a) => a[Math.floor(Math.random() * a.length)];
+const entre = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+
+/** Elige un item segun pesos relativos. */
+function pesado(items, pesos) {
+  const total = pesos.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < items.length; i++) { r -= pesos[i]; if (r <= 0) return items[i]; }
+  return items[items.length - 1];
+}
+
+function crearOperadores() {
+  for (const [usuario, nombre, puesto] of OPERADORES) {
+    if (get('SELECT id FROM usuarios WHERE usuario = ?', [usuario])) continue;
+    run('INSERT INTO usuarios (usuario, nombre, hash, rol, puesto, creado) VALUES (?,?,?,?,?,?)',
+      [usuario, nombre, hashPassword('1234'), usuario === 'mlopez' ? 'supervisor' : 'operador',
+        puesto, partesFecha().ts]);
+  }
+  for (const nombre of LOCALIDADES) {
+    if (!get('SELECT id FROM localidades WHERE nombre = ?', [nombre])) {
+      run('INSERT INTO localidades (nombre) VALUES (?)', [nombre]);
+    }
+  }
+}
+
+function generar() {
+  crearOperadores();
+
+  const sectores = all('SELECT * FROM sectores WHERE activo = 1 ORDER BY orden');
+  const motivos = all('SELECT * FROM motivos WHERE activo = 1');
+  const canales = all('SELECT * FROM canales WHERE activo = 1');
+  const localidades = all('SELECT * FROM localidades');
+  const operadores = all("SELECT * FROM usuarios WHERE usuario <> 'admin'");
+
+  // La demanda no se reparte pareja: energia y facturacion se llevan la mayor parte.
+  const pesoSector = sectores.map((s, i) => [9, 7, 3, 6, 3, 8, 2, 2, 4, 1][i] ?? 2);
+  const pesoCanal = canales.map((c) => ({ Telefonico: 10, Presencial: 6, WhatsApp: 5, Email: 2, 'Web / Redes': 1 }[c.nombre] ?? 2));
+  const pesoHora = { 8: 6, 9: 10, 10: 12, 11: 10, 12: 6, 13: 4, 14: 5, 15: 7, 16: 8, 17: 6, 18: 3 };
+  const horas = Object.keys(pesoHora).map(Number);
+
+  let creadas = 0, encuestas = 0;
+  const finalizar = hoy();
+
+  for (let d = DIAS - 1; d >= 0; d--) {
+    const fecha = sumarDias(finalizar, -d);
+    const dow = new Date(`${fecha}T12:00:00Z`).getUTCDay();
+    if (dow === 0) continue;                       // domingo cerrado
+    const factor = dow === 6 ? 0.35 : 1;           // sabado, media jornada
+    const pico = Math.random() < 0.08 ? 1.9 : 1;   // dias de corte general o vencimiento
+    const cantidad = Math.round(POR_DIA * factor * pico * (0.75 + Math.random() * 0.5));
+
+    for (let i = 0; i < cantidad; i++) {
+      const sector = pesado(sectores, pesoSector);
+      const delSector = motivos.filter((m) => m.sector_id === sector.id);
+      const motivo = delSector.length ? azar(delSector) : null;
+      const canal = pesado(canales, pesoCanal);
+      const operador = azar(operadores);
+      const hora = pesado(horas, horas.map((h) => pesoHora[h]));
+      const minuto = entre(0, 59);
+      const ts = `${fecha}T${String(hora).padStart(2, '0')}:${String(minuto).padStart(2, '0')}:00`;
+
+      const estado = pesado(['resuelta', 'derivada', 'pendiente', 'reclamo'], [66, 14, 8, 12]);
+      const primerContacto = estado === 'resuelta' ? 1 : (Math.random() < 0.2 ? 1 : 0);
+      const duracion = entre(90, 900);
+
+      const r = run(
+        `INSERT INTO consultas (ts, fecha, hora, dow, operador_id, puesto, canal_id, sector_id,
+            motivo_id, localidad_id, socio_nro, socio_nombre, contacto, estado, prioridad,
+            primer_contacto, duracion_seg, reclamo_nro, observaciones, cerrada_ts, cerrada_por)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [ts, fecha, hora, dow, operador.id,
+          canal.nombre === 'Presencial' ? 'mesa_informes' : operador.puesto,
+          canal.id, sector.id, motivo ? motivo.id : null, azar(localidades).id,
+          String(entre(1000, 9999)), '', '', estado,
+          pesado(['baja', 'normal', 'alta'], [1, 8, 2]), primerContacto, duracion,
+          estado === 'reclamo' ? `OT-${entre(10000, 99999)}` : '',
+          motivo ? `Consulta por ${motivo.nombre.toLowerCase()}.` : '',
+          estado === 'resuelta' ? ts : null, estado === 'resuelta' ? operador.id : null]);
+      creadas++;
+
+      // Una de cada seis atenciones deja una encuesta respondida.
+      if (Math.random() < 0.17) {
+        const base = estado === 'resuelta' ? 4 : 3;
+        const nota = Math.max(1, Math.min(5, base + entre(-1, 1)));
+        run(`INSERT INTO encuestas (token, consulta_id, sector_id, canal_id, operador_id, origen,
+                creada, respondida, fecha, satisfaccion, resolucion, atencion, espera, recomendaria, comentario)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+          [crypto.randomBytes(9).toString('base64url'), Number(r.lastInsertRowid), sector.id, canal.id,
+            operador.id, azar(['link', 'qr', 'operador']), ts, ts, fecha, nota,
+            Math.max(1, Math.min(5, nota + entre(-1, 0))), Math.max(1, Math.min(5, nota + entre(0, 1))),
+            Math.max(1, Math.min(5, nota + entre(-1, 1))), Math.max(0, Math.min(10, nota * 2 + entre(-2, 1))),
+            Math.random() < 0.25 ? azar([
+              'Me atendieron muy bien y rapido.', 'Estuve mucho tiempo esperando en linea.',
+              'Resolvieron el problema en el dia.', 'Me derivaron y nunca me llamaron.',
+              'Muy amables en el mostrador.', 'Deberian tener mas lineas telefonicas.',
+            ]) : '']);
+        encuestas++;
+      }
+    }
+  }
+
+  console.log(`Listo: ${creadas} consultas y ${encuestas} encuestas en los ultimos ${DIAS} dias.`);
+  console.log('Usuarios de prueba: mlopez (supervisor), jperez, rgomez, dsosa, svera — clave 1234');
+}
+
+generar();

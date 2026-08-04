@@ -1,0 +1,215 @@
+# Consultas y encuestas — Mesa de Informes y Call Center
+
+Aplicación web para registrar **todas las consultas que recibe la cooperativa** (por
+teléfono, mostrador, WhatsApp, mail o redes), imputarlas al **sector** que
+corresponde y sacar de ahí **estadística detallada**: cuánto recibe cada sector, por
+qué motivo, en qué franja horaria, cómo se resolvió y qué opina el socio.
+
+Corre en una PC de la cooperativa o en un servidor propio. **No necesita internet,
+ni base de datos externa, ni instalar dependencias**: sólo Node.js 22 o superior.
+
+---
+
+## Qué resuelve
+
+| Problema típico | Cómo lo resuelve |
+|---|---|
+| "No sabemos cuántas consultas atendemos ni de qué" | Carga rápida en una pantalla, pensada para completarse **durante** la llamada |
+| "Cada sector dice que recibe mucho, pero no hay número" | Toda consulta se imputa a un sector y a un motivo dentro de ese sector |
+| "No sabemos cuándo poner más gente" | Mapa de demanda por día y hora, con el pico marcado |
+| "El socio llamó tres veces por lo mismo" | Estado (resuelta / derivada / pendiente / reclamo) con seguimiento y notas |
+| "No tenemos idea de si el socio quedó conforme" | Encuesta de satisfacción por enlace, QR o carga del operador, con CSAT y NPS |
+| "El informe mensual lo armamos a mano" | Exportación a CSV (detallado y por sector) y vista lista para imprimir |
+
+---
+
+## Puesta en marcha
+
+```bash
+node -v            # tiene que decir v22 o superior
+npm start          # levanta el servidor en http://localhost:3000
+```
+
+Primer ingreso: usuario **`admin`**, clave **`admin`**.
+Cambiala en *Administración → Mi clave* antes de usarlo con datos reales.
+
+Para ver la aplicación con datos de ejemplo (no usar en producción):
+
+```bash
+npm run seed:demo          # 90 días de consultas y encuestas ficticias
+npm run seed:demo 30 15    # o: 30 días, ~15 consultas por día
+npm run reset              # borra todo y deja la base vacía
+```
+
+### Configuración
+
+Todo se controla con variables de entorno (opcionales):
+
+| Variable | Por defecto | Para qué |
+|---|---|---|
+| `PORT` | `3000` | Puerto del servidor |
+| `HOST` | `0.0.0.0` | Interfaz donde escucha |
+| `ORG_NOMBRE` | `Cooperativa` | Nombre que se muestra en el encabezado y en la encuesta |
+| `TZ_APP` | `America/Argentina/Buenos_Aires` | Zona horaria con la que se fechan las consultas |
+| `DATA_DIR` | `./data` | Carpeta de la base de datos |
+| `SESSION_HORAS` | `12` | Duración de la sesión de cada operador |
+
+```bash
+ORG_NOMBRE="Cooperativa Eléctrica de ..." PORT=8080 npm start
+```
+
+---
+
+## Las pantallas
+
+### 1. Registrar consulta
+La que usan todo el día el call center y la mesa de informes.
+
+- Botones de **motivos frecuentes** (los más usados del mes) que completan sector y
+  motivo de un clic.
+- **Cronómetro** para medir la duración real de la atención sin mirar el reloj.
+- `Ctrl` + `Enter` guarda y deja el formulario listo para la siguiente llamada.
+- Casilla *Generar encuesta de satisfacción*: al guardar devuelve un enlace único
+  para pasarle al socio por WhatsApp o mail.
+- A la derecha: cuántas consultas van hoy y las últimas que cargó el operador.
+
+### 2. Consultas
+Listado con todos los filtros (fecha, sector, canal, puesto, estado, operador y
+búsqueda por socio, N° de reclamo u observaciones), detalle de cada consulta,
+línea de tiempo de seguimiento, cambio de estado y exportación a CSV.
+
+### 3. Estadísticas
+El panel que mira la gerencia o el consejo:
+
+- **KPIs**: total, promedio por día, % resuelto en el primer contacto, pendientes,
+  duración promedio, conformidad, y la variación contra el período anterior.
+- Evolución diaria, ranking por sector, **cómo se cierra** cada consulta por sector,
+  motivos más consultados, canal, puesto, localidad.
+- **Mapa de demanda por día y hora** — el insumo para armar turnos.
+- Un mini gráfico por sector con la misma escala (evolución comparada).
+- Tablas con los mismos números, para leer o copiar.
+- CSV detallado, CSV por sector y versión para imprimir.
+
+### 4. Satisfacción
+Respuestas de la encuesta: conformidad general, CSAT (% de 4 y 5), **NPS**,
+resolución, atención y espera; distribución de las notas, evolución, ranking por
+sector y los últimos comentarios textuales. También permite generar un enlace de
+encuesta o cargar a mano una respuesta tomada por teléfono.
+
+### 5. Encuesta del socio (`/encuesta.html`)
+Formulario público, pensado para el celular, en dos variantes:
+
+- **Con enlace único** (`/encuesta.html?t=...`): queda atado a la consulta y al
+  sector que atendió; se responde una sola vez.
+- **Abierto**: `/encuesta.html` sin parámetros. Es el que conviene imprimir como
+  **QR en el mostrador**; el socio elige el sector que lo atendió.
+
+### 6. Administración
+Sectores, motivos por sector, canales, localidades y usuarios. Los catálogos no se
+borran, se **desactivan**: así la estadística vieja no pierde el nombre del sector.
+
+---
+
+## Roles
+
+| Rol | Puede |
+|---|---|
+| **Operador** | Cargar consultas, ver el listado y las estadísticas, cargar encuestas, editar lo que él mismo cargó |
+| **Supervisor** | Todo lo anterior + editar/eliminar cualquier consulta, administrar catálogos y exportar encuestas |
+| **Administrador** | Todo + crear usuarios, cambiar roles y claves |
+
+---
+
+## Qué se guarda de cada consulta
+
+Fecha y hora, operador, puesto (call center / mesa de informes), canal, sector,
+motivo, localidad, socio (número, nombre, contacto), estado, prioridad, si se
+resolvió en el primer contacto, duración, N° de reclamo u orden de trabajo,
+observaciones y toda la línea de seguimiento.
+
+---
+
+## Estructura del proyecto
+
+```
+server/
+  index.js          servidor HTTP y ruteo (sin frameworks)
+  db.js             esquema SQLite, índices y catálogos iniciales
+  auth.js           sesiones e inicio de sesión
+  auth-hash.js      hash de claves (scrypt)
+  filtros.js        filtros compartidos por listado y estadísticas
+  util.js           fechas en la zona de la cooperativa, JSON, CSV
+  api/              consultas · catálogos · estadísticas · encuestas · usuarios
+public/
+  carga.html        registro rápido
+  consultas.html    listado y seguimiento
+  panel.html        estadísticas
+  satisfaccion.html encuesta: resultados
+  encuesta.html     encuesta: formulario público
+  admin.html        catálogos y usuarios
+  js/charts.js      gráficos en SVG, sin librerías
+scripts/
+  seed-demo.js      datos de ejemplo
+  reset-db.js       reinicio de la base
+```
+
+Los gráficos usan una paleta verificada para **daltonismo** y **modo claro y
+oscuro**; todos tienen etiqueta de valor visible o una tabla equivalente, para que
+el color nunca sea la única forma de leer el dato.
+
+---
+
+## Copias de seguridad
+
+Toda la información está en un solo archivo: `data/coop.db`.
+
+```bash
+# copia en caliente, sin parar el servidor
+mkdir -p respaldos
+sqlite3 data/coop.db ".backup 'respaldos/coop-$(date +%F).db'"
+```
+
+Si no está instalado `sqlite3`, alcanza con copiar `data/coop.db`, `data/coop.db-wal`
+y `data/coop.db-shm` con el servidor detenido.
+
+---
+
+## Dejarlo andando siempre (Linux)
+
+`/etc/systemd/system/consultas.service`:
+
+```ini
+[Unit]
+Description=Consultas y encuestas
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/consultas
+ExecStart=/usr/bin/node --no-warnings server/index.js
+Environment=ORG_NOMBRE=Cooperativa
+Environment=PORT=3000
+Restart=always
+User=consultas
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl enable --now consultas
+```
+
+Para que los socios lleguen a la encuesta desde afuera, publicá **solamente**
+`/encuesta.html` y `/api/publico/*` detrás de un proxy con HTTPS (nginx, Caddy).
+El resto de la aplicación conviene dejarlo en la red interna.
+
+---
+
+## Ideas para la próxima etapa
+
+- Buscar el socio por número contra el sistema de facturación (si tiene API o base
+  accesible) para completar nombre y localidad solos.
+- Aviso automático a los sectores con consultas pendientes de más de X días.
+- Informe mensual en PDF listo para el consejo de administración.
+- Alta automática del reclamo en el sistema de gestión al elegir *Reclamo generado*.
+- Envío automático de la encuesta por WhatsApp Business al cerrar la atención.

@@ -1,0 +1,137 @@
+/* Panel de estadisticas: todo el periodo filtrado, en una sola pantalla. */
+
+import {
+  get, exigirSesion, montarBarra, montarFiltros, leerFiltros, escribirFiltros, qs,
+  escapar, num, dec, pct, fechaLarga, etiquetaEstado, etiquetaPuesto,
+} from '/js/api.js';
+import { barras, apiladas, lineas, multiplos, calor, paleta, DIAS } from '/js/charts.js';
+
+const $ = (id) => document.getElementById(id);
+let filtros;
+
+inicio().catch((e) => console.error(e));
+
+async function inicio() {
+  const usuario = await exigirSesion();
+  await montarBarra(usuario);
+  const catalogos = await get('/api/catalogos');
+  filtros = leerFiltros();
+  montarFiltros($('filtros'), catalogos, filtros, (nuevos) => escribirFiltros(nuevos));
+  $('exp-detalle').href = `/api/consultas/export?${qs(filtros)}`;
+  $('exp-resumen').href = `/api/estadisticas/export?${qs(filtros)}`;
+  pintar(await get(`/api/estadisticas?${qs(filtros)}`));
+}
+
+function pintar(d) {
+  const r = d.resumen;
+  const variacion = r.variacion_pct === null ? ''
+    : `<span class="${r.variacion_pct >= 0 ? 'sube' : 'baja'}">${r.variacion_pct >= 0 ? '▲' : '▼'} ${dec(Math.abs(r.variacion_pct))}%</span> vs. período anterior`;
+
+  $('kpis').innerHTML = `
+    <div class="kpi"><div class="etiqueta">Consultas</div>
+      <div class="valor">${num(r.total)}</div>
+      <div class="pie">${variacion || `${d.periodo.dias} días`}</div></div>
+    <div class="kpi"><div class="etiqueta">Promedio por día</div>
+      <div class="valor">${dec(r.promedio_dia)}</div>
+      <div class="pie">${d.periodo.dias} días del período</div></div>
+    <div class="kpi"><div class="etiqueta">Resueltas al 1er contacto</div>
+      <div class="valor">${pct(r.pct_primer_contacto)}</div>
+      <div class="pie">${num(r.resueltas)} cerradas en el acto</div></div>
+    <div class="kpi"><div class="etiqueta">Pendientes</div>
+      <div class="valor">${num(r.pendientes)}</div>
+      <div class="pie">${pct(r.pct_pendientes)} del total · ${num(r.derivadas)} derivadas</div></div>
+    <div class="kpi"><div class="etiqueta">Duración promedio</div>
+      <div class="valor">${r.duracion_prom_min === null ? '—' : `${dec(r.duracion_prom_min)}′`}</div>
+      <div class="pie">sobre las consultas con tiempo cargado</div></div>
+    <div class="kpi"><div class="etiqueta">Conformidad</div>
+      <div class="valor">${r.satisfaccion === null ? '—' : `${dec(r.satisfaccion, 2)}/5`}</div>
+      <div class="pie">${num(r.encuestas_respondidas)} encuestas respondidas</div></div>`;
+
+  $('sub-evolucion').textContent = `${fechaLarga(d.periodo.desde)} — ${fechaLarga(d.periodo.hasta)}`;
+
+  // --- evolucion diaria (serie unica: sin leyenda, el titulo la nombra)
+  lineas($('g-evolucion'), [{
+    nombre: 'Consultas',
+    puntos: d.serie.map((s) => ({ x: s.fecha, y: s.total })),
+  }], { alto: 250, etiquetaX: (v, completo) => (completo ? fechaLarga(v) : v.slice(8) + '/' + v.slice(5, 7)) });
+
+  // --- ranking por sector
+  barras($('g-sector'), d.por_sector.map((s) => ({
+    etiqueta: s.nombre, valor: s.total,
+    detalle: `${pct(s.pct)} del total · ${pct(s.pct_primer_contacto)} al 1er contacto`,
+  })));
+
+  // --- composicion por estado (colores de estado + leyenda con nombre)
+  const p = paleta();
+  const estados = ['resuelta', 'derivada', 'pendiente', 'reclamo'];
+  apiladas($('g-estado-sector'), d.por_sector.map((s) => ({
+    etiqueta: s.nombre,
+    partes: [
+      { nombre: 'Resuelta', valor: s.total - s.derivadas - s.pendientes - s.reclamos, color: p.estado.resuelta },
+      { nombre: 'Derivada', valor: s.derivadas, color: p.estado.derivada },
+      { nombre: 'Pendiente', valor: s.pendientes, color: p.estado.pendiente },
+      { nombre: 'Reclamo generado', valor: s.reclamos, color: p.estado.reclamo },
+    ],
+  })), { leyenda: estados.map((e) => ({ nombre: etiquetaEstado(e), color: p.estado[e] })) });
+
+  // --- motivos, canal y puesto
+  barras($('g-motivos'), d.por_motivo.map((m) => ({
+    etiqueta: m.nombre, valor: m.total, detalle: m.sector || '',
+  })), { maxEtiqueta: 30 });
+
+  barras($('g-canal'), d.por_canal.map((c) => ({ etiqueta: c.nombre, valor: c.total })));
+  barras($('g-puesto'), d.por_puesto.map((c) => ({ etiqueta: etiquetaPuesto(c.nombre), valor: c.total })));
+
+  // --- demanda por dia y hora
+  calor($('g-calor'), d.heatmap);
+  const pico = d.heatmap.slice().sort((a, b) => b.total - a.total)[0];
+  if (pico) {
+    $('sub-calor').textContent = `pico: ${DIAS[[1, 2, 3, 4, 5, 6, 0].indexOf(pico.dow)]} ${String(pico.hora).padStart(2, '0')}:00 con ${num(pico.total)} consultas`;
+  }
+
+  // --- evolucion comparada por sector
+  const porId = new Map(d.por_sector.map((s) => [s.id, s.nombre]));
+  const fechas = d.serie.map((s) => s.fecha);
+  const seriesSector = [...new Set(d.serie_sector.map((s) => s.sector_id))].map((id) => {
+    const mapa = new Map(d.serie_sector.filter((s) => s.sector_id === id).map((s) => [s.fecha, s.total]));
+    return { nombre: porId.get(id) || `Sector ${id}`, puntos: fechas.map((f) => ({ x: f, y: mapa.get(f) || 0 })) };
+  });
+  multiplos($('g-sector-tiempo'), seriesSector, {
+    etiquetaX: (v, completo) => (completo ? fechaLarga(v) : `${v.slice(8)}/${v.slice(5, 7)}`),
+  });
+
+  // --- tablas (misma informacion que los graficos, en texto)
+  $('t-sector').innerHTML = `
+    <table>
+      <thead><tr><th>Sector</th><th class="num">Consultas</th><th class="num">%</th>
+        <th class="num">1er contacto</th><th class="num">Pendientes</th><th class="num">Duración</th></tr></thead>
+      <tbody>${d.por_sector.map((s) => `
+        <tr><td>${escapar(s.nombre)}</td>
+            <td class="num">${num(s.total)}</td>
+            <td class="num">${pct(s.pct)}</td>
+            <td class="num">${pct(s.pct_primer_contacto)}</td>
+            <td class="num">${num(s.pendientes)}</td>
+            <td class="num">${s.duracion_prom_min === null ? '—' : `${dec(s.duracion_prom_min)}′`}</td></tr>`).join('')
+    || '<tr><td colspan="6" class="vacio">Sin datos</td></tr>'}
+      </tbody>
+    </table>`;
+
+  $('t-operador').innerHTML = `
+    <table>
+      <thead><tr><th>Operador</th><th>Puesto</th><th class="num">Consultas</th>
+        <th class="num">1er contacto</th><th class="num">Duración</th></tr></thead>
+      <tbody>${d.por_operador.map((o) => `
+        <tr><td>${escapar(o.nombre)}</td>
+            <td>${etiquetaPuesto(o.puesto)}</td>
+            <td class="num">${num(o.total)}</td>
+            <td class="num">${pct(o.pct_primer_contacto)}</td>
+            <td class="num">${o.duracion_prom_min === null ? '—' : `${dec(o.duracion_prom_min)}′`}</td></tr>`).join('')
+    || '<tr><td colspan="5" class="vacio">Sin datos</td></tr>'}
+      </tbody>
+    </table>`;
+
+  if (d.por_localidad.length) {
+    $('caja-localidad').classList.remove('oculto');
+    barras($('g-localidad'), d.por_localidad.map((l) => ({ etiqueta: l.nombre, valor: l.total })));
+  }
+}
