@@ -151,9 +151,23 @@ const agregarSeguimiento = requiere('operador', ({ res, params, body, usuario })
                   WHERE g.consulta_id = ? ORDER BY g.ts`, [id]), 201);
 });
 
-const borrar = requiere('supervisor', ({ res, params }) => {
+/** Ventana para que el operador deshaga un registro recien cargado. */
+const MINUTOS_DESHACER = 10;
+
+const borrar = requiere('operador', ({ res, params, usuario }) => {
   const id = enteroONull(params.id);
-  if (!get('SELECT id FROM consultas WHERE id = ?', [id])) return error(res, 404, 'Consulta no encontrada');
+  const c = get('SELECT id, ts, operador_id FROM consultas WHERE id = ?', [id]);
+  if (!c) return error(res, 404, 'Consulta no encontrada');
+
+  if (!esSupervisor(usuario)) {
+    // El que la cargo puede deshacerla, pero solo si fue recien: sirve para
+    // corregir un clic equivocado, no para borrar historia.
+    const minutos = (Date.parse(partesFecha().ts) - Date.parse(c.ts)) / 60000;
+    if (c.operador_id !== usuario.id) return error(res, 403, 'Solo un supervisor puede eliminar consultas de otro operador');
+    if (minutos > MINUTOS_DESHACER) {
+      return error(res, 403, `Pasaron más de ${MINUTOS_DESHACER} minutos: pedile a un supervisor que la elimine`);
+    }
+  }
   run('DELETE FROM consultas WHERE id = ?', [id]);
   json(res, { ok: true });
 });

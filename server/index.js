@@ -13,6 +13,7 @@ const catalogos = require('./api/catalogos');
 const estadisticas = require('./api/estadisticas');
 const encuestas = require('./api/encuestas');
 const usuarios = require('./api/usuarios');
+const tablero = require('./api/tablero');
 
 // ---------------------------------------------------------------- rutas ---
 // El orden importa: las rutas literales van antes que las que capturan :id.
@@ -27,6 +28,7 @@ const RUTAS = [
   ['POST', '/api/publico/encuesta', encuestas.publicoResponder, { publico: true }],
 
   ['GET', '/api/catalogos', requiere('operador', catalogos.catalogos)],
+  ['GET', '/api/tablero', tablero.tablero],
   ['POST', '/api/catalogos/:tabla', catalogos.crear],
   ['PUT', '/api/catalogos/:tabla/:id', catalogos.editar],
   ['DELETE', '/api/catalogos/:tabla/:id', catalogos.desactivar],

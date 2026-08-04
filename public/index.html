@@ -40,7 +40,7 @@ get('/api/yo').then((u) => { if (u) location.href = destino(); }).catch(() => {}
 
 function destino() {
   const volver = new URLSearchParams(location.search).get('volver');
-  return volver && volver.startsWith('/') ? volver : '/carga.html';
+  return volver && volver.startsWith('/') ? volver : '/rapido.html';
 }
 
 document.getElementById('form').addEventListener('submit', async (e) => {

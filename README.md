@@ -14,7 +14,8 @@ ni base de datos externa, ni instalar dependencias**: sólo Node.js 22 o superio
 
 | Problema típico | Cómo lo resuelve |
 |---|---|
-| "No sabemos cuántas consultas atendemos ni de qué" | Carga rápida en una pantalla, pensada para completarse **durante** la llamada |
+| "No sabemos cuántas consultas atendemos ni de qué" | Un botón por motivo: un toque durante la llamada y queda registrada |
+| "El personal no va a cargar nada si le lleva tiempo" | El camino normal es **un clic**; el detalle es opcional y se agrega después |
 | "Cada sector dice que recibe mucho, pero no hay número" | Toda consulta se imputa a un sector y a un motivo dentro de ese sector |
 | "No sabemos cuándo poner más gente" | Mapa de demanda por día y hora, con el pico marcado |
 | "El socio llamó tres veces por lo mismo" | Estado (resuelta / derivada / pendiente / reclamo) con seguimiento y notas |
@@ -62,23 +63,38 @@ ORG_NOMBRE="Cooperativa Eléctrica de ..." PORT=8080 npm start
 
 ## Las pantallas
 
-### 1. Registrar consulta
-La que usan todo el día el call center y la mesa de informes.
+### 1. Atención rápida — la pantalla del día a día
+Entra la llamada, el operador toca **un solo botón** y la consulta ya quedó
+registrada. Sin formulario, sin guardar, sin confirmar.
 
-- Botones de **motivos frecuentes** (los más usados del mes) que completan sector y
-  motivo de un clic.
-- **Cronómetro** para medir la duración real de la atención sin mirar el reloj.
-- `Ctrl` + `Enter` guarda y deja el formulario listo para la siguiente llamada.
-- Casilla *Generar encuesta de satisfacción*: al guardar devuelve un enlace único
-  para pasarle al socio por WhatsApp o mail.
-- A la derecha: cuántas consultas van hoy y las últimas que cargó el operador.
+- Tablero de botones grandes con los motivos agrupados por sector, más una fila
+  **"Los que más usás"** con los nueve motivos que ese operador más registra, con
+  atajos de teclado **1 a 9**.
+- El **canal** (Telefónico, Presencial, WhatsApp…) se elige una vez y queda fijo:
+  el call center no vuelve a tocarlo en todo el turno.
+- Cada botón muestra cuántas veces se usó hoy, así el operador ve su propio ritmo.
+- Al registrar aparece un aviso de 12 segundos con las salidas de excepción, todas
+  a un clic: **Derivada · Pendiente · Reclamo · Agregar datos · Deshacer** (`Esc`).
+  El camino normal es un clic; la excepción, dos.
+- *Agregar datos* abre el socio, el N° de reclamo, la duración, las observaciones y
+  la encuesta de satisfacción **sobre la consulta ya guardada** — nada se recarga.
+- Cada botón deja igual el sector, el motivo, el canal, el operador, el puesto, la
+  fecha y la hora: la estadística sale completa aunque nadie escriba una palabra.
 
-### 2. Consultas
+Si el operador se equivoca de botón, tiene 10 minutos para deshacerlo él mismo;
+pasado ese plazo lo elimina un supervisor.
+
+### 2. Carga detallada
+El formulario completo, para cuando la consulta lo amerita: socio, contacto,
+localidad, prioridad, observaciones, **cronómetro** de duración y generación del
+enlace de encuesta. `Ctrl` + `Enter` guarda y deja todo listo para la siguiente.
+
+### 3. Consultas
 Listado con todos los filtros (fecha, sector, canal, puesto, estado, operador y
 búsqueda por socio, N° de reclamo u observaciones), detalle de cada consulta,
 línea de tiempo de seguimiento, cambio de estado y exportación a CSV.
 
-### 3. Estadísticas
+### 4. Estadísticas
 El panel que mira la gerencia o el consejo:
 
 - **KPIs**: total, promedio por día, % resuelto en el primer contacto, pendientes,
@@ -90,13 +106,13 @@ El panel que mira la gerencia o el consejo:
 - Tablas con los mismos números, para leer o copiar.
 - CSV detallado, CSV por sector y versión para imprimir.
 
-### 4. Satisfacción
+### 5. Satisfacción
 Respuestas de la encuesta: conformidad general, CSAT (% de 4 y 5), **NPS**,
 resolución, atención y espera; distribución de las notas, evolución, ranking por
 sector y los últimos comentarios textuales. También permite generar un enlace de
 encuesta o cargar a mano una respuesta tomada por teléfono.
 
-### 5. Encuesta del socio (`/encuesta.html`)
+### 6. Encuesta del socio (`/encuesta.html`)
 Formulario público, pensado para el celular, en dos variantes:
 
 - **Con enlace único** (`/encuesta.html?t=...`): queda atado a la consulta y al
@@ -104,7 +120,7 @@ Formulario público, pensado para el celular, en dos variantes:
 - **Abierto**: `/encuesta.html` sin parámetros. Es el que conviene imprimir como
   **QR en el mostrador**; el socio elige el sector que lo atendió.
 
-### 6. Administración
+### 7. Administración
 Sectores, motivos por sector, canales, localidades y usuarios. Los catálogos no se
 borran, se **desactivan**: así la estadística vieja no pierde el nombre del sector.
 
@@ -114,7 +130,7 @@ borran, se **desactivan**: así la estadística vieja no pierde el nombre del se
 
 | Rol | Puede |
 |---|---|
-| **Operador** | Cargar consultas, ver el listado y las estadísticas, cargar encuestas, editar lo que él mismo cargó |
+| **Operador** | Cargar consultas, ver el listado y las estadísticas, cargar encuestas, editar lo que él mismo cargó y deshacer su carga dentro de los 10 minutos |
 | **Supervisor** | Todo lo anterior + editar/eliminar cualquier consulta, administrar catálogos y exportar encuestas |
 | **Administrador** | Todo + crear usuarios, cambiar roles y claves |
 
@@ -141,7 +157,8 @@ server/
   util.js           fechas en la zona de la cooperativa, JSON, CSV
   api/              consultas · catálogos · estadísticas · encuestas · usuarios
 public/
-  carga.html        registro rápido
+  rapido.html       atención rápida (un toque = una consulta)
+  carga.html        carga detallada
   consultas.html    listado y seguimiento
   panel.html        estadísticas
   satisfaccion.html encuesta: resultados

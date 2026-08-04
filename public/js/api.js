@@ -28,7 +28,8 @@ export async function exigirSesion() {
 }
 
 const PAGINAS = [
-  { href: '/carga.html', texto: 'Registrar consulta' },
+  { href: '/rapido.html', texto: 'Atención rápida' },
+  { href: '/carga.html', texto: 'Carga detallada' },
   { href: '/consultas.html', texto: 'Consultas' },
   { href: '/panel.html', texto: 'Estadisticas' },
   { href: '/satisfaccion.html', texto: 'Satisfaccion' },

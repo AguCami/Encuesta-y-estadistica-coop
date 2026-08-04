@@ -249,6 +249,78 @@ dialog .pie { padding: .7rem 1rem; border-top: 1px solid var(--border); display:
 .escala label small { display: block; font-size: .68rem; font-weight: 500; color: var(--muted); }
 .escala input:checked + label small { color: #fff; }
 
+/* ------------------------------------------------------- atencion rapida */
+
+.rapido { max-width: 1500px; }
+.contador-hoy { font-size: .85rem; color: var(--ink-2); }
+.contador-hoy b { font-size: 1.05rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+.canal-barra { display: flex; flex-wrap: wrap; gap: .5rem; padding: .55rem .8rem; }
+.segmentado { display: flex; flex-wrap: wrap; gap: .3rem; }
+.segmentado button {
+  padding: .4rem .85rem; border-radius: 8px; font-size: .9rem;
+  border: 1px solid var(--axis); background: var(--surface-1); color: var(--ink-2);
+}
+.segmentado button[aria-pressed="true"] {
+  background: var(--s1); border-color: var(--s1); color: #fff;
+}
+
+.botonera { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: .6rem; }
+.botonera.destacada { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+
+.ficha {
+  position: relative;
+  display: flex; flex-direction: column; align-items: flex-start; gap: .1rem;
+  min-height: 74px; padding: .6rem .7rem; text-align: left;
+  border: 1px solid var(--axis); border-radius: var(--radio);
+  background: var(--surface-1); cursor: pointer;
+  transition: transform .06s ease, border-color .12s ease, background .12s ease;
+}
+.ficha:hover { border-color: var(--s1); background: var(--plane); }
+.ficha:active { transform: scale(.97); }
+.ficha:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
+.ficha .titulo { font-size: .98rem; font-weight: 650; color: var(--ink); line-height: 1.2; }
+.ficha .sector { font-size: .75rem; color: var(--muted); }
+.ficha .veces {
+  position: absolute; right: .5rem; bottom: .45rem;
+  font-size: .7rem; color: var(--ink-2); font-variant-numeric: tabular-nums;
+}
+.ficha .atajo {
+  position: absolute; right: .5rem; top: .45rem;
+  font-size: .68rem; font-weight: 700; color: var(--muted);
+  border: 1px solid var(--grid); border-radius: 4px; padding: 0 .25rem;
+}
+.ficha.otra { border-style: dashed; }
+.ficha.otra .titulo { color: var(--ink-2); }
+/* destello al registrar: confirma el toque sin frenar la atencion */
+.ficha.marcada { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, var(--surface-1)); }
+
+.brindis {
+  position: fixed; left: 50%; bottom: 1rem; transform: translate(-50%, 130%);
+  z-index: 50; min-width: min(560px, 94vw);
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radio);
+  box-shadow: var(--sombra); padding: .7rem .9rem;
+  transition: transform .16s ease, opacity .16s ease; opacity: 0;
+}
+.brindis.visible { transform: translate(-50%, 0); opacity: 1; }
+.brindis.error { border-color: var(--critico); }
+.brindis .linea { display: flex; align-items: center; gap: .5rem; font-size: .92rem; }
+.brindis .cuenta {
+  margin-left: auto; font-size: .78rem; color: var(--muted);
+  font-variant-numeric: tabular-nums; min-width: 1.4rem; text-align: right;
+}
+.brindis .acciones { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .55rem; }
+.brindis .acciones button { padding: .3rem .6rem; font-size: .84rem; }
+.brindis .acciones button[aria-pressed="true"] { border-color: var(--s1); color: var(--s1); }
+.brindis .acciones small { font-size: .74rem; color: var(--muted); font-weight: 500; }
+.brindis .marca-estado { color: var(--s1); font-weight: 650; font-size: .86rem; }
+.brindis #deshacer { margin-left: auto; }
+
+@media (max-width: 640px) {
+  .botonera { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .ficha { min-height: 66px; }
+}
+
 .oculto { display: none !important; }
 .solo-lectura { color: var(--muted); font-size: .82rem; }
 
