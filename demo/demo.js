@@ -15,10 +15,8 @@ const SECTORES = [
   { id: 3, nombre: 'Reclamos', detalle: 'Fallas y reclamos de servicio', puesto: 'call_center', peso: 9 },
   { id: 4, nombre: 'TIC', detalle: 'Internet, IPTV y servicios de conectividad', puesto: 'call_center', peso: 6 },
   { id: 5, nombre: 'Pagos', detalle: 'Acreditación e información de pagos', puesto: 'call_center', peso: 4 },
-  // mesa de informes: las areas del totem de turnos
-  { id: 6, nombre: 'Mesa Sector 1', detalle: 'Reclamos, trámites, notas y proveedores', puesto: 'mesa_informes', peso: 6 },
-  { id: 7, nombre: 'Mesa Sector 2', detalle: 'RRHH, internet, obras y bienestar', puesto: 'mesa_informes', peso: 4 },
-  { id: 8, nombre: 'Consultas de mostrador', detalle: 'Lo que se resuelve en el momento, sin turno', puesto: 'mesa_informes', peso: 7 },
+  // mesa de informes: todo en un solo grupo, como se atiende en el mostrador
+  { id: 6, nombre: 'Mesa de informes', detalle: 'Atención presencial en el mostrador', puesto: 'mesa_informes', peso: 12 },
 ];
 
 const MOTIVOS_POR_SECTOR = {
@@ -29,9 +27,9 @@ const MOTIVOS_POR_SECTOR = {
     'Sin luz', 'Sin agua', 'Error de facturación', 'Estado del reclamo'],
   4: ['Reclamos', 'Consultas', 'Lentitud', 'Micro cortes', 'Problemas IPTV', 'Sensa'],
   5: ['Roela no impactado', 'Información'],
-  6: ['Reclamos', 'Trámites y ventas', 'Entrega de notas', 'Proveedores'],
-  7: ['Recursos humanos', 'Reclamos internet / IPTV', 'Oficina técnica', 'Red Bienestar Cooperativo'],
-  8: ['Estados de cuenta', 'Información general', 'Boletas', 'Actualización de datos',
+  6: ['Reclamos', 'Trámites y ventas', 'Entrega de notas', 'Proveedores',
+    'Recursos humanos', 'Reclamos internet / IPTV', 'Oficina técnica', 'Red Bienestar Cooperativo',
+    'Estados de cuenta', 'Información general', 'Boletas', 'Actualización de datos',
     'Reconexiones', 'Apros', 'Prórroga'],
 };
 
@@ -66,6 +64,7 @@ const USUARIO = OPERADORES[0];   // el operador con el que se navega la demo
 const DIAS_DEMO = 90;
 
 let CONSULTAS = [];
+let PRIMERA_CONSULTA = '';
 
 // ------------------------------------------------------------- helpers ---
 
@@ -102,6 +101,20 @@ function sumarDias(fechaISO, dias) {
   return d.toISOString().slice(0, 10);
 }
 const diaSemana = (fechaISO) => new Date(`${fechaISO}T12:00:00Z`).getUTCDay();
+const inicioSemana = (fechaISO) => sumarDias(fechaISO, -((diaSemana(fechaISO) + 6) % 7));
+const inicioMes = (fechaISO) => `${fechaISO.slice(0, 7)}-01`;
+function sumarMeses(fechaISO, n) {
+  const [a, m] = fechaISO.split('-').map(Number);
+  const total = (a * 12) + (m - 1) + n;
+  return `${String(Math.floor(total / 12)).padStart(4, '0')}-${String((total % 12) + 1).padStart(2, '0')}-01`;
+}
+const diasEntre = (a, b) => Math.max(1, Math.round(
+  (new Date(`${b}T12:00:00Z`) - new Date(`${a}T12:00:00Z`)) / 86400000) + 1);
+
+/** Por día en períodos cortos, por semana hasta un año, por mes en el histórico. */
+const granularidad = (dias) => (dias <= 62 ? 'dia' : dias <= 400 ? 'semana' : 'mes');
+const inicioPeriodo = (f, g) => (g === 'mes' ? inicioMes(f) : g === 'semana' ? inicioSemana(f) : f);
+const siguientePeriodo = (f, g) => (g === 'mes' ? sumarMeses(f, 1) : sumarDias(f, g === 'semana' ? 7 : 1));
 
 const escapar = (s) => String(s ?? '').replace(/[&<>"']/g,
   (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -179,16 +192,23 @@ function generarDatos() {
     }
   }
   CONSULTAS.sort((a, b) => (a.ts < b.ts ? -1 : 1));
+  PRIMERA_CONSULTA = CONSULTAS.length ? CONSULTAS[0].fecha : HOY;
 }
 
 // ------------------------------------------------------------- filtros ---
 
 // Cada puesto se mira por separado; '' muestra los dos juntos.
-const filtro = { dias: 30, sector_id: '', puesto: 'call_center' };
+const filtro = { desde: '', hasta: '', sector_id: '', puesto: 'call_center' };
+const PERIODOS = [
+  { id: 'dia', texto: 'Hoy', desde: (h) => h },
+  { id: 'semana', texto: 'Esta semana', desde: (h) => inicioSemana(h) },
+  { id: 'mes', texto: 'Este mes', desde: (h) => inicioMes(h) },
+  { id: 'historico', texto: 'Histórico', desde: () => PRIMERA_CONSULTA },
+];
 const PUESTOS_PANEL = [
   ['call_center', 'Call center'], ['mesa_informes', 'Mesa de informes'], ['', 'Los dos juntos'],
 ];
-const desdeFiltro = () => sumarDias(HOY, -(filtro.dias - 1));
+const desdeFiltro = () => filtro.desde || inicioMes(HOY);
 
 function consultasFiltradas() {
   const desde = desdeFiltro();
@@ -197,7 +217,6 @@ function consultasFiltradas() {
     && (!filtro.sector_id || c.sector_id === Number(filtro.sector_id)));
 }
 
-const RANGOS = [[7, 'Últimos 7 días'], [30, 'Últimos 30 días'], [90, 'Últimos 90 días']];
 
 /** Barra de filtros de la demo: rango de fechas y sector. */
 function montarFiltros(contenedor, alCambiar) {
@@ -213,7 +232,7 @@ function montarFiltros(contenedor, alCambiar) {
       <div class="campo" style="flex:0 0 auto">
         <label>Período</label>
         <div class="segmentado">
-          ${RANGOS.map(([d, t]) => `<button type="button" data-dias="${d}"${filtro.dias === d ? ' aria-pressed="true"' : ''}>${t}</button>`).join('')}
+          ${PERIODOS.map((p) => `<button type="button" data-periodo="${p.id}"${desdeFiltro() === p.desde(HOY) ? ' aria-pressed="true"' : ''}>${p.texto}</button>`).join('')}
         </div>
       </div>
       <div class="campo"><label>Sector</label>
@@ -227,8 +246,11 @@ function montarFiltros(contenedor, alCambiar) {
   contenedor.querySelectorAll('[data-puesto]').forEach((b) => {
     b.onclick = () => { filtro.puesto = b.dataset.puesto; filtro.sector_id = ''; alCambiar(); };
   });
-  contenedor.querySelectorAll('[data-dias]').forEach((b) => {
-    b.onclick = () => { filtro.dias = Number(b.dataset.dias); alCambiar(); };
+  contenedor.querySelectorAll('[data-periodo]').forEach((b) => {
+    b.onclick = () => {
+      filtro.desde = PERIODOS.find((p) => p.id === b.dataset.periodo).desde(HOY);
+      alCambiar();
+    };
   });
   contenedor.querySelector('[data-sector]').onchange = (e) => {
     filtro.sector_id = e.target.value; alCambiar();
@@ -251,7 +273,8 @@ function estadisticas() {
   const desde = desdeFiltro();
   const filas = consultasFiltradas();
   const total = filas.length;
-  const dias = filtro.dias;
+  const dias = diasEntre(desde, HOY);
+  const gran = granularidad(dias);
 
   const cuenta = (fn) => filas.filter(fn).length;
   const conDuracion = filas.filter((c) => c.duracion_seg > 0);
@@ -309,9 +332,12 @@ function estadisticas() {
     .map(([id, n]) => ({ id, nombre: LOCALIDADES.find((l) => l.id === id).nombre, total: n }))
     .sort((a, b) => b.total - a.total);
 
-  const porFecha = agrupar(filas, (c) => c.fecha);
+  const porFecha = agrupar(filas, (c) => inicioPeriodo(c.fecha, gran));
   const serie = [];
-  for (let f = desde; f <= HOY; f = sumarDias(f, 1)) serie.push({ fecha: f, total: porFecha.get(f) || 0 });
+  const fin = inicioPeriodo(HOY, gran);
+  for (let f = inicioPeriodo(desde, gran); f <= fin; f = siguientePeriodo(f, gran)) {
+    serie.push({ fecha: f, total: porFecha.get(f) || 0 });
+  }
 
   const heatmap = [...agrupar(filas, (c) => `${c.dow}|${c.hora}`)]
     .map(([k, total]) => ({ dow: Number(k.split('|')[0]), hora: Number(k.split('|')[1]), total }));
@@ -319,12 +345,12 @@ function estadisticas() {
   const topSectores = porSector.slice(0, 6).map((s) => s.id);
   const serieSector = [];
   for (const sid of topSectores) {
-    const delSector = agrupar(filas.filter((c) => c.sector_id === sid), (c) => c.fecha);
+    const delSector = agrupar(filas.filter((c) => c.sector_id === sid), (c) => inicioPeriodo(c.fecha, gran));
     for (const [fecha, tot] of delSector) serieSector.push({ sector_id: sid, fecha, total: tot });
   }
 
   return {
-    periodo: { desde, hasta: HOY, dias },
+    periodo: { desde, hasta: HOY, dias, granularidad: gran },
     resumen: {
       total,
       promedio_dia: redondear(total / dias, 1),
@@ -370,12 +396,11 @@ function frecuentesDelOperador() {
 const hoyPorMotivo = (motivoId) =>
   CONSULTAS.filter((c) => c.fecha === HOY && c.operador_id === USUARIO.id && c.motivo_id === motivoId).length;
 
-function fichaHTML(motivo, { conSector = false } = {}) {
+function fichaHTML(motivo) {
   const hoy = hoyPorMotivo(motivo.id);
   return `
     <button type="button" class="ficha" data-motivo="${motivo.id}">
       <span class="titulo">${escapar(motivo.nombre)}</span>
-      ${conSector ? `<span class="sector">${escapar(sectorDe(motivo.sector_id).nombre)}</span>` : ''}
       <span class="veces${hoy ? '' : ' oculto'}" data-veces="${motivo.id}">${hoy} hoy</span>
     </button>`;
 }
@@ -398,8 +423,7 @@ function pintarRapido() {
     b.onclick = () => { puestoActual = b.dataset.puesto; pintarRapido(); };
   });
 
-  $('frecuentes').innerHTML = frecuentesDelOperador()
-    .map((m) => fichaHTML(m, { conSector: true })).join('');
+  $('frecuentes').innerHTML = frecuentesDelOperador().map((m) => fichaHTML(m)).join('');
 
   $('sectores').innerHTML = sectoresDelPuesto().map((s) => `
     <section class="tarjeta" style="margin-top:1rem">
@@ -457,7 +481,7 @@ function mostrarConfirmacion(titulo) {
   caja.innerHTML = `
     <div class="linea">
       <b>Registrada</b> · ${escapar(titulo)}
-      <span id="marca-estado" class="marca-estado"></span>
+      <span id="marca-estado" class="marca-estado">— queda como solucionada</span>
       <span class="cuenta" id="cuenta">${SEGUNDOS_DESHACER}</span>
     </div>
     <div class="acciones">
@@ -473,7 +497,7 @@ function mostrarConfirmacion(titulo) {
       ultima.primer_contacto = b.dataset.estado === 'resuelta' ? 1 : 0;
       caja.querySelectorAll('[data-estado]').forEach((x) => x.removeAttribute('aria-pressed'));
       b.setAttribute('aria-pressed', 'true');
-      $('marca-estado').textContent = b.dataset.estado === 'resuelta' ? '' : `· ${etiquetaEstado(b.dataset.estado)}`;
+      $('marca-estado').textContent = `— queda como ${etiquetaEstado(b.dataset.estado).toLowerCase()}`;
     };
   });
   caja.querySelector('#deshacer').onclick = deshacer;
@@ -574,7 +598,7 @@ function pintarPanel() {
       <div class="pie">${variacion || `${d.periodo.dias} días`}</div></div>
     <div class="kpi"><div class="etiqueta">Promedio por día</div>
       <div class="valor">${dec(r.promedio_dia)}</div>
-      <div class="pie">${d.periodo.dias} días del período</div></div>
+      <div class="pie">${num(d.periodo.dias)} día${d.periodo.dias === 1 ? '' : 's'} del período</div></div>
     <div class="kpi"><div class="etiqueta">Solucionadas al 1er contacto</div>
       <div class="valor">${pct(r.pct_primer_contacto)}</div>
       <div class="pie">${num(r.resueltas)} cerradas en el acto</div></div>
@@ -587,7 +611,18 @@ function pintarPanel() {
 
   $('sub-evolucion').textContent = `${fechaLarga(d.periodo.desde)} — ${fechaLarga(d.periodo.hasta)}`;
 
-  const etiquetaX = (v, completo) => (completo ? fechaLarga(v) : `${v.slice(8)}/${v.slice(5, 7)}`);
+  const gran = d.periodo.granularidad;
+  const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  const etiquetaX = (v, completo) => {
+    if (gran === 'mes') {
+      return completo ? `${MESES[Number(v.slice(5, 7)) - 1]} de ${v.slice(0, 4)}`
+        : `${MESES[Number(v.slice(5, 7)) - 1]} ${v.slice(2, 4)}`;
+    }
+    if (gran === 'semana' && completo) return `semana del ${fechaLarga(v)}`;
+    return completo ? fechaLarga(v) : `${v.slice(8)}/${v.slice(5, 7)}`;
+  };
+  $('titulo-evolucion').textContent =
+    gran === 'mes' ? 'Evolución mensual' : gran === 'semana' ? 'Evolución semanal' : 'Evolución diaria';
 
   lineas($('g-evolucion'), [{ nombre: 'Consultas', puntos: d.serie.map((s) => ({ x: s.fecha, y: s.total })) }],
     { alto: 250, etiquetaX });
@@ -683,10 +718,19 @@ document.querySelectorAll('#nav a').forEach((a) => {
 
 $('c-buscar').oninput = () => pintarConsultas();
 
+// Reiniciar borra todo lo cargado: se pide un código para que no pase de casualidad.
+const CODIGO_REINICIO = '11235813';
+
 $('btn-reiniciar').onclick = () => {
+  const codigo = prompt('Para reiniciar las estadísticas ingresá el código:');
+  if (codigo === null) return;
+  if (codigo.trim() !== CODIGO_REINICIO) {
+    aviso('Código incorrecto: las estadísticas no se tocaron');
+    return;
+  }
   generarDatos();
   ir('rapido');
-  aviso('Datos de ejemplo regenerados');
+  aviso('Estadísticas reiniciadas');
 };
 
 // Escape deshace el ultimo registro mientras el aviso sigue en pantalla.

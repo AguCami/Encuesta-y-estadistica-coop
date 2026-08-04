@@ -68,15 +68,11 @@ function pintarPuestos() {
   });
 }
 
-const nombreSector = (id) => (datos.sectores.find((s) => s.id === id) || {}).nombre || '';
-
-/** `conSector` solo hace falta en la fila de frecuentes, donde se mezclan. */
-function boton(motivo, { conSector = false } = {}) {
+function boton(motivo) {
   const hoy = datos.hoy_por_motivo[motivo.id] || 0;
   return `
     <button type="button" class="ficha" data-motivo="${motivo.id}">
       <span class="titulo">${escapar(motivo.nombre)}</span>
-      ${conSector ? `<span class="sector">${escapar(nombreSector(motivo.sector_id))}</span>` : ''}
       <span class="veces${hoy ? '' : ' oculto'}" data-veces="${motivo.id}">${hoy} hoy</span>
     </button>`;
 }
@@ -87,7 +83,7 @@ function pintarFrecuentes() {
     .map((id) => datos.motivos.find((m) => m.id === id))
     .filter((m) => m && delPuesto.has(m.sector_id));
   $('caja-frecuentes').classList.toggle('oculto', !lista.length);
-  $('frecuentes').innerHTML = lista.map((m) => boton(m, { conSector: true })).join('');
+  $('frecuentes').innerHTML = lista.map((m) => boton(m)).join('');
   enlazarFichas($('frecuentes'));
 }
 
@@ -170,7 +166,7 @@ function mostrarConfirmacion(consulta, titulo) {
   caja.innerHTML = `
     <div class="linea">
       <b>Registrada</b> · ${escapar(titulo)}
-      <span id="marca-estado" class="marca-estado"></span>
+      <span id="marca-estado" class="marca-estado">— queda como solucionada</span>
       <span class="cuenta" id="cuenta">${SEGUNDOS_DESHACER}</span>
     </div>
     <div class="acciones">
@@ -223,7 +219,7 @@ async function cambiarEstado(estado, boton) {
     caja.querySelectorAll('[data-estado]').forEach((b) => b.removeAttribute('aria-pressed'));
     if (boton) boton.setAttribute('aria-pressed', 'true');
     const marca = caja.querySelector('#marca-estado');
-    if (marca) marca.textContent = estado === 'resuelta' ? '' : `· ${etiquetaEstado(estado)}`;
+    if (marca) marca.textContent = `— queda como ${etiquetaEstado(estado).toLowerCase()}`;
   } catch (err) {
     brindis(err.message, 'error');
   }

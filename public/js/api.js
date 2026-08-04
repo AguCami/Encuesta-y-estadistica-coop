@@ -148,8 +148,21 @@ export function escribirFiltros(f, recargar = true) {
 
 export const qs = (f) => new URLSearchParams(Object.entries(f).filter(([, v]) => v)).toString();
 
-const RANGOS = [
-  ['Hoy', 0], ['Ultimos 7 dias', 6], ['Ultimos 30 dias', 29], ['Ultimos 90 dias', 89],
+/** Lunes de la semana de esa fecha. */
+export function inicioSemana(iso) {
+  const d = new Date(`${iso}T12:00:00Z`);
+  return sumarDias(iso, -((d.getUTCDay() + 6) % 7));
+}
+
+/**
+ * Los períodos con los que se mira la operación. `historico` arranca en la
+ * primera consulta cargada, así que lo resuelve quien monta los filtros.
+ */
+export const PERIODOS = [
+  { id: 'dia', texto: 'Hoy', desde: (h) => h },
+  { id: 'semana', texto: 'Esta semana', desde: (h) => inicioSemana(h) },
+  { id: 'mes', texto: 'Este mes', desde: (h) => `${h.slice(0, 7)}-01` },
+  { id: 'historico', texto: 'Histórico', desde: (h, primera) => primera || sumarDias(h, -730) },
 ];
 
 const CAMPOS_FILTRO = {
@@ -183,7 +196,8 @@ export function montarFiltros(contenedor, catalogos, filtros, alCambiar, opcione
       <button id="f-limpiar">Limpiar</button>
     </div>
     <div class="fila" style="margin-top:.5rem">
-      ${RANGOS.map(([t, d]) => `<button class="chico" data-dias="${d}">${t}</button>`).join('')}
+      ${PERIODOS.map((p) => `<button class="chico" data-periodo="${p.id}">${p.texto}</button>`).join('')}
+      <span class="solo-lectura" style="align-self:center">o elegí las fechas arriba</span>
     </div>`;
 
   const leer = () => {
@@ -198,11 +212,12 @@ export function montarFiltros(contenedor, catalogos, filtros, alCambiar, opcione
 
   contenedor.querySelector('#f-aplicar').onclick = () => alCambiar(leer());
   contenedor.querySelector('#f-limpiar').onclick = () =>
-    alCambiar({ desde: sumarDias(hoyISO(), -29), hasta: hoyISO() });
-  contenedor.querySelectorAll('[data-dias]').forEach((b) => {
+    alCambiar({ desde: `${hoyISO().slice(0, 7)}-01`, hasta: hoyISO() });
+  contenedor.querySelectorAll('[data-periodo]').forEach((b) => {
     b.onclick = () => {
       const hasta = hoyISO();
-      alCambiar({ ...leer(), desde: sumarDias(hasta, -Number(b.dataset.dias)), hasta });
+      const periodo = PERIODOS.find((p) => p.id === b.dataset.periodo);
+      alCambiar({ ...leer(), desde: periodo.desde(hasta, catalogos.primera_consulta), hasta });
     };
   });
   return { leer };

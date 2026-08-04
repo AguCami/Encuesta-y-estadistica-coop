@@ -7,6 +7,7 @@ import {
 import { barras, apiladas, lineas, multiplos, calor, paleta, DIAS } from '/js/charts.js';
 
 const $ = (id) => document.getElementById(id);
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 let filtros;
 
 inicio().catch((e) => console.error(e));
@@ -59,7 +60,7 @@ function pintar(d) {
       <div class="pie">${variacion || `${d.periodo.dias} días`}</div></div>
     <div class="kpi"><div class="etiqueta">Promedio por día</div>
       <div class="valor">${dec(r.promedio_dia)}</div>
-      <div class="pie">${d.periodo.dias} días del período</div></div>
+      <div class="pie">${num(d.periodo.dias)} día${d.periodo.dias === 1 ? '' : 's'} del período</div></div>
     <div class="kpi"><div class="etiqueta">Solucionadas al 1er contacto</div>
       <div class="valor">${pct(r.pct_primer_contacto)}</div>
       <div class="pie">${num(r.resueltas)} cerradas en el acto</div></div>
@@ -73,13 +74,26 @@ function pintar(d) {
       <div class="valor">${r.satisfaccion === null ? '—' : `${dec(r.satisfaccion, 2)}/5`}</div>
       <div class="pie">${num(r.encuestas_respondidas)} encuestas respondidas</div></div>`;
 
+  // Según el largo del período, la serie viene por día, por semana o por mes.
+  const gran = d.periodo.granularidad;
+  const etiquetaX = (v, completo) => {
+    if (gran === 'mes') {
+      return completo ? `${MESES[Number(v.slice(5, 7)) - 1]} de ${v.slice(0, 4)}`
+        : `${MESES[Number(v.slice(5, 7)) - 1]} ${v.slice(2, 4)}`;
+    }
+    if (gran === 'semana' && completo) return `semana del ${fechaLarga(v)}`;
+    return completo ? fechaLarga(v) : `${v.slice(8)}/${v.slice(5, 7)}`;
+  };
+
+  $('titulo-evolucion').textContent =
+    gran === 'mes' ? 'Evolución mensual' : gran === 'semana' ? 'Evolución semanal' : 'Evolución diaria';
   $('sub-evolucion').textContent = `${fechaLarga(d.periodo.desde)} — ${fechaLarga(d.periodo.hasta)}`;
 
-  // --- evolucion diaria (serie unica: sin leyenda, el titulo la nombra)
+  // --- evolucion (serie unica: sin leyenda, el titulo la nombra)
   lineas($('g-evolucion'), [{
     nombre: 'Consultas',
     puntos: d.serie.map((s) => ({ x: s.fecha, y: s.total })),
-  }], { alto: 250, etiquetaX: (v, completo) => (completo ? fechaLarga(v) : v.slice(8) + '/' + v.slice(5, 7)) });
+  }], { alto: 250, etiquetaX });
 
   // --- ranking por sector
   barras($('g-sector'), d.por_sector.map((s) => ({
@@ -122,9 +136,7 @@ function pintar(d) {
     const mapa = new Map(d.serie_sector.filter((s) => s.sector_id === id).map((s) => [s.fecha, s.total]));
     return { nombre: porId.get(id) || `Sector ${id}`, puntos: fechas.map((f) => ({ x: f, y: mapa.get(f) || 0 })) };
   });
-  multiplos($('g-sector-tiempo'), seriesSector, {
-    etiquetaX: (v, completo) => (completo ? fechaLarga(v) : `${v.slice(8)}/${v.slice(5, 7)}`),
-  });
+  multiplos($('g-sector-tiempo'), seriesSector, { etiquetaX });
 
   // --- tablas (misma informacion que los graficos, en texto)
   $('t-sector').innerHTML = `

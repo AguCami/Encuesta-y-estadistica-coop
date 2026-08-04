@@ -61,7 +61,7 @@ function generar() {
   // La demanda no se reparte pareja: reclamos y ventas se llevan la mayor parte.
   const PESOS = {
     'Reclamos': 9, 'Ventas': 7, 'TIC': 6, 'Cortes por falta de pago': 5, 'Pagos': 4,
-    'Mesa Sector 1': 6, 'Mesa Sector 2': 4, 'Consultas de mostrador': 7,
+    'Mesa de informes': 12,
   };
   const pesoSector = sectores.map((s) => PESOS[s.nombre] ?? 3);
   const pesoCanal = canales.map((c) => ({ Telefonico: 12, Presencial: 4, WhatsApp: 5, Email: 2, 'Web / Redes': 1 }[c.nombre] ?? 2));

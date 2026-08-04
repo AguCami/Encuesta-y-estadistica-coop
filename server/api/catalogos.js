@@ -6,7 +6,9 @@ const { requiere } = require('../auth');
 
 /** Todo lo que la interfaz necesita para dibujar los selectores. */
 function catalogos({ res }) {
+  const primera = get('SELECT MIN(fecha) AS f FROM consultas');
   json(res, {
+    primera_consulta: (primera && primera.f) || null,
     sectores: all('SELECT id, nombre, detalle, orden, puesto, activo FROM sectores ORDER BY orden, nombre'),
     motivos: all('SELECT id, sector_id, nombre, activo FROM motivos ORDER BY nombre'),
     canales: all('SELECT id, nombre, orden, activo FROM canales ORDER BY orden, nombre'),

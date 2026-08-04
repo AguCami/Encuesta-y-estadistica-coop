@@ -1,7 +1,7 @@
 'use strict';
 
 const { all, get } = require('../db');
-const { json, sumarDias, csv } = require('../util');
+const { json, sumarDias, csv, granularidad, inicioPeriodo, siguientePeriodo } = require('../util');
 const { filtroConsultas, filtroEncuestas } = require('../filtros');
 const { requiere } = require('../auth');
 
@@ -12,17 +12,20 @@ function diasEntre(desde, hasta) {
   return Math.max(1, Math.round((b - a) / 86400000) + 1);
 }
 
-function serieCompleta(desde, hasta, filas) {
-  const mapa = new Map(filas.map((f) => [f.fecha, f]));
+/**
+ * Arma la serie con el paso que corresponda (día, semana o mes) y sin huecos:
+ * los períodos sin consultas valen cero, para que la línea no mienta.
+ */
+function serieCompleta(desde, hasta, filas, gran) {
+  const acum = new Map();
+  for (const f of filas) {
+    const k = inicioPeriodo(f.fecha, gran);
+    acum.set(k, (acum.get(k) || 0) + f.total);
+  }
   const salida = [];
-  for (let d = desde; d <= hasta; d = sumarDias(d, 1)) {
-    const f = mapa.get(d);
-    salida.push({
-      fecha: d,
-      total: f ? f.total : 0,
-      pendientes: f ? f.pendientes : 0,
-      resueltas: f ? f.resueltas : 0,
-    });
+  const fin = inicioPeriodo(hasta, gran);
+  for (let d = inicioPeriodo(desde, gran); d <= fin; d = siguientePeriodo(d, gran)) {
+    salida.push({ fecha: d, total: acum.get(d) || 0 });
   }
   return salida;
 }
@@ -104,11 +107,10 @@ const general = requiere('operador', ({ res, query }) => {
       FROM consultas c JOIN localidades l ON l.id = c.localidad_id
      WHERE ${W} GROUP BY l.id ORDER BY total DESC LIMIT 12`, P);
 
+  const gran = granularidad(dias);
   const serie = serieCompleta(f.desde, f.hasta, all(`
-    SELECT c.fecha, COUNT(*) AS total,
-           SUM(CASE WHEN c.estado = 'pendiente' THEN 1 ELSE 0 END) AS pendientes,
-           SUM(CASE WHEN c.estado = 'resuelta'  THEN 1 ELSE 0 END) AS resueltas
-      FROM consultas c WHERE ${W} GROUP BY c.fecha ORDER BY c.fecha`, P));
+    SELECT c.fecha, COUNT(*) AS total
+      FROM consultas c WHERE ${W} GROUP BY c.fecha ORDER BY c.fecha`, P), gran);
 
   const heat = all(`
     SELECT c.dow, c.hora, COUNT(*) AS total
@@ -119,11 +121,17 @@ const general = requiere('operador', ({ res, query }) => {
   let serieSector = [];
   if (topSectores.length) {
     const marcas = topSectores.map(() => '?').join(',');
-    serieSector = all(`
+    const crudo = all(`
       SELECT c.sector_id, c.fecha, COUNT(*) AS total
         FROM consultas c
        WHERE ${W} AND c.sector_id IN (${marcas})
        GROUP BY c.sector_id, c.fecha ORDER BY c.fecha`, [...P, ...topSectores]);
+    // Cada sector con el mismo paso y los mismos períodos que la serie general.
+    for (const sid of topSectores) {
+      for (const punto of serieCompleta(f.desde, f.hasta, crudo.filter((x) => x.sector_id === sid), gran)) {
+        serieSector.push({ sector_id: sid, ...punto });
+      }
+    }
   }
 
   const fe = filtroEncuestas(query);
@@ -132,7 +140,7 @@ const general = requiere('operador', ({ res, query }) => {
       FROM encuestas e WHERE ${fe.sql}`, fe.params);
 
   json(res, {
-    periodo: { desde: f.desde, hasta: f.hasta, dias },
+    periodo: { desde: f.desde, hasta: f.hasta, dias, granularidad: gran },
     resumen: {
       total,
       promedio_dia: redondear(total / dias, 1),

@@ -88,9 +88,9 @@ registrada. Sin formulario, sin guardar, sin confirmar.
   telefónico, mesa → presencial); si la consulta entró por WhatsApp o mail, el
   canal se corrige desde *Agregar datos*.
 - Cada botón muestra cuántas veces se usó hoy, así el operador ve su propio ritmo.
-- Al registrar aparece un aviso de 12 segundos con el resultado y la corrección a
-  un clic: **Solucionada · Derivada · Deshacer** (`Esc`). Toda consulta entra como
-  solucionada; si hubo que derivarla, es un clic más.
+- Al registrar aparece un aviso de 12 segundos que dice qué se guardó — *"queda
+  como solucionada"* — y permite corregirlo con un clic: **Solucionada ·
+  Derivada · Deshacer** (`Esc`). Si el operador no toca nada, queda solucionada.
 - Cada botón deja igual el sector, el motivo, el canal, el operador, el puesto, la
   fecha y la hora: la estadística sale completa aunque nadie escriba una palabra.
 
@@ -112,6 +112,9 @@ El panel que mira la gerencia o el consejo:
 
 - **Call center y mesa de informes se miran por separado**: un selector arriba de
   todo cambia el panel entero, con la opción de verlos juntos.
+- **Períodos**: hoy, esta semana, este mes o histórico (o las fechas que quieras).
+  La serie se agrupa sola: por día hasta dos meses, por semana hasta un año y por
+  mes en el histórico, para que el gráfico se siga leyendo.
 - **KPIs**: total, promedio por día, % resuelto en el primer contacto, pendientes,
   duración promedio, conformidad, y la variación contra el período anterior.
 - Evolución diaria, ranking por sector, **cómo se cierra** cada consulta por sector,

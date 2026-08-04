@@ -153,10 +153,8 @@ const SECTORES = [
   ['Reclamos', 'Fallas y reclamos de servicio', 30, 'call_center'],
   ['TIC', 'Internet, IPTV y servicios de conectividad', 40, 'call_center'],
   ['Pagos', 'Acreditación e información de pagos', 50, 'call_center'],
-  // mesa de informes: las areas del totem de turnos, agrupadas como en el salon
-  ['Mesa Sector 1', 'Reclamos, trámites, notas y proveedores', 60, 'mesa_informes'],
-  ['Mesa Sector 2', 'RRHH, internet, obras y bienestar', 70, 'mesa_informes'],
-  ['Consultas de mostrador', 'Lo que se resuelve en el momento, sin turno', 80, 'mesa_informes'],
+  // mesa de informes: todo en un solo grupo, como se atiende en el mostrador
+  ['Mesa de informes', 'Atención presencial en el mostrador', 60, 'mesa_informes'],
 ];
 
 const MOTIVOS = {
@@ -167,11 +165,10 @@ const MOTIVOS = {
     'Sin luz', 'Sin agua', 'Error de facturación', 'Estado del reclamo'],
   'TIC': ['Reclamos', 'Consultas', 'Lentitud', 'Micro cortes', 'Problemas IPTV', 'Sensa'],
   'Pagos': ['Roela no impactado', 'Información'],
-  'Mesa Sector 1': ['Reclamos', 'Trámites y ventas', 'Entrega de notas', 'Proveedores'],
-  'Mesa Sector 2': ['Recursos humanos', 'Reclamos internet / IPTV', 'Oficina técnica',
-    'Red Bienestar Cooperativo'],
-  'Consultas de mostrador': ['Estados de cuenta', 'Información general', 'Boletas',
-    'Actualización de datos', 'Reconexiones', 'Apros', 'Prórroga'],
+  'Mesa de informes': ['Reclamos', 'Trámites y ventas', 'Entrega de notas', 'Proveedores',
+    'Recursos humanos', 'Reclamos internet / IPTV', 'Oficina técnica', 'Red Bienestar Cooperativo',
+    'Estados de cuenta', 'Información general', 'Boletas', 'Actualización de datos',
+    'Reconexiones', 'Apros', 'Prórroga'],
 };
 
 const CANALES = [['Telefonico', 10], ['Presencial', 20], ['WhatsApp', 30], ['Email', 40], ['Web / Redes', 50]];

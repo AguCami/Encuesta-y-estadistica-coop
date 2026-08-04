@@ -29,6 +29,37 @@ function sumarDias(fechaISO, dias) {
   return d.toISOString().slice(0, 10);
 }
 
+/** Lunes de la semana de esa fecha. */
+function inicioSemana(fechaISO) {
+  const d = new Date(`${fechaISO}T12:00:00Z`);
+  const dow = (d.getUTCDay() + 6) % 7;   // 0 = lunes
+  return sumarDias(fechaISO, -dow);
+}
+
+const inicioMes = (fechaISO) => `${fechaISO.slice(0, 7)}-01`;
+
+function sumarMeses(fechaISO, n) {
+  const [a, m] = fechaISO.split('-').map(Number);
+  const total = (a * 12) + (m - 1) + n;
+  return `${String(Math.floor(total / 12)).padStart(4, '0')}-${String((total % 12) + 1).padStart(2, '0')}-01`;
+}
+
+/**
+ * Con qué paso se dibuja la serie: por día en períodos cortos, por semana
+ * hasta poco más de un año y por mes en el histórico.
+ */
+function granularidad(dias) {
+  if (dias <= 62) return 'dia';
+  if (dias <= 400) return 'semana';
+  return 'mes';
+}
+
+const inicioPeriodo = (fechaISO, gran) =>
+  (gran === 'mes' ? inicioMes(fechaISO) : gran === 'semana' ? inicioSemana(fechaISO) : fechaISO);
+
+const siguientePeriodo = (fechaISO, gran) =>
+  (gran === 'mes' ? sumarMeses(fechaISO, 1) : sumarDias(fechaISO, gran === 'semana' ? 7 : 1));
+
 /** Rango por defecto: ultimos 30 dias (incluyendo hoy). */
 function rangoDesdeQuery(q) {
   const hasta = /^\d{4}-\d{2}-\d{2}$/.test(q.hasta || '') ? q.hasta : hoy();
@@ -104,6 +135,7 @@ const enRango = (v, min, max) => {
 
 module.exports = {
   partesFecha, hoy, sumarDias, rangoDesdeQuery,
+  inicioSemana, inicioMes, sumarMeses, granularidad, inicioPeriodo, siguientePeriodo,
   json, error, leerJson, csv,
   enteroONull, texto, enRango,
 };
