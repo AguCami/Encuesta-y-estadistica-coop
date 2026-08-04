@@ -1,0 +1,248 @@
+<title>Consultas y encuestas — demostración</title>
+
+<style>
+/*{{CSS}}*/
+
+/* ------------------------------------------------- extras de la demo */
+.cinta {
+  display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
+  padding: .5rem 1rem; font-size: .85rem;
+  background: var(--surface-1); color: var(--ink-2);
+  border-bottom: 1px solid var(--border);
+}
+.cinta b { color: var(--ink); }
+.cinta .punto {
+  width: .5rem; height: .5rem; border-radius: 50%; background: var(--ok); flex: none;
+}
+.cinta .derecha { margin-left: auto; display: flex; gap: .4rem; }
+.nav a { cursor: pointer; }
+.pantalla { display: none; }
+.pantalla.activa { display: block; }
+.encuesta-publica .tarjeta { max-width: 620px; margin: 0 auto; }
+.pie-demo {
+  max-width: 1400px; margin: 2rem auto 1rem; padding: 0 1rem;
+  font-size: .82rem; color: var(--muted);
+}
+</style>
+
+<header class="cinta">
+  <span class="punto"></span>
+  <span><b>Demostración</b> — datos de ejemplo generados para mostrar la aplicación.
+    Podés tocar todo: lo que cargues se refleja en las estadísticas y se borra al recargar la página.</span>
+  <span class="derecha">
+    <button class="chico" id="btn-reiniciar">Reiniciar datos</button>
+  </span>
+</header>
+
+<header class="barra">
+  <div class="marca">Cooperativa<small>consultas y encuestas</small></div>
+  <nav class="nav" id="nav">
+    <a data-ir="rapido" aria-current="page">Atención rápida</a>
+    <a data-ir="consultas">Consultas</a>
+    <a data-ir="panel">Estadísticas</a>
+    <a data-ir="satisfaccion">Satisfacción</a>
+    <a data-ir="encuesta">Encuesta del socio</a>
+  </nav>
+  <div class="derecha">
+    <span class="usuario"><b>Marina López</b> · Call center</span>
+  </div>
+</header>
+
+<!-- ============================================================ rápido -->
+<main class="pantalla activa rapido" id="p-rapido">
+  <div class="fila" style="align-items:center;gap:.8rem">
+    <h1 style="margin:0">Atención rápida</h1>
+    <p class="solo-lectura" style="margin:0">Un toque en el motivo y la consulta queda registrada</p>
+    <span style="flex:1"></span>
+    <span class="contador-hoy" id="contador">—</span>
+  </div>
+
+  <div class="tarjeta canal-barra" style="margin-top:.7rem">
+    <label style="margin:0 .6rem 0 0;align-self:center">Canal</label>
+    <div class="segmentado" id="canales"></div>
+  </div>
+
+  <section class="tarjeta" style="margin-top:1rem" id="caja-frecuentes">
+    <header><h2>Los que más usás</h2><p>teclas 1 a 9</p></header>
+    <div class="botonera destacada" id="frecuentes"></div>
+  </section>
+
+  <div id="sectores"></div>
+</main>
+
+<!-- ========================================================= consultas -->
+<main class="pantalla" id="p-consultas">
+  <h1>Consultas registradas</h1>
+  <div class="tarjeta filtros" id="c-filtros"></div>
+
+  <section class="tarjeta" style="margin-top:1rem">
+    <header>
+      <h2>Listado</h2>
+      <p id="c-resumen"></p>
+      <span style="flex:1"></span>
+      <input id="c-buscar" placeholder="Buscar socio, motivo o texto…" style="width:240px">
+    </header>
+    <div class="tabla-scroll" id="c-tabla"></div>
+  </section>
+</main>
+
+<!-- ============================================================= panel -->
+<main class="pantalla" id="p-panel">
+  <div class="fila" style="align-items:baseline">
+    <h1>Estadísticas de consultas</h1>
+  </div>
+
+  <div class="tarjeta filtros" id="p-filtros" style="margin-top:.6rem"></div>
+  <div class="kpis" id="kpis" style="margin:1rem 0"></div>
+
+  <section class="tarjeta">
+    <header><h2>Evolución diaria</h2><p id="sub-evolucion"></p></header>
+    <div id="g-evolucion"></div>
+  </section>
+
+  <div class="grilla g2" style="margin-top:1rem">
+    <section class="tarjeta">
+      <header><h2>Consultas por sector</h2><p>quién recibe la demanda</p></header>
+      <div id="g-sector"></div>
+    </section>
+    <section class="tarjeta">
+      <header><h2>Resultado por sector</h2><p>cómo se cierra cada consulta</p></header>
+      <div id="g-estado-sector"></div>
+    </section>
+  </div>
+
+  <div class="grilla g2" style="margin-top:1rem">
+    <section class="tarjeta">
+      <header><h2>Motivos más consultados</h2><p>top 15 del período</p></header>
+      <div id="g-motivos"></div>
+    </section>
+    <section class="tarjeta">
+      <header><h2>Canal de contacto</h2></header>
+      <div id="g-canal"></div>
+      <header style="margin-top:1.2rem"><h2>Puesto de atención</h2></header>
+      <div id="g-puesto"></div>
+    </section>
+  </div>
+
+  <section class="tarjeta" style="margin-top:1rem">
+    <header><h2>Demanda por día y hora</h2><p id="sub-calor">para dimensionar el personal en cada franja</p></header>
+    <div id="g-calor"></div>
+  </section>
+
+  <section class="tarjeta" style="margin-top:1rem">
+    <header><h2>Evolución por sector</h2><p>los 6 sectores con más consultas, un gráfico por sector</p></header>
+    <div id="g-sector-tiempo"></div>
+  </section>
+
+  <div class="grilla g2" style="margin-top:1rem">
+    <section class="tarjeta">
+      <header><h2>Detalle por sector</h2></header>
+      <div class="tabla-scroll" id="t-sector"></div>
+    </section>
+    <section class="tarjeta">
+      <header><h2>Actividad por operador</h2></header>
+      <div class="tabla-scroll" id="t-operador"></div>
+    </section>
+  </div>
+</main>
+
+<!-- ====================================================== satisfacción -->
+<main class="pantalla" id="p-satisfaccion">
+  <h1>Satisfacción del socio</h1>
+  <div class="tarjeta filtros" id="s-filtros" style="margin-top:.6rem"></div>
+  <div class="kpis" id="sat-kpis" style="margin:1rem 0"></div>
+
+  <div class="grilla g2">
+    <section class="tarjeta">
+      <header><h2>Conformidad general</h2><p>distribución de las respuestas</p></header>
+      <div id="sat-distribucion"></div>
+    </section>
+    <section class="tarjeta">
+      <header><h2>Promedio por dimensión</h2><p>escala 1 a 5</p></header>
+      <div id="sat-dimensiones"></div>
+    </section>
+  </div>
+
+  <section class="tarjeta" style="margin-top:1rem">
+    <header><h2>Evolución de la conformidad</h2><p>promedio diario</p></header>
+    <div id="sat-serie"></div>
+  </section>
+
+  <div class="grilla g2" style="margin-top:1rem">
+    <section class="tarjeta">
+      <header><h2>Conformidad por sector</h2></header>
+      <div class="tabla-scroll" id="sat-t-sector"></div>
+    </section>
+    <section class="tarjeta">
+      <header><h2>Últimos comentarios</h2></header>
+      <div id="sat-comentarios" style="max-height:420px;overflow:auto"></div>
+    </section>
+  </div>
+</main>
+
+<!-- ========================================================== encuesta -->
+<main class="pantalla" id="p-encuesta">
+  <div class="encuesta-publica">
+    <p class="solo-lectura" style="text-align:center;margin-bottom:.8rem">
+      Así ve el socio la encuesta en el celular, después de que lo atendieron.
+    </p>
+    <div class="tarjeta">
+      <h1 id="enc-titulo">¿Cómo te atendimos en la Cooperativa?</h1>
+      <p style="color:var(--ink-2);margin:.3rem 0 1rem">
+        Nos ayuda a mejorar la atención. Son 30 segundos y es anónima.
+      </p>
+
+      <form id="enc-form">
+        <div style="margin-bottom:1rem">
+          <label for="enc-sector">¿Qué sector te atendió?</label>
+          <select id="enc-sector"></select>
+        </div>
+        <div id="enc-preguntas"></div>
+
+        <div style="margin:1.1rem 0 .3rem">
+          <label for="enc-nps">¿Qué tan probable es que recomiendes la atención de la cooperativa? (0 a 10)</label>
+          <input type="range" id="enc-nps" min="0" max="10" step="1" value="8" style="padding:0">
+          <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted)">
+            <span>0 · nada probable</span><b id="enc-valor" style="color:var(--ink)">8</b><span>10 · muy probable</span>
+          </div>
+        </div>
+
+        <div style="margin-top:1rem">
+          <label for="enc-comentario">¿Querés contarnos algo más? (opcional)</label>
+          <textarea id="enc-comentario" maxlength="500"
+            placeholder="Tu comentario nos sirve para corregir lo que haga falta"></textarea>
+        </div>
+
+        <button class="primario" type="submit" style="width:100%;justify-content:center;margin-top:1rem">
+          Enviar respuesta
+        </button>
+        <p class="aviso" id="enc-aviso"></p>
+      </form>
+
+      <div id="enc-gracias" class="oculto" style="text-align:center;padding:1.5rem 0">
+        <h2>¡Gracias por responder!</h2>
+        <p style="color:var(--ink-2)">Tu respuesta ya está sumada en la pantalla de Satisfacción.</p>
+        <button class="chico" id="enc-otra" style="margin-top:.6rem">Responder otra</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="brindis" id="brindis" role="status" aria-live="polite"></div>
+
+<dialog id="detalle">
+  <div class="cuerpo" id="detalle-cuerpo"></div>
+</dialog>
+
+<footer class="pie-demo">
+  Demostración de la aplicación de consultas y encuestas para mesa de informes y call center.
+  Los sectores, motivos, operadores y socios son ficticios y se generan en el navegador;
+  en la instalación real todo eso se administra desde la aplicación y queda guardado en la
+  base de datos de la cooperativa.
+</footer>
+
+<script type="module">
+/*{{CHARTS}}*/
+
+/*{{DEMO}}*/
+</script>

@@ -42,6 +42,18 @@ npm run seed:demo 30 15    # o: 30 días, ~15 consultas por día
 npm run reset              # borra todo y deja la base vacía
 ```
 
+### Demostración sin instalar nada
+
+`demo/demostracion.html` es un archivo suelto que abre la aplicación completa con
+datos de ejemplo, sin servidor ni base de datos: se abre con doble clic o se sube a
+cualquier hosting para mostrarla. Usa la misma hoja de estilos y el mismo motor de
+gráficos que la aplicación real; lo que se carga ahí vive en el navegador y se borra
+al recargar la página.
+
+```bash
+node scripts/build-demo.js   # regenera demo/demostracion.html
+```
+
 ### Configuración
 
 Todo se controla con variables de entorno (opcionales):
@@ -165,9 +177,14 @@ public/
   encuesta.html     encuesta: formulario público
   admin.html        catálogos y usuarios
   js/charts.js      gráficos en SVG, sin librerías
+demo/
+  plantilla.html    estructura de la demostración
+  demo.js           datos de ejemplo y pantallas de la demostración
+  demostracion.html archivo generado, autónomo, para mostrar sin instalar
 scripts/
   seed-demo.js      datos de ejemplo
   reset-db.js       reinicio de la base
+  build-demo.js     arma la demostración autónoma
 ```
 
 Los gráficos usan una paleta verificada para **daltonismo** y **modo claro y

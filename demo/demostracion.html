@@ -1,0 +1,2053 @@
+<title>Consultas y encuestas — demostración</title>
+
+<style>
+/* ============================================================
+   Consultas y encuestas — hoja de estilos unica
+   Paleta validada para daltonismo y para modo claro / oscuro.
+   ============================================================ */
+
+:root {
+  color-scheme: light;
+  --surface-1: #fcfcfb;
+  --plane: #f9f9f7;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.10);
+  --sombra: 0 1px 2px rgba(11, 11, 11, .05), 0 6px 18px rgba(11, 11, 11, .05);
+
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --s5: #e87ba4; --s6: #008300; --s7: #4a3aa7; --s8: #e34948;
+
+  --seq-100: #cde2fb; --seq-200: #9ec5f4; --seq-300: #6da7ec; --seq-400: #3987e5;
+  --seq-500: #256abf; --seq-600: #184f95; --seq-700: #0d366b;
+
+  --ok: #0ca30c; --warn: #fab219; --serio: #ec835a; --critico: #d03b3b;
+  --ok-texto: #006300;
+
+  --radio: 10px;
+  --fuente: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --plane: #0d0d0d;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.10);
+    --sombra: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 18px rgba(0, 0, 0, .35);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    --ok-texto: #0ca30c;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-1: #1a1a19;
+  --plane: #0d0d0d;
+  --ink: #ffffff;
+  --ink-2: #c3c2b7;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --border: rgba(255, 255, 255, 0.10);
+  --sombra: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 18px rgba(0, 0, 0, .35);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+  --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+  --ok-texto: #0ca30c;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--fuente);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink);
+  background: var(--plane);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { margin: 0 0 .4rem; line-height: 1.2; font-weight: 650; }
+h1 { font-size: 1.35rem; }
+h2 { font-size: 1.05rem; }
+h3 { font-size: .95rem; }
+a { color: var(--s1); }
+
+/* ------------------------------------------------------------- cabecera */
+
+.barra {
+  display: flex; align-items: center; gap: 1rem;
+  padding: .55rem 1rem;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 20;
+  flex-wrap: wrap;
+}
+.marca { display: flex; align-items: baseline; gap: .5rem; font-weight: 700; }
+.marca small { font-weight: 500; color: var(--muted); font-size: .78rem; }
+.nav { display: flex; gap: .15rem; flex-wrap: wrap; margin-left: .5rem; }
+.nav a {
+  padding: .38rem .7rem; border-radius: 8px; text-decoration: none;
+  color: var(--ink-2); font-weight: 550; font-size: .9rem;
+}
+.nav a:hover { background: var(--plane); color: var(--ink); }
+.nav a[aria-current="page"] { background: var(--s1); color: #fff; }
+.barra .derecha { margin-left: auto; display: flex; align-items: center; gap: .6rem; }
+.usuario { font-size: .85rem; color: var(--ink-2); }
+.usuario b { color: var(--ink); }
+
+/* -------------------------------------------------------------- layout */
+
+main { padding: 1rem; max-width: 1400px; margin: 0 auto; }
+.grilla { display: grid; gap: 1rem; }
+.g2 { grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
+.g3 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.fila { display: flex; gap: .6rem; flex-wrap: wrap; align-items: flex-end; }
+
+.tarjeta {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radio);
+  padding: 1rem;
+  box-shadow: var(--sombra);
+}
+.tarjeta > header { display: flex; align-items: baseline; gap: .5rem; margin-bottom: .7rem; }
+.tarjeta > header p { margin: 0; color: var(--muted); font-size: .82rem; }
+
+/* ------------------------------------------------------------ formulario */
+
+label { display: block; font-size: .78rem; font-weight: 600; color: var(--ink-2); margin-bottom: .22rem; }
+input, select, textarea, button { font: inherit; font-size: .92rem; }
+input, select, textarea {
+  width: 100%; padding: .48rem .6rem;
+  border: 1px solid var(--axis); border-radius: 8px;
+  background: var(--surface-1); color: var(--ink);
+}
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid var(--s1); outline-offset: -1px; border-color: var(--s1);
+}
+textarea { min-height: 74px; resize: vertical; }
+.campo { flex: 1 1 190px; min-width: 150px; }
+.campo.corto { flex: 0 1 130px; }
+.campo.ancho { flex: 3 1 340px; }
+
+button, .boton {
+  padding: .5rem .95rem; border-radius: 8px; border: 1px solid var(--axis);
+  background: var(--surface-1); color: var(--ink); cursor: pointer; font-weight: 600;
+  text-decoration: none; display: inline-flex; align-items: center; gap: .4rem;
+}
+button:hover, .boton:hover { border-color: var(--s1); color: var(--s1); }
+button.primario, .boton.primario {
+  background: var(--s1); border-color: var(--s1); color: #fff;
+}
+button.primario:hover { filter: brightness(1.08); color: #fff; }
+button.chico { padding: .28rem .55rem; font-size: .82rem; }
+button:disabled { opacity: .55; cursor: not-allowed; }
+
+fieldset { border: 0; padding: 0; margin: 0; }
+
+/* ------------------------------------------------------------- etiquetas */
+
+.chip {
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .1rem .5rem; border-radius: 999px; font-size: .76rem; font-weight: 650;
+  border: 1px solid var(--border); background: var(--plane); color: var(--ink-2);
+  white-space: nowrap;
+}
+.chip::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: currentColor; }
+.chip.resuelta { color: var(--ok-texto); }
+.chip.pendiente { color: var(--critico); }
+.chip.derivada { color: var(--s1); }
+.chip.reclamo { color: var(--serio); }
+.chip.alta { color: var(--critico); }
+
+/* ---------------------------------------------------------------- tablas */
+
+table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+th, td { text-align: left; padding: .45rem .5rem; border-bottom: 1px solid var(--grid); }
+th { font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 700; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tbody tr:hover { background: var(--plane); }
+.tabla-scroll { overflow-x: auto; }
+
+/* ---------------------------------------------------------- stat tiles */
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: .7rem; }
+.kpi {
+  background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radio); padding: .7rem .85rem;
+}
+.kpi .etiqueta { font-size: .74rem; color: var(--muted); font-weight: 650;
+  text-transform: uppercase; letter-spacing: .03em; }
+.kpi .valor { font-size: 1.75rem; font-weight: 680; line-height: 1.15; margin-top: .15rem; }
+.kpi .pie { font-size: .78rem; color: var(--ink-2); }
+.kpi .sube { color: var(--ok-texto); font-weight: 650; }
+.kpi .baja { color: var(--critico); font-weight: 650; }
+
+/* --------------------------------------------------------------- graficos */
+
+.viz { width: 100%; overflow: visible; display: block; }
+.viz text { font-family: var(--fuente); }
+.leyenda { display: flex; flex-wrap: wrap; gap: .5rem .9rem; margin-top: .55rem; font-size: .8rem; color: var(--ink-2); }
+.leyenda span { display: inline-flex; align-items: center; gap: .35rem; }
+.leyenda i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.tip {
+  position: fixed; pointer-events: none; z-index: 60; opacity: 0;
+  background: var(--surface-1); color: var(--ink);
+  border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: var(--sombra); padding: .4rem .6rem; font-size: .82rem;
+  transition: opacity .08s linear; max-width: 260px;
+}
+.tip b { font-variant-numeric: tabular-nums; }
+.vacio { color: var(--muted); font-size: .88rem; padding: 1.4rem 0; text-align: center; }
+
+/* ---------------------------------------------------------------- avisos */
+
+.aviso { padding: .55rem .8rem; border-radius: 8px; font-size: .88rem; margin: .6rem 0;
+  border: 1px solid var(--border); display: flex; gap: .5rem; align-items: center; }
+.aviso.ok { border-color: var(--ok); color: var(--ok-texto); }
+.aviso.error { border-color: var(--critico); color: var(--critico); }
+.aviso:empty { display: none; }
+
+/* --------------------------------------------------------------- ingreso */
+
+.ingreso { min-height: 100vh; display: grid; place-items: center; padding: 1rem; }
+.ingreso .tarjeta { width: min(380px, 100%); }
+
+/* --------------------------------------------------------------- detalle */
+
+dialog {
+  border: 1px solid var(--border); border-radius: var(--radio); padding: 0;
+  background: var(--surface-1); color: var(--ink); max-width: min(700px, 94vw); width: 100%;
+}
+dialog::backdrop { background: rgba(0, 0, 0, .45); }
+dialog .cuerpo { padding: 1rem; }
+dialog .pie { padding: .7rem 1rem; border-top: 1px solid var(--border); display: flex; gap: .5rem; justify-content: flex-end; }
+
+.linea-tiempo { list-style: none; margin: .5rem 0 0; padding: 0; }
+.linea-tiempo li { border-left: 2px solid var(--grid); padding: .1rem 0 .7rem .7rem; }
+.linea-tiempo time { font-size: .76rem; color: var(--muted); }
+
+/* --------------------------------------------------------- encuesta web */
+
+.encuesta-publica { max-width: 620px; margin: 0 auto; padding: 1.2rem; }
+.escala { display: flex; gap: .4rem; flex-wrap: wrap; }
+.escala input { position: absolute; opacity: 0; width: 0; height: 0; }
+.escala label {
+  flex: 1 1 60px; text-align: center; padding: .55rem .3rem; margin: 0;
+  border: 1px solid var(--axis); border-radius: 8px; cursor: pointer;
+  font-size: .85rem; color: var(--ink); font-weight: 600;
+}
+.escala input:checked + label { background: var(--s1); border-color: var(--s1); color: #fff; }
+.escala input:focus-visible + label { outline: 2px solid var(--s1); outline-offset: 2px; }
+.escala label small { display: block; font-size: .68rem; font-weight: 500; color: var(--muted); }
+.escala input:checked + label small { color: #fff; }
+
+/* ------------------------------------------------------- atencion rapida */
+
+.rapido { max-width: 1500px; }
+.contador-hoy { font-size: .85rem; color: var(--ink-2); }
+.contador-hoy b { font-size: 1.05rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+.canal-barra { display: flex; flex-wrap: wrap; gap: .5rem; padding: .55rem .8rem; }
+.segmentado { display: flex; flex-wrap: wrap; gap: .3rem; }
+.segmentado button {
+  padding: .4rem .85rem; border-radius: 8px; font-size: .9rem;
+  border: 1px solid var(--axis); background: var(--surface-1); color: var(--ink-2);
+}
+.segmentado button[aria-pressed="true"] {
+  background: var(--s1); border-color: var(--s1); color: #fff;
+}
+
+.botonera { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: .6rem; }
+.botonera.destacada { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+
+.ficha {
+  position: relative;
+  display: flex; flex-direction: column; align-items: flex-start; gap: .1rem;
+  min-height: 74px; padding: .6rem .7rem; text-align: left;
+  border: 1px solid var(--axis); border-radius: var(--radio);
+  background: var(--surface-1); cursor: pointer;
+  transition: transform .06s ease, border-color .12s ease, background .12s ease;
+}
+.ficha:hover { border-color: var(--s1); background: var(--plane); }
+.ficha:active { transform: scale(.97); }
+.ficha:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
+.ficha .titulo { font-size: .98rem; font-weight: 650; color: var(--ink); line-height: 1.2; }
+.ficha .sector { font-size: .75rem; color: var(--muted); }
+.ficha .veces {
+  position: absolute; right: .5rem; bottom: .45rem;
+  font-size: .7rem; color: var(--ink-2); font-variant-numeric: tabular-nums;
+}
+.ficha .atajo {
+  position: absolute; right: .5rem; top: .45rem;
+  font-size: .68rem; font-weight: 700; color: var(--muted);
+  border: 1px solid var(--grid); border-radius: 4px; padding: 0 .25rem;
+}
+.ficha.otra { border-style: dashed; }
+.ficha.otra .titulo { color: var(--ink-2); }
+/* destello al registrar: confirma el toque sin frenar la atencion */
+.ficha.marcada { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, var(--surface-1)); }
+
+.brindis {
+  position: fixed; left: 50%; bottom: 1rem; transform: translate(-50%, 130%);
+  z-index: 50; min-width: min(560px, 94vw);
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radio);
+  box-shadow: var(--sombra); padding: .7rem .9rem;
+  transition: transform .16s ease, opacity .16s ease; opacity: 0;
+}
+.brindis.visible { transform: translate(-50%, 0); opacity: 1; }
+.brindis.error { border-color: var(--critico); }
+.brindis .linea { display: flex; align-items: center; gap: .5rem; font-size: .92rem; }
+.brindis .cuenta {
+  margin-left: auto; font-size: .78rem; color: var(--muted);
+  font-variant-numeric: tabular-nums; min-width: 1.4rem; text-align: right;
+}
+.brindis .acciones { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .55rem; }
+.brindis .acciones button { padding: .3rem .6rem; font-size: .84rem; }
+.brindis .acciones button[aria-pressed="true"] { border-color: var(--s1); color: var(--s1); }
+.brindis .acciones small { font-size: .74rem; color: var(--muted); font-weight: 500; }
+.brindis .marca-estado { color: var(--s1); font-weight: 650; font-size: .86rem; }
+.brindis #deshacer { margin-left: auto; }
+
+@media (max-width: 640px) {
+  .botonera { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .ficha { min-height: 66px; }
+}
+
+.oculto { display: none !important; }
+.solo-lectura { color: var(--muted); font-size: .82rem; }
+
+@media print {
+  .barra, .filtros, button, .boton { display: none !important; }
+  body { background: #fff; }
+  .tarjeta { break-inside: avoid; box-shadow: none; }
+}
+
+
+/* ------------------------------------------------- extras de la demo */
+.cinta {
+  display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
+  padding: .5rem 1rem; font-size: .85rem;
+  background: var(--surface-1); color: var(--ink-2);
+  border-bottom: 1px solid var(--border);
+}
+.cinta b { color: var(--ink); }
+.cinta .punto {
+  width: .5rem; height: .5rem; border-radius: 50%; background: var(--ok); flex: none;
+}
+.cinta .derecha { margin-left: auto; display: flex; gap: .4rem; }
+.nav a { cursor: pointer; }
+.pantalla { display: none; }
+.pantalla.activa { display: block; }
+.encuesta-publica .tarjeta { max-width: 620px; margin: 0 auto; }
+.pie-demo {
+  max-width: 1400px; margin: 2rem auto 1rem; padding: 0 1rem;
+  font-size: .82rem; color: var(--muted);
+}
+</style>
+
+<header class="cinta">
+  <span class="punto"></span>
+  <span><b>Demostración</b> — datos de ejemplo generados para mostrar la aplicación.
+    Podés tocar todo: lo que cargues se refleja en las estadísticas y se borra al recargar la página.</span>
+  <span class="derecha">
+    <button class="chico" id="btn-reiniciar">Reiniciar datos</button>
+  </span>
+</header>
+
+<header class="barra">
+  <div class="marca">Cooperativa<small>consultas y encuestas</small></div>
+  <nav class="nav" id="nav">
+    <a data-ir="rapido" aria-current="page">Atención rápida</a>
+    <a data-ir="consultas">Consultas</a>
+    <a data-ir="panel">Estadísticas</a>
+    <a data-ir="satisfaccion">Satisfacción</a>
+    <a data-ir="encuesta">Encuesta del socio</a>
+  </nav>
+  <div class="derecha">
+    <span class="usuario"><b>Marina López</b> · Call center</span>
+  </div>
+</header>
+
+<!-- ============================================================ rápido -->
+<main class="pantalla activa rapido" id="p-rapido">
+  <div class="fila" style="align-items:center;gap:.8rem">
+    <h1 style="margin:0">Atención rápida</h1>
+    <p class="solo-lectura" style="margin:0">Un toque en el motivo y la consulta queda registrada</p>
+    <span style="flex:1"></span>
+    <span class="contador-hoy" id="contador">—</span>
+  </div>
+
+  <div class="tarjeta canal-barra" style="margin-top:.7rem">
+    <label style="margin:0 .6rem 0 0;align-self:center">Canal</label>
+    <div class="segmentado" id="canales"></div>
+  </div>
+
+  <section class="tarjeta" style="margin-top:1rem" id="caja-frecuentes">
+    <header><h2>Los que más usás</h2><p>teclas 1 a 9</p></header>
+    <div class="botonera destacada" id="frecuentes"></div>
+  </section>
+
+  <div id="sectores"></div>
+</main>
+
+<!-- ========================================================= consultas -->
+<main class="pantalla" id="p-consultas">
+  <h1>Consultas registradas</h1>
+  <div class="tarjeta filtros" id="c-filtros"></div>
+
+  <section class="tarjeta" style="margin-top:1rem">
+    <header>
+      <h2>Listado</h2>
+      <p id="c-resumen"></p>
+      <span style="flex:1"></span>
+      <input id="c-buscar" placeholder="Buscar socio, motivo o texto…" style="width:240px">
+    </header>
+    <div class="tabla-scroll" id="c-tabla"></div>
+  </section>
+</main>
+
+<!-- ============================================================= panel -->
+<main class="pantalla" id="p-panel">
+  <div class="fila" style="align-items:baseline">
+    <h1>Estadísticas de consultas</h1>
+  </div>
+
+  <div class="tarjeta filtros" id="p-filtros" style="margin-top:.6rem"></div>
+  <div class="kpis" id="kpis" style="margin:1rem 0"></div>
+
+  <section class="tarjeta">
+    <header><h2>Evolución diaria</h2><p id="sub-evolucion"></p></header>
+    <div id="g-evolucion"></div>
+  </section>
+
+  <div class="grilla g2" style="margin-top:1rem">
+    <section class="tarjeta">
+      <header><h2>Consultas por sector</h2><p>quién recibe la demanda</p></header>
+      <div id="g-sector"></div>
+    </section>
+    <section class="tarjeta">
+      <header><h2>Resultado por sector</h2><p>cómo se cierra cada consulta</p></header>
+      <div id="g-estado-sector"></div>
+    </section>
+  </div>
+
+  <div class="grilla g2" style="margin-top:1rem">
+    <section class="tarjeta">
+      <header><h2>Motivos más consultados</h2><p>top 15 del período</p></header>
+      <div id="g-motivos"></div>
+    </section>
+    <section class="tarjeta">
+      <header><h2>Canal de contacto</h2></header>
+      <div id="g-canal"></div>
+      <header style="margin-top:1.2rem"><h2>Puesto de atención</h2></header>
+      <div id="g-puesto"></div>
+    </section>
+  </div>
+
+  <section class="tarjeta" style="margin-top:1rem">
+    <header><h2>Demanda por día y hora</h2><p id="sub-calor">para dimensionar el personal en cada franja</p></header>
+    <div id="g-calor"></div>
+  </section>
+
+  <section class="tarjeta" style="margin-top:1rem">
+    <header><h2>Evolución por sector</h2><p>los 6 sectores con más consultas, un gráfico por sector</p></header>
+    <div id="g-sector-tiempo"></div>
+  </section>
+
+  <div class="grilla g2" style="margin-top:1rem">
+    <section class="tarjeta">
+      <header><h2>Detalle por sector</h2></header>
+      <div class="tabla-scroll" id="t-sector"></div>
+    </section>
+    <section class="tarjeta">
+      <header><h2>Actividad por operador</h2></header>
+      <div class="tabla-scroll" id="t-operador"></div>
+    </section>
+  </div>
+</main>
+
+<!-- ====================================================== satisfacción -->
+<main class="pantalla" id="p-satisfaccion">
+  <h1>Satisfacción del socio</h1>
+  <div class="tarjeta filtros" id="s-filtros" style="margin-top:.6rem"></div>
+  <div class="kpis" id="sat-kpis" style="margin:1rem 0"></div>
+
+  <div class="grilla g2">
+    <section class="tarjeta">
+      <header><h2>Conformidad general</h2><p>distribución de las respuestas</p></header>
+      <div id="sat-distribucion"></div>
+    </section>
+    <section class="tarjeta">
+      <header><h2>Promedio por dimensión</h2><p>escala 1 a 5</p></header>
+      <div id="sat-dimensiones"></div>
+    </section>
+  </div>
+
+  <section class="tarjeta" style="margin-top:1rem">
+    <header><h2>Evolución de la conformidad</h2><p>promedio diario</p></header>
+    <div id="sat-serie"></div>
+  </section>
+
+  <div class="grilla g2" style="margin-top:1rem">
+    <section class="tarjeta">
+      <header><h2>Conformidad por sector</h2></header>
+      <div class="tabla-scroll" id="sat-t-sector"></div>
+    </section>
+    <section class="tarjeta">
+      <header><h2>Últimos comentarios</h2></header>
+      <div id="sat-comentarios" style="max-height:420px;overflow:auto"></div>
+    </section>
+  </div>
+</main>
+
+<!-- ========================================================== encuesta -->
+<main class="pantalla" id="p-encuesta">
+  <div class="encuesta-publica">
+    <p class="solo-lectura" style="text-align:center;margin-bottom:.8rem">
+      Así ve el socio la encuesta en el celular, después de que lo atendieron.
+    </p>
+    <div class="tarjeta">
+      <h1 id="enc-titulo">¿Cómo te atendimos en la Cooperativa?</h1>
+      <p style="color:var(--ink-2);margin:.3rem 0 1rem">
+        Nos ayuda a mejorar la atención. Son 30 segundos y es anónima.
+      </p>
+
+      <form id="enc-form">
+        <div style="margin-bottom:1rem">
+          <label for="enc-sector">¿Qué sector te atendió?</label>
+          <select id="enc-sector"></select>
+        </div>
+        <div id="enc-preguntas"></div>
+
+        <div style="margin:1.1rem 0 .3rem">
+          <label for="enc-nps">¿Qué tan probable es que recomiendes la atención de la cooperativa? (0 a 10)</label>
+          <input type="range" id="enc-nps" min="0" max="10" step="1" value="8" style="padding:0">
+          <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted)">
+            <span>0 · nada probable</span><b id="enc-valor" style="color:var(--ink)">8</b><span>10 · muy probable</span>
+          </div>
+        </div>
+
+        <div style="margin-top:1rem">
+          <label for="enc-comentario">¿Querés contarnos algo más? (opcional)</label>
+          <textarea id="enc-comentario" maxlength="500"
+            placeholder="Tu comentario nos sirve para corregir lo que haga falta"></textarea>
+        </div>
+
+        <button class="primario" type="submit" style="width:100%;justify-content:center;margin-top:1rem">
+          Enviar respuesta
+        </button>
+        <p class="aviso" id="enc-aviso"></p>
+      </form>
+
+      <div id="enc-gracias" class="oculto" style="text-align:center;padding:1.5rem 0">
+        <h2>¡Gracias por responder!</h2>
+        <p style="color:var(--ink-2)">Tu respuesta ya está sumada en la pantalla de Satisfacción.</p>
+        <button class="chico" id="enc-otra" style="margin-top:.6rem">Responder otra</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="brindis" id="brindis" role="status" aria-live="polite"></div>
+
+<dialog id="detalle">
+  <div class="cuerpo" id="detalle-cuerpo"></div>
+</dialog>
+
+<footer class="pie-demo">
+  Demostración de la aplicación de consultas y encuestas para mesa de informes y call center.
+  Los sectores, motivos, operadores y socios son ficticios y se generan en el navegador;
+  en la instalación real todo eso se administra desde la aplicación y queda guardado en la
+  base de datos de la cooperativa.
+</footer>
+
+<script type="module">
+/* ============================================================
+   Graficos en SVG, sin librerias externas.
+   Reglas: marcas finas, extremos redondeados de 4px, separacion de
+   2px entre rellenos, etiquetas directas, leyenda siempre que haya
+   dos o mas series, y tooltip en todos los graficos.
+   ============================================================ */
+
+const SVGNS = 'http://www.w3.org/2000/svg';
+
+function paleta() {
+  const cs = getComputedStyle(document.documentElement);
+  const v = (n) => cs.getPropertyValue(n).trim();
+  const oscuro = document.documentElement.dataset.theme === 'dark'
+    || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
+  return {
+    oscuro,
+    series: [v('--s1'), v('--s2'), v('--s3'), v('--s4'), v('--s5'), v('--s6'), v('--s7'), v('--s8')],
+    // Rampa ordinal: en claro no arranca mas claro que el paso 250;
+    // en oscuro no termina mas oscuro que el paso 600.
+    ordinal: oscuro
+      ? [v('--seq-100'), v('--seq-200'), v('--seq-300'), v('--seq-400'), v('--seq-600')]
+      : [v('--seq-200'), v('--seq-300'), v('--seq-400'), v('--seq-500'), v('--seq-700')],
+    // Rampa de magnitud: siempre del paso mas cercano a la superficie (cero)
+    // al mas alejado, asi "mas" siempre resalta — en claro oscureciendo y en
+    // oscuro aclarando.
+    secuencial: (() => {
+      const r = [v('--seq-100'), v('--seq-200'), v('--seq-300'), v('--seq-400'), v('--seq-500'), v('--seq-600'), v('--seq-700')];
+      return oscuro ? r.reverse() : r;
+    })(),
+    superficie: v('--surface-1'),
+    ink: v('--ink'),
+    ink2: v('--ink-2'),
+    muted: v('--muted'),
+    grid: v('--grid'),
+    axis: v('--axis'),
+    estado: { resuelta: v('--ok'), derivada: v('--s1'), pendiente: v('--critico'), reclamo: v('--serio') },
+  };
+}
+
+function el(tag, attrs = {}, texto) {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const [k, val] of Object.entries(attrs)) n.setAttribute(k, val);
+  if (texto !== undefined) n.textContent = texto;
+  return n;
+}
+
+// --------------------------------------------------------------- tooltip ---
+
+let tip;
+function tooltip() {
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.className = 'tip';
+    document.body.appendChild(tip);
+  }
+  return tip;
+}
+function mostrarTip(evt, html) {
+  const t = tooltip();
+  t.innerHTML = html;
+  t.style.opacity = '1';
+  const ancho = t.offsetWidth, alto = t.offsetHeight;
+  let x = evt.clientX + 14, y = evt.clientY + 14;
+  if (x + ancho > innerWidth - 8) x = evt.clientX - ancho - 14;
+  if (y + alto > innerHeight - 8) y = evt.clientY - alto - 14;
+  t.style.left = `${Math.max(8, x)}px`;
+  t.style.top = `${Math.max(8, y)}px`;
+}
+function ocultarTip() { if (tip) tip.style.opacity = '0'; }
+
+// ---------------------------------------------------------------- varios ---
+
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fmt = new Intl.NumberFormat('es-AR');
+
+function recortar(txt, max) {
+  const s = String(txt ?? '');
+  return s.length > max ? `${s.slice(0, max - 1)}…` : s;
+}
+
+function vacio(cont, mensaje = 'Sin datos en el periodo elegido') {
+  cont.innerHTML = `<p class="vacio">${esc(mensaje)}</p>`;
+}
+
+/** Redibuja el grafico cuando cambia el ancho del contenedor o el tema. */
+function responsivo(cont, dibujar) {
+  let ancho = 0;
+  const render = () => {
+    const w = cont.clientWidth;
+    if (!w) return;
+    ancho = w;
+    dibujar(w);
+  };
+  render();
+  if (cont._ro) cont._ro.disconnect();
+  cont._ro = new ResizeObserver(() => { if (Math.abs(cont.clientWidth - ancho) > 8) render(); });
+  cont._ro.observe(cont);
+  if (cont._tema) window.removeEventListener('tema-cambiado', cont._tema);
+  cont._tema = () => render();
+  window.addEventListener('tema-cambiado', cont._tema);
+}
+
+function escalaLinda(max) {
+  if (max <= 5) return Math.max(1, Math.ceil(max));
+  const exp = Math.pow(10, Math.floor(Math.log10(max)));
+  const n = max / exp;
+  const paso = n <= 1.2 ? 1.2 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10;
+  return paso * exp;
+}
+
+// ------------------------------------------------------ barras horizontales ---
+
+/**
+ * Ranking (sector, motivo, canal...). Una sola serie: sin leyenda, con la
+ * etiqueta de valor escrita al final de cada barra.
+ * datos: [{ etiqueta, valor, detalle? }]
+ */
+function barras(cont, datos, opciones = {}) {
+  if (!datos || !datos.length) return vacio(cont);
+  const { color, sufijo = '', maxEtiqueta = 26, alturaBarra = 16, escala } = opciones;
+
+  responsivo(cont, (ancho) => {
+    const p = paleta();
+    const tinta = color || p.series[0];
+    const anchoEtiqueta = Math.min(210, Math.max(90, ...datos.map((d) => recortar(d.etiqueta, maxEtiqueta).length * 6.6)));
+    const gap = 12;
+    const alto = datos.length * (alturaBarra + gap) + 8;
+    const anchoValor = 54;
+    const x0 = anchoEtiqueta + 10;
+    const util = Math.max(40, ancho - x0 - anchoValor);
+    // `escala` fija el tope del eje (por ejemplo 5 en una encuesta de 1 a 5):
+    // sin eso, comparar promedios contra el maximo exagera las diferencias.
+    const max = escala || Math.max(...datos.map((d) => d.valor), 1);
+
+    const svg = el('svg', { class: 'viz', width: ancho, height: alto, viewBox: `0 0 ${ancho} ${alto}` });
+    datos.forEach((d, i) => {
+      const y = i * (alturaBarra + gap) + 4;
+      const w = Math.max(2, (d.valor / max) * util);
+
+      svg.appendChild(el('text', {
+        x: anchoEtiqueta, y: y + alturaBarra / 2 + 4, 'text-anchor': 'end',
+        'font-size': 12.5, fill: p.ink2,
+      }, recortar(d.etiqueta, maxEtiqueta)));
+
+      // pista de fondo, para leer la proporcion aun con barras cortas
+      svg.appendChild(el('rect', { x: x0, y, width: util, height: alturaBarra, rx: 4, fill: p.grid, opacity: .45 }));
+
+      const barra = el('rect', { x: x0, y, width: w, height: alturaBarra, rx: 4, fill: tinta });
+      barra.style.cursor = 'default';
+      barra.addEventListener('mousemove', (e) => mostrarTip(e,
+        `<b>${esc(d.etiqueta)}</b><br>${fmt.format(d.valor)}${sufijo}${d.detalle ? `<br><span style="color:var(--muted)">${esc(d.detalle)}</span>` : ''}`));
+      barra.addEventListener('mouseleave', ocultarTip);
+      svg.appendChild(barra);
+
+      svg.appendChild(el('text', {
+        x: x0 + w + 7, y: y + alturaBarra / 2 + 4, 'font-size': 12.5,
+        fill: p.ink, 'font-weight': 600, 'font-variant-numeric': 'tabular-nums',
+      }, `${fmt.format(d.valor)}${sufijo}`));
+    });
+
+    cont.replaceChildren(svg);
+  });
+}
+
+// --------------------------------------------------------- barras apiladas ---
+
+/**
+ * Composicion por estado dentro de cada sector.
+ * datos: [{ etiqueta, partes: [{ nombre, valor, color }] }]
+ */
+function apiladas(cont, datos, opciones = {}) {
+  if (!datos || !datos.length) return vacio(cont);
+  const leyenda = opciones.leyenda || [];
+
+  responsivo(cont, (ancho) => {
+    const p = paleta();
+    const anchoEtiqueta = Math.min(200, Math.max(90, ...datos.map((d) => recortar(d.etiqueta, 24).length * 6.6)));
+    const alturaBarra = 18, gap = 12;
+    const alto = datos.length * (alturaBarra + gap) + 6;
+    const x0 = anchoEtiqueta + 10;
+    const util = Math.max(40, ancho - x0 - 52);
+    const max = Math.max(...datos.map((d) => d.partes.reduce((a, b) => a + b.valor, 0)), 1);
+
+    const svg = el('svg', { class: 'viz', width: ancho, height: alto, viewBox: `0 0 ${ancho} ${alto}` });
+    datos.forEach((d, i) => {
+      const y = i * (alturaBarra + gap) + 3;
+      const total = d.partes.reduce((a, b) => a + b.valor, 0);
+      svg.appendChild(el('text', {
+        x: anchoEtiqueta, y: y + alturaBarra / 2 + 4, 'text-anchor': 'end', 'font-size': 12.5, fill: p.ink2,
+      }, recortar(d.etiqueta, 24)));
+
+      let x = x0;
+      d.partes.filter((s) => s.valor > 0).forEach((s, j, arr) => {
+        const w = Math.max(2, (s.valor / max) * util);
+        const primera = j === 0, ultima = j === arr.length - 1;
+        const r = el('rect', {
+          x, y, width: Math.max(2, w - (ultima ? 0 : 2)), height: alturaBarra,
+          rx: primera || ultima ? 4 : 0, fill: s.color,
+        });
+        r.addEventListener('mousemove', (e) => mostrarTip(e,
+          `<b>${esc(d.etiqueta)}</b><br>${esc(s.nombre)}: ${fmt.format(s.valor)} (${Math.round(s.valor / total * 100)}%)`));
+        r.addEventListener('mouseleave', ocultarTip);
+        svg.appendChild(r);
+        x += w;
+      });
+
+      svg.appendChild(el('text', {
+        x: x + 7, y: y + alturaBarra / 2 + 4, 'font-size': 12.5, fill: p.ink,
+        'font-weight': 600, 'font-variant-numeric': 'tabular-nums',
+      }, fmt.format(total)));
+    });
+
+    const caja = document.createElement('div');
+    caja.appendChild(svg);
+    if (leyenda.length > 1) {
+      const l = document.createElement('div');
+      l.className = 'leyenda';
+      l.innerHTML = leyenda.map((s) => `<span><i style="background:${s.color}"></i>${esc(s.nombre)}</span>`).join('');
+      caja.appendChild(l);
+    }
+    cont.replaceChildren(caja);
+  });
+}
+
+// ------------------------------------------------------------------ lineas ---
+
+/**
+ * Evolucion diaria. series: [{ nombre, color?, puntos: [{ x, y }] }]
+ * Con dos o mas series dibuja leyenda; el tooltip es un cursor vertical con
+ * todos los valores del dia.
+ */
+function lineas(cont, series, opciones = {}) {
+  const hayDatos = series && series.length && series.some((s) => s.puntos.length);
+  if (!hayDatos) return vacio(cont);
+  const { alto: altoTotal = 240, etiquetaX = (v) => v, sufijo = '', minY0 = true } = opciones;
+
+  responsivo(cont, (ancho) => {
+    const p = paleta();
+    const m = { top: 14, right: 14, bottom: 26, left: 42 };
+    const w = Math.max(120, ancho - m.left - m.right);
+    const h = altoTotal - m.top - m.bottom;
+    const ejeX = series[0].puntos.map((pt) => pt.x);
+    const n = ejeX.length;
+    const valores = series.flatMap((s) => s.puntos.map((pt) => pt.y)).filter((v) => v !== null);
+    const maxY = escalaLinda(Math.max(...valores, 1));
+    const minYv = minY0 ? 0 : Math.min(...valores, 0);
+    const px = (i) => m.left + (n === 1 ? w / 2 : (i / (n - 1)) * w);
+    const py = (v) => m.top + h - ((v - minYv) / (maxY - minYv || 1)) * h;
+
+    const svg = el('svg', { class: 'viz', width: ancho, height: altoTotal, viewBox: `0 0 ${ancho} ${altoTotal}` });
+
+    // grilla horizontal (hairline, recesiva)
+    const pasos = 4;
+    for (let i = 0; i <= pasos; i++) {
+      const v = minYv + ((maxY - minYv) * i) / pasos;
+      const y = py(v);
+      svg.appendChild(el('line', { x1: m.left, x2: m.left + w, y1: y, y2: y, stroke: p.grid, 'stroke-width': 1 }));
+      svg.appendChild(el('text', {
+        x: m.left - 8, y: y + 4, 'text-anchor': 'end', 'font-size': 11, fill: p.muted,
+        'font-variant-numeric': 'tabular-nums',
+      }, opciones.formatoY ? opciones.formatoY(v) : fmt.format(Math.round(v * 10) / 10)));
+    }
+
+    // etiquetas del eje X (hasta 7, sin encimarse)
+    const cada = Math.max(1, Math.ceil(n / Math.min(7, Math.max(2, Math.floor(w / 70)))));
+    ejeX.forEach((x, i) => {
+      if (i % cada && i !== n - 1) return;
+      svg.appendChild(el('text', {
+        x: px(i), y: altoTotal - 8, 'text-anchor': 'middle', 'font-size': 11, fill: p.muted,
+      }, etiquetaX(x)));
+    });
+
+    series.forEach((s, si) => {
+      const color = s.color || p.series[si % 8];
+      const puntos = s.puntos.map((pt, i) => [px(i), py(pt.y)]);
+      if (series.length === 1) {
+        const area = `M${puntos[0][0]},${py(minYv)} ` + puntos.map(([x, y]) => `L${x},${y}`).join(' ')
+          + ` L${puntos[puntos.length - 1][0]},${py(minYv)} Z`;
+        svg.appendChild(el('path', { d: area, fill: color, opacity: .10 }));
+      }
+      svg.appendChild(el('path', {
+        d: `M${puntos.map(([x, y]) => `${x},${y}`).join(' L')}`,
+        fill: 'none', stroke: color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round',
+      }));
+      if (n <= 14) {
+        puntos.forEach(([x, y]) => {
+          svg.appendChild(el('circle', { cx: x, cy: y, r: 4, fill: color, stroke: p.superficie, 'stroke-width': 2 }));
+        });
+      }
+    });
+
+    // capa de interaccion: cursor vertical + puntos + tooltip
+    const cursor = el('line', { y1: m.top, y2: m.top + h, stroke: p.axis, 'stroke-width': 1, opacity: 0 });
+    svg.appendChild(cursor);
+    const marcas = series.map((s, si) => {
+      const c = el('circle', { r: 4.5, fill: s.color || p.series[si % 8], stroke: p.superficie, 'stroke-width': 2, opacity: 0 });
+      svg.appendChild(c);
+      return c;
+    });
+
+    const captura = el('rect', { x: m.left, y: m.top, width: w, height: h, fill: 'transparent' });
+    captura.addEventListener('mousemove', (e) => {
+      const caja = svg.getBoundingClientRect();
+      const rel = e.clientX - caja.left - m.left;
+      const i = Math.max(0, Math.min(n - 1, Math.round((rel / w) * (n - 1))));
+      cursor.setAttribute('x1', px(i)); cursor.setAttribute('x2', px(i)); cursor.setAttribute('opacity', 1);
+      series.forEach((s, si) => {
+        const pt = s.puntos[i];
+        if (!pt || pt.y === null) { marcas[si].setAttribute('opacity', 0); return; }
+        marcas[si].setAttribute('cx', px(i)); marcas[si].setAttribute('cy', py(pt.y));
+        marcas[si].setAttribute('opacity', 1);
+      });
+      const filas = series.map((s, si) => {
+        const pt = s.puntos[i];
+        return `<span style="display:inline-flex;align-items:center;gap:.35rem">
+          <i style="width:9px;height:9px;border-radius:3px;background:${s.color || p.series[si % 8]};display:inline-block"></i>
+          ${esc(s.nombre)}: <b>${pt && pt.y !== null ? fmt.format(pt.y) + sufijo : '—'}</b></span>`;
+      }).join('<br>');
+      mostrarTip(e, `<b>${esc(etiquetaX(ejeX[i], true))}</b><br>${filas}`);
+    });
+    captura.addEventListener('mouseleave', () => {
+      ocultarTip();
+      cursor.setAttribute('opacity', 0);
+      marcas.forEach((c) => c.setAttribute('opacity', 0));
+    });
+    svg.appendChild(captura);
+
+    const caja = document.createElement('div');
+    caja.appendChild(svg);
+    if (series.length > 1) {
+      const l = document.createElement('div');
+      l.className = 'leyenda';
+      l.innerHTML = series.map((s, si) =>
+        `<span><i style="background:${s.color || p.series[si % 8]}"></i>${esc(s.nombre)}</span>`).join('');
+      caja.appendChild(l);
+    }
+    cont.replaceChildren(caja);
+  });
+}
+
+// ------------------------------------------------------- pequenos multiplos ---
+
+/**
+ * Un mini grafico por sector, todos con la misma escala vertical. Reemplaza al
+ * grafico de ocho lineas superpuestas, que se vuelve ilegible.
+ * series: [{ nombre, puntos: [{ x, y }] }]
+ */
+function multiplos(cont, series, opciones = {}) {
+  if (!series || !series.length) return vacio(cont);
+  const { etiquetaX = (v) => v, altoCelda = 92 } = opciones;
+
+  responsivo(cont, (ancho) => {
+    const p = paleta();
+    const columnas = Math.max(1, Math.min(3, Math.floor(ancho / 260)));
+    const anchoCelda = Math.floor(ancho / columnas) - 12;
+    const max = Math.max(...series.flatMap((s) => s.puntos.map((pt) => pt.y)), 1);
+
+    const grilla = document.createElement('div');
+    grilla.style.display = 'grid';
+    grilla.style.gridTemplateColumns = `repeat(${columnas}, 1fr)`;
+    grilla.style.gap = '.8rem';
+
+    series.forEach((s, si) => {
+      const color = s.color || p.series[si % 8];
+      const m = { top: 8, right: 4, bottom: 14, left: 4 };
+      const w = anchoCelda - m.left - m.right;
+      const h = altoCelda - m.top - m.bottom;
+      const n = s.puntos.length;
+      const px = (i) => m.left + (n === 1 ? w / 2 : (i / (n - 1)) * w);
+      const py = (v) => m.top + h - (v / max) * h;
+      const total = s.puntos.reduce((a, b) => a + b.y, 0);
+
+      const celda = document.createElement('div');
+      celda.innerHTML = `<div style="font-size:.8rem;font-weight:600;display:flex;gap:.4rem;align-items:center">
+        <i style="width:9px;height:9px;border-radius:3px;background:${color};display:inline-block"></i>
+        ${esc(recortar(s.nombre, 24))}
+        <span style="margin-left:auto;color:var(--muted);font-weight:500">${fmt.format(total)}</span></div>`;
+
+      const svg = el('svg', { class: 'viz', width: anchoCelda, height: altoCelda, viewBox: `0 0 ${anchoCelda} ${altoCelda}` });
+      svg.appendChild(el('line', {
+        x1: m.left, x2: m.left + w, y1: py(0), y2: py(0), stroke: p.grid, 'stroke-width': 1,
+      }));
+      const puntos = s.puntos.map((pt, i) => [px(i), py(pt.y)]);
+      svg.appendChild(el('path', {
+        d: `M${puntos[0][0]},${py(0)} ${puntos.map(([x, y]) => `L${x},${y}`).join(' ')} L${puntos[n - 1][0]},${py(0)} Z`,
+        fill: color, opacity: .12,
+      }));
+      svg.appendChild(el('path', {
+        d: `M${puntos.map(([x, y]) => `${x},${y}`).join(' L')}`,
+        fill: 'none', stroke: color, 'stroke-width': 2, 'stroke-linejoin': 'round',
+      }));
+
+      const marca = el('circle', { r: 4, fill: color, stroke: p.superficie, 'stroke-width': 2, opacity: 0 });
+      svg.appendChild(marca);
+      const captura = el('rect', { x: m.left, y: m.top, width: w, height: h, fill: 'transparent' });
+      captura.addEventListener('mousemove', (e) => {
+        const caja = svg.getBoundingClientRect();
+        const i = Math.max(0, Math.min(n - 1, Math.round(((e.clientX - caja.left - m.left) / w) * (n - 1))));
+        marca.setAttribute('cx', px(i)); marca.setAttribute('cy', py(s.puntos[i].y)); marca.setAttribute('opacity', 1);
+        mostrarTip(e, `<b>${esc(s.nombre)}</b><br>${esc(etiquetaX(s.puntos[i].x, true))}: <b>${fmt.format(s.puntos[i].y)}</b>`);
+      });
+      captura.addEventListener('mouseleave', () => { ocultarTip(); marca.setAttribute('opacity', 0); });
+      svg.appendChild(captura);
+
+      svg.appendChild(el('text', { x: m.left, y: altoCelda - 2, 'font-size': 10, fill: p.muted },
+        etiquetaX(s.puntos[0].x)));
+      svg.appendChild(el('text', {
+        x: m.left + w, y: altoCelda - 2, 'font-size': 10, fill: p.muted, 'text-anchor': 'end',
+      }, etiquetaX(s.puntos[n - 1].x)));
+
+      celda.appendChild(svg);
+      grilla.appendChild(celda);
+    });
+
+    const caja = document.createElement('div');
+    caja.appendChild(grilla);
+    const nota = document.createElement('p');
+    nota.className = 'solo-lectura';
+    nota.style.marginTop = '.5rem';
+    nota.textContent = `Todos los gráficos usan la misma escala (0 a ${fmt.format(max)} consultas por día).`;
+    caja.appendChild(nota);
+    cont.replaceChildren(caja);
+  });
+}
+
+// ----------------------------------------------------------------- heatmap ---
+
+const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+const ORDEN_DOW = [1, 2, 3, 4, 5, 6, 0]; // la semana arranca el lunes
+
+/** datos: [{ dow, hora, total }] — magnitud continua: una sola tinta, clara a oscura. */
+function calor(cont, datos, opciones = {}) {
+  if (!datos || !datos.length) return vacio(cont);
+  const horas = [];
+  const desdeHora = Math.min(...datos.map((d) => d.hora));
+  const hastaHora = Math.max(...datos.map((d) => d.hora));
+  for (let h = Math.min(desdeHora, opciones.desde ?? 7); h <= Math.max(hastaHora, opciones.hasta ?? 20); h++) horas.push(h);
+
+  responsivo(cont, (ancho) => {
+    const p = paleta();
+    const mapa = new Map(datos.map((d) => [`${d.dow}-${d.hora}`, d.total]));
+    const max = Math.max(...datos.map((d) => d.total), 1);
+    const anchoEtiqueta = 66;
+    const gap = 2;
+    const celda = Math.max(14, Math.floor((ancho - anchoEtiqueta - 4) / horas.length) - gap);
+    const alturaFila = Math.min(28, Math.max(16, celda));
+    const alto = 7 * (alturaFila + gap) + 22;
+
+    const svg = el('svg', { class: 'viz', width: ancho, height: alto, viewBox: `0 0 ${ancho} ${alto}` });
+    const tinta = (v) => {
+      if (!v) return p.grid;
+      const escala = p.secuencial;
+      const i = Math.min(escala.length - 1, Math.max(1, Math.round((v / max) * (escala.length - 1))));
+      return escala[i];
+    };
+
+    ORDEN_DOW.forEach((dow, fila) => {
+      const y = fila * (alturaFila + gap) + 2;
+      svg.appendChild(el('text', {
+        x: anchoEtiqueta - 8, y: y + alturaFila / 2 + 4, 'text-anchor': 'end', 'font-size': 11.5, fill: p.ink2,
+      }, DIAS[fila].slice(0, 3)));
+
+      horas.forEach((h, col) => {
+        const v = mapa.get(`${dow}-${h}`) || 0;
+        const x = anchoEtiqueta + col * (celda + gap);
+        const r = el('rect', { x, y, width: celda, height: alturaFila, rx: 3, fill: tinta(v), opacity: v ? 1 : .5 });
+        r.addEventListener('mousemove', (e) => mostrarTip(e,
+          `<b>${DIAS[fila]} ${String(h).padStart(2, '0')}:00</b><br>${fmt.format(v)} consulta${v === 1 ? '' : 's'}`));
+        r.addEventListener('mouseleave', ocultarTip);
+        svg.appendChild(r);
+      });
+    });
+
+    horas.forEach((h, col) => {
+      if (horas.length > 12 && h % 2) return;
+      svg.appendChild(el('text', {
+        x: anchoEtiqueta + col * (celda + gap) + celda / 2, y: alto - 6,
+        'text-anchor': 'middle', 'font-size': 10.5, fill: p.muted,
+      }, String(h).padStart(2, '0')));
+    });
+
+    const caja = document.createElement('div');
+    caja.appendChild(svg);
+    const l = document.createElement('div');
+    l.className = 'leyenda';
+    l.innerHTML = `<span>Menos</span>${p.secuencial.map((c) =>
+      `<i style="background:${c};width:16px;height:10px;border-radius:2px"></i>`).join('')}<span>Más (${fmt.format(max)})</span>`;
+    caja.appendChild(l);
+    cont.replaceChildren(caja);
+  });
+}
+
+// ------------------------------------------------------------ distribucion ---
+
+/** Distribucion 1..5 de la encuesta: escala ordenada, una sola tinta. */
+function distribucion(cont, datos, opciones = {}) {
+  const total = datos.reduce((a, b) => a + b.total, 0);
+  if (!total) return vacio(cont, 'Todavia no hay respuestas');
+
+  responsivo(cont, (ancho) => {
+    const p = paleta();
+    const etiquetas = opciones.etiquetas || ['Muy malo', 'Malo', 'Regular', 'Bueno', 'Muy bueno'];
+    const alturaBarra = 18, gap = 12;
+    const alto = 5 * (alturaBarra + gap);
+    const anchoEtiqueta = 88;
+    const x0 = anchoEtiqueta + 10;
+    const util = Math.max(40, ancho - x0 - 92);
+    const max = Math.max(...datos.map((d) => d.total), 1);
+
+    const svg = el('svg', { class: 'viz', width: ancho, height: alto, viewBox: `0 0 ${ancho} ${alto}` });
+    for (let v = 5; v >= 1; v--) {
+      const fila = 5 - v;
+      const y = fila * (alturaBarra + gap) + 2;
+      const d = datos.find((x) => x.valor === v) || { total: 0 };
+      const w = Math.max(2, (d.total / max) * util);
+      svg.appendChild(el('text', {
+        x: anchoEtiqueta, y: y + alturaBarra / 2 + 4, 'text-anchor': 'end', 'font-size': 12, fill: p.ink2,
+      }, `${v} · ${etiquetas[v - 1]}`));
+      svg.appendChild(el('rect', { x: x0, y, width: util, height: alturaBarra, rx: 4, fill: p.grid, opacity: .45 }));
+      const r = el('rect', { x: x0, y, width: w, height: alturaBarra, rx: 4, fill: p.ordinal[v - 1] });
+      r.addEventListener('mousemove', (e) => mostrarTip(e,
+        `<b>${v} · ${etiquetas[v - 1]}</b><br>${fmt.format(d.total)} de ${fmt.format(total)} (${Math.round(d.total / total * 100)}%)`));
+      r.addEventListener('mouseleave', ocultarTip);
+      svg.appendChild(r);
+      svg.appendChild(el('text', {
+        x: x0 + w + 7, y: y + alturaBarra / 2 + 4, 'font-size': 12, fill: p.ink, 'font-weight': 600,
+      }, `${fmt.format(d.total)}  (${Math.round(d.total / total * 100)}%)`));
+    }
+    cont.replaceChildren(svg);
+  });
+}
+
+
+
+
+/* ============================================================
+   Demostración: la misma interfaz y los mismos gráficos que la
+   aplicación real, pero con los datos generados en el navegador.
+   No hay servidor ni base de datos: todo vive en memoria.
+   ============================================================ */
+
+const $ = (id) => document.getElementById(id);
+
+// --------------------------------------------------------------- datos ---
+
+const SECTORES = [
+  { id: 1, nombre: 'Energía Eléctrica', detalle: 'Suministro, cortes, medidores, conexiones', peso: 9 },
+  { id: 2, nombre: 'Agua Potable', detalle: 'Suministro, presión, roturas, medidores', peso: 7 },
+  { id: 3, nombre: 'Cloacas y Saneamiento', detalle: 'Desagües, obstrucciones, conexiones', peso: 3 },
+  { id: 4, nombre: 'Internet y Telefonía', detalle: 'Altas, fallas de servicio, planes', peso: 6 },
+  { id: 5, nombre: 'TV por Cable', detalle: 'Altas, señal, grilla, decodificadores', peso: 3 },
+  { id: 6, nombre: 'Facturación y Cobranzas', detalle: 'Facturas, planes de pago, débitos, deuda', peso: 8 },
+  { id: 7, nombre: 'Servicio Sepelio', detalle: 'Cobertura, trámites, plan sepelio', peso: 2 },
+  { id: 8, nombre: 'Obras y Nuevas Conexiones', detalle: 'Factibilidad, obras, ampliaciones', peso: 2 },
+  { id: 9, nombre: 'Atención al Socio', detalle: 'Altas y bajas, datos, reclamos generales', peso: 4 },
+];
+
+const MOTIVOS_POR_SECTOR = {
+  1: ['Corte de suministro', 'Baja tensión', 'Medidor con falla', 'Alumbrado público', 'Nueva conexión', 'Consumo elevado', 'Poda / cables'],
+  2: ['Falta de agua', 'Baja presión', 'Pérdida en la vía pública', 'Rotura de caño', 'Calidad del agua', 'Nueva conexión'],
+  3: ['Obstrucción', 'Desborde', 'Olores', 'Nueva conexión'],
+  4: ['Sin servicio', 'Servicio lento', 'Alta de servicio', 'Cambio de plan', 'Configuración de equipo', 'Baja de servicio'],
+  5: ['Sin señal', 'Falla de decodificador', 'Alta de servicio', 'Grilla de canales', 'Baja de servicio'],
+  6: ['Consulta de saldo', 'Reimpresión de factura', 'Plan de pago', 'Reclamo por importe', 'Débito automático', 'Vencimientos', 'Medios de pago'],
+  7: ['Consulta de cobertura', 'Alta de plan', 'Trámite / servicio', 'Traslados'],
+  8: ['Factibilidad', 'Estado de obra', 'Presupuesto', 'Ampliación de servicio'],
+  9: ['Alta de socio', 'Actualización de datos', 'Cambio de titularidad', 'Reclamo general', 'Información institucional'],
+};
+
+const MOTIVOS = [];
+let idMotivo = 0;
+for (const [sectorId, nombres] of Object.entries(MOTIVOS_POR_SECTOR)) {
+  for (const nombre of nombres) MOTIVOS.push({ id: ++idMotivo, sector_id: Number(sectorId), nombre });
+}
+
+const CANALES = [
+  { id: 1, nombre: 'Telefónico', peso: 10 },
+  { id: 2, nombre: 'Presencial', peso: 6 },
+  { id: 3, nombre: 'WhatsApp', peso: 5 },
+  { id: 4, nombre: 'Email', peso: 2 },
+  { id: 5, nombre: 'Web / Redes', peso: 1 },
+];
+
+const OPERADORES = [
+  { id: 1, nombre: 'Marina López', puesto: 'call_center' },
+  { id: 2, nombre: 'Julián Pérez', puesto: 'call_center' },
+  { id: 3, nombre: 'Rocío Gómez', puesto: 'mesa_informes' },
+  { id: 4, nombre: 'Diego Sosa', puesto: 'mesa_informes' },
+  { id: 5, nombre: 'Silvia Vera', puesto: 'call_center' },
+];
+
+const LOCALIDADES = [
+  { id: 1, nombre: 'Centro' }, { id: 2, nombre: 'Barrio Norte' }, { id: 3, nombre: 'Villa Elisa' },
+  { id: 4, nombre: 'Colonia San José' }, { id: 5, nombre: 'Zona rural' },
+];
+
+const COMENTARIOS = [
+  'Me atendieron muy bien y rápido.',
+  'Estuve mucho tiempo esperando en línea.',
+  'Resolvieron el problema en el día.',
+  'Me derivaron y nunca me llamaron.',
+  'Muy amables en el mostrador.',
+  'Deberían tener más líneas telefónicas.',
+  'La chica me explicó todo con paciencia.',
+  'Tuve que llamar tres veces por lo mismo.',
+];
+
+const USUARIO = OPERADORES[0];   // el operador con el que se navega la demo
+const DIAS_DEMO = 90;
+
+let CONSULTAS = [];
+let ENCUESTAS = [];
+
+// ------------------------------------------------------------- helpers ---
+
+/** Generador con semilla fija: todos los que abren la demo ven los mismos números. */
+function generador(semilla) {
+  let a = semilla >>> 0;
+  return () => {
+    a += 0x6d2b79f5;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+let azar = generador(20260804);
+const entre = (a, b) => a + Math.floor(azar() * (b - a + 1));
+const uno = (lista) => lista[Math.floor(azar() * lista.length)];
+
+function pesado(items, pesos) {
+  const total = pesos.reduce((a, b) => a + b, 0);
+  let r = azar() * total;
+  for (let i = 0; i < items.length; i++) { r -= pesos[i]; if (r <= 0) return items[i]; }
+  return items[items.length - 1];
+}
+
+const iso = (fecha) => {
+  const d = new Date(fecha.getTime() - fecha.getTimezoneOffset() * 60000);
+  return d.toISOString().slice(0, 10);
+};
+const HOY = iso(new Date());
+function sumarDias(fechaISO, dias) {
+  const d = new Date(`${fechaISO}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + dias);
+  return d.toISOString().slice(0, 10);
+}
+const diaSemana = (fechaISO) => new Date(`${fechaISO}T12:00:00Z`).getUTCDay();
+
+const escapar = (s) => String(s ?? '').replace(/[&<>"']/g,
+  (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+const nf = new Intl.NumberFormat('es-AR');
+const num = (n) => (n === null || n === undefined ? '—' : nf.format(n));
+const dec = (n, d = 1) => (n === null || n === undefined ? '—' : Number(n).toFixed(d).replace('.', ','));
+const pct = (n) => (n === null || n === undefined ? '—' : `${dec(n, 1)}%`);
+const redondear = (n, d = 1) => (n === null || n === undefined || Number.isNaN(n) ? null : Number(Number(n).toFixed(d)));
+
+const fechaLarga = (isoTexto) => {
+  if (!isoTexto) return '—';
+  const [a, m, d] = isoTexto.slice(0, 10).split('-');
+  return `${d}/${m}/${a}` + (isoTexto.length > 10 ? ` ${isoTexto.slice(11, 16)}` : '');
+};
+const fechaCorta = (isoTexto) => `${isoTexto.slice(8, 10)}/${isoTexto.slice(5, 7)}` +
+  (isoTexto.length > 10 ? ` ${isoTexto.slice(11, 16)}` : '');
+const minutos = (seg) => (seg ? `${Math.round(seg / 60)} min` : '—');
+
+const ESTADOS = { resuelta: 'Resuelta', derivada: 'Derivada', pendiente: 'Pendiente', reclamo: 'Reclamo generado' };
+const PUESTOS = { call_center: 'Call center', mesa_informes: 'Mesa de informes', otro: 'Otro' };
+const etiquetaEstado = (e) => ESTADOS[e] || e;
+const etiquetaPuesto = (p) => PUESTOS[p] || p;
+
+const sectorDe = (id) => SECTORES.find((s) => s.id === id);
+const motivoDe = (id) => MOTIVOS.find((m) => m.id === id);
+const canalDe = (id) => CANALES.find((c) => c.id === id);
+const operadorDe = (id) => OPERADORES.find((o) => o.id === id);
+
+// --------------------------------------------------------- generación ---
+
+function generarDatos() {
+  azar = generador(20260804);
+  CONSULTAS = [];
+  ENCUESTAS = [];
+  let id = 0;
+
+  const pesoHora = { 8: 6, 9: 10, 10: 12, 11: 10, 12: 6, 13: 4, 14: 5, 15: 7, 16: 8, 17: 6, 18: 3 };
+  const horas = Object.keys(pesoHora).map(Number);
+
+  for (let d = DIAS_DEMO - 1; d >= 0; d--) {
+    const fecha = sumarDias(HOY, -d);
+    const dow = diaSemana(fecha);
+    if (dow === 0) continue;                        // domingo cerrado
+    const factor = dow === 6 ? 0.35 : 1;            // sábado, media jornada
+    const pico = azar() < 0.08 ? 1.9 : 1;           // corte general o vencimiento
+    const cantidad = Math.round(26 * factor * pico * (0.75 + azar() * 0.5));
+
+    for (let i = 0; i < cantidad; i++) {
+      const sector = pesado(SECTORES, SECTORES.map((s) => s.peso));
+      const motivo = uno(MOTIVOS.filter((m) => m.sector_id === sector.id));
+      const canal = pesado(CANALES, CANALES.map((c) => c.peso));
+      const operador = uno(OPERADORES);
+      const hora = pesado(horas, horas.map((h) => pesoHora[h]));
+      const ts = `${fecha}T${String(hora).padStart(2, '0')}:${String(entre(0, 59)).padStart(2, '0')}:00`;
+      const estado = pesado(['resuelta', 'derivada', 'pendiente', 'reclamo'], [66, 14, 8, 12]);
+
+      CONSULTAS.push({
+        id: ++id,
+        ts, fecha, hora, dow,
+        operador_id: operador.id,
+        puesto: canal.nombre === 'Presencial' ? 'mesa_informes' : operador.puesto,
+        canal_id: canal.id,
+        sector_id: sector.id,
+        motivo_id: motivo.id,
+        localidad_id: uno(LOCALIDADES).id,
+        socio_nro: String(entre(1000, 9999)),
+        estado,
+        primer_contacto: estado === 'resuelta' ? 1 : (azar() < 0.2 ? 1 : 0),
+        duracion_seg: entre(90, 900),
+        observaciones: `Consulta por ${motivo.nombre.toLowerCase()}.`,
+      });
+
+      if (azar() < 0.17) {
+        const base = estado === 'resuelta' ? 4 : 3;
+        const nota = Math.max(1, Math.min(5, base + entre(-1, 1)));
+        const acotar = (v) => Math.max(1, Math.min(5, v));
+        ENCUESTAS.push({
+          fecha, sector_id: sector.id, canal_id: canal.id, operador_id: operador.id,
+          respondida: ts,
+          satisfaccion: nota,
+          resolucion: acotar(nota + entre(-1, 0)),
+          atencion: acotar(nota + entre(0, 1)),
+          espera: acotar(nota + entre(-1, 1)),
+          recomendaria: Math.max(0, Math.min(10, nota * 2 + entre(-2, 1))),
+          comentario: azar() < 0.25 ? uno(COMENTARIOS) : '',
+        });
+      }
+    }
+  }
+  CONSULTAS.sort((a, b) => (a.ts < b.ts ? -1 : 1));
+}
+
+// ------------------------------------------------------------- filtros ---
+
+const filtro = { dias: 30, sector_id: '' };
+const desdeFiltro = () => sumarDias(HOY, -(filtro.dias - 1));
+
+function consultasFiltradas() {
+  const desde = desdeFiltro();
+  return CONSULTAS.filter((c) => c.fecha >= desde && c.fecha <= HOY
+    && (!filtro.sector_id || c.sector_id === Number(filtro.sector_id)));
+}
+
+function encuestasFiltradas() {
+  const desde = desdeFiltro();
+  return ENCUESTAS.filter((e) => e.fecha >= desde && e.fecha <= HOY
+    && (!filtro.sector_id || e.sector_id === Number(filtro.sector_id)));
+}
+
+const RANGOS = [[7, 'Últimos 7 días'], [30, 'Últimos 30 días'], [90, 'Últimos 90 días']];
+
+/** Barra de filtros de la demo: rango de fechas y sector. */
+function montarFiltros(contenedor, alCambiar) {
+  contenedor.innerHTML = `
+    <div class="fila" style="align-items:flex-end">
+      <div class="campo" style="flex:0 0 auto">
+        <label>Período</label>
+        <div class="segmentado">
+          ${RANGOS.map(([d, t]) => `<button type="button" data-dias="${d}"${filtro.dias === d ? ' aria-pressed="true"' : ''}>${t}</button>`).join('')}
+        </div>
+      </div>
+      <div class="campo"><label>Sector</label>
+        <select data-sector>
+          <option value="">Todos</option>
+          ${SECTORES.map((s) => `<option value="${s.id}"${String(s.id) === String(filtro.sector_id) ? ' selected' : ''}>${escapar(s.nombre)}</option>`).join('')}
+        </select></div>
+      <span style="flex:1"></span>
+      <span class="solo-lectura">${fechaLarga(desdeFiltro())} — ${fechaLarga(HOY)}</span>
+    </div>`;
+  contenedor.querySelectorAll('[data-dias]').forEach((b) => {
+    b.onclick = () => { filtro.dias = Number(b.dataset.dias); alCambiar(); };
+  });
+  contenedor.querySelector('[data-sector]').onchange = (e) => {
+    filtro.sector_id = e.target.value; alCambiar();
+  };
+}
+
+// -------------------------------------------------------- agregaciones ---
+
+function agrupar(lista, clave) {
+  const mapa = new Map();
+  for (const x of lista) {
+    const k = clave(x);
+    if (k === null || k === undefined) continue;
+    mapa.set(k, (mapa.get(k) || 0) + 1);
+  }
+  return mapa;
+}
+
+function estadisticas() {
+  const desde = desdeFiltro();
+  const filas = consultasFiltradas();
+  const total = filas.length;
+  const dias = filtro.dias;
+
+  const cuenta = (fn) => filas.filter(fn).length;
+  const conDuracion = filas.filter((c) => c.duracion_seg > 0);
+
+  const anterior = (() => {
+    const hastaPrev = sumarDias(desde, -1);
+    const desdePrev = sumarDias(hastaPrev, -(dias - 1));
+    return CONSULTAS.filter((c) => c.fecha >= desdePrev && c.fecha <= hastaPrev
+      && (!filtro.sector_id || c.sector_id === Number(filtro.sector_id))).length;
+  })();
+
+  const porSector = SECTORES.map((s) => {
+    const dell = filas.filter((c) => c.sector_id === s.id);
+    const conDur = dell.filter((c) => c.duracion_seg > 0);
+    const primer = dell.filter((c) => c.primer_contacto).length;
+    return {
+      id: s.id, nombre: s.nombre, total: dell.length,
+      pendientes: dell.filter((c) => c.estado === 'pendiente').length,
+      derivadas: dell.filter((c) => c.estado === 'derivada').length,
+      reclamos: dell.filter((c) => c.estado === 'reclamo').length,
+      pct: total ? redondear((dell.length / total) * 100, 1) : 0,
+      pct_primer_contacto: dell.length ? redondear((primer / dell.length) * 100, 1) : null,
+      duracion_prom_min: conDur.length
+        ? redondear(conDur.reduce((a, c) => a + c.duracion_seg, 0) / conDur.length / 60, 1) : null,
+    };
+  }).filter((s) => s.total).sort((a, b) => b.total - a.total);
+
+  const porMotivo = [...agrupar(filas, (c) => c.motivo_id)]
+    .map(([id, n]) => {
+      const m = motivoDe(id);
+      return { id, nombre: m.nombre, sector: sectorDe(m.sector_id).nombre, total: n };
+    })
+    .sort((a, b) => b.total - a.total).slice(0, 15);
+
+  const porCanal = [...agrupar(filas, (c) => c.canal_id)]
+    .map(([id, n]) => ({ id, nombre: canalDe(id).nombre, total: n }))
+    .sort((a, b) => b.total - a.total);
+
+  const porPuesto = [...agrupar(filas, (c) => c.puesto)]
+    .map(([nombre, total]) => ({ nombre, total })).sort((a, b) => b.total - a.total);
+
+  const porOperador = [...agrupar(filas, (c) => c.operador_id)]
+    .map(([id, n]) => {
+      const suyas = filas.filter((c) => c.operador_id === id);
+      const conDur = suyas.filter((c) => c.duracion_seg > 0);
+      return {
+        id, nombre: operadorDe(id).nombre, puesto: operadorDe(id).puesto, total: n,
+        pct_primer_contacto: redondear((suyas.filter((c) => c.primer_contacto).length / n) * 100, 1),
+        duracion_prom_min: conDur.length
+          ? redondear(conDur.reduce((a, c) => a + c.duracion_seg, 0) / conDur.length / 60, 1) : null,
+      };
+    }).sort((a, b) => b.total - a.total);
+
+  const porLocalidad = [...agrupar(filas, (c) => c.localidad_id)]
+    .map(([id, n]) => ({ id, nombre: LOCALIDADES.find((l) => l.id === id).nombre, total: n }))
+    .sort((a, b) => b.total - a.total);
+
+  const porFecha = agrupar(filas, (c) => c.fecha);
+  const serie = [];
+  for (let f = desde; f <= HOY; f = sumarDias(f, 1)) serie.push({ fecha: f, total: porFecha.get(f) || 0 });
+
+  const heatmap = [...agrupar(filas, (c) => `${c.dow}|${c.hora}`)]
+    .map(([k, total]) => ({ dow: Number(k.split('|')[0]), hora: Number(k.split('|')[1]), total }));
+
+  const topSectores = porSector.slice(0, 6).map((s) => s.id);
+  const serieSector = [];
+  for (const sid of topSectores) {
+    const delSector = agrupar(filas.filter((c) => c.sector_id === sid), (c) => c.fecha);
+    for (const [fecha, tot] of delSector) serieSector.push({ sector_id: sid, fecha, total: tot });
+  }
+
+  const enc = encuestasFiltradas();
+
+  return {
+    periodo: { desde, hasta: HOY, dias },
+    resumen: {
+      total,
+      promedio_dia: redondear(total / dias, 1),
+      resueltas: cuenta((c) => c.estado === 'resuelta'),
+      derivadas: cuenta((c) => c.estado === 'derivada'),
+      pendientes: cuenta((c) => c.estado === 'pendiente'),
+      pct_primer_contacto: total ? redondear((cuenta((c) => c.primer_contacto) / total) * 100, 1) : null,
+      pct_pendientes: total ? redondear((cuenta((c) => c.estado === 'pendiente') / total) * 100, 1) : null,
+      duracion_prom_min: conDuracion.length
+        ? redondear(conDuracion.reduce((a, c) => a + c.duracion_seg, 0) / conDuracion.length / 60, 1) : null,
+      variacion_pct: anterior ? redondear(((total - anterior) / anterior) * 100, 1) : null,
+      satisfaccion: enc.length ? redondear(enc.reduce((a, e) => a + e.satisfaccion, 0) / enc.length, 2) : null,
+      encuestas_respondidas: enc.length,
+    },
+    por_sector: porSector,
+    por_motivo: porMotivo,
+    por_canal: porCanal,
+    por_puesto: porPuesto,
+    por_operador: porOperador,
+    por_localidad: porLocalidad,
+    serie,
+    serie_sector: serieSector,
+    heatmap,
+  };
+}
+
+function estadisticasEncuestas() {
+  const filas = encuestasFiltradas();
+  const n = filas.length;
+  const prom = (campo) => (n ? redondear(filas.reduce((a, e) => a + (e[campo] || 0), 0) / n, 2) : null);
+
+  const promotores = filas.filter((e) => e.recomendaria >= 9).length;
+  const detractores = filas.filter((e) => e.recomendaria <= 6).length;
+
+  const porSector = SECTORES.map((s) => {
+    const suyas = filas.filter((e) => e.sector_id === s.id);
+    if (!suyas.length) return null;
+    const p = (campo) => redondear(suyas.reduce((a, e) => a + (e[campo] || 0), 0) / suyas.length, 2);
+    return {
+      nombre: s.nombre, respuestas: suyas.length,
+      satisfaccion: p('satisfaccion'), resolucion: p('resolucion'),
+      atencion: p('atencion'), espera: p('espera'),
+    };
+  }).filter(Boolean).sort((a, b) => b.respuestas - a.respuestas);
+
+  const porFecha = new Map();
+  for (const e of filas) {
+    const acc = porFecha.get(e.fecha) || { n: 0, suma: 0 };
+    acc.n++; acc.suma += e.satisfaccion;
+    porFecha.set(e.fecha, acc);
+  }
+
+  return {
+    resumen: {
+      respondidas: n,
+      satisfaccion: prom('satisfaccion'),
+      resolucion: prom('resolucion'),
+      atencion: prom('atencion'),
+      espera: prom('espera'),
+      csat: n ? redondear((filas.filter((e) => e.satisfaccion >= 4).length / n) * 100, 1) : null,
+      nps: n ? Math.round(((promotores - detractores) / n) * 100) : null,
+    },
+    distribucion: [1, 2, 3, 4, 5].map((v) => ({ valor: v, total: filas.filter((e) => e.satisfaccion === v).length })),
+    por_sector: porSector,
+    serie: [...porFecha.entries()].sort().map(([fecha, a]) => ({ fecha, satisfaccion: redondear(a.suma / a.n, 2) })),
+    comentarios: filas.filter((e) => e.comentario).slice(-30).reverse(),
+  };
+}
+
+// ------------------------------------------------------ pantalla rápida ---
+
+let canalId = 1;
+let ultima = null;
+let temporizador = null;
+const SEGUNDOS_DESHACER = 12;
+
+function frecuentesDelOperador() {
+  const suyas = CONSULTAS.filter((c) => c.operador_id === USUARIO.id && c.motivo_id);
+  return [...agrupar(suyas, (c) => c.motivo_id)]
+    .sort((a, b) => b[1] - a[1]).slice(0, 9).map(([id]) => motivoDe(id));
+}
+
+const hoyPorMotivo = (motivoId) =>
+  CONSULTAS.filter((c) => c.fecha === HOY && c.operador_id === USUARIO.id && c.motivo_id === motivoId).length;
+
+function fichaHTML(motivo, { atajo = null, conSector = false } = {}) {
+  const hoy = hoyPorMotivo(motivo.id);
+  return `
+    <button type="button" class="ficha" data-motivo="${motivo.id}">
+      ${atajo ? `<span class="atajo">${atajo}</span>` : ''}
+      <span class="titulo">${escapar(motivo.nombre)}</span>
+      ${conSector ? `<span class="sector">${escapar(sectorDe(motivo.sector_id).nombre)}</span>` : ''}
+      <span class="veces${hoy ? '' : ' oculto'}" data-veces="${motivo.id}">${hoy} hoy</span>
+    </button>`;
+}
+
+function pintarRapido() {
+  $('canales').innerHTML = CANALES.map((c) => `
+    <button type="button" data-canal="${c.id}"${c.id === canalId ? ' aria-pressed="true"' : ''}>
+      ${escapar(c.nombre)}</button>`).join('');
+  $('canales').querySelectorAll('[data-canal]').forEach((b) => {
+    b.onclick = () => { canalId = Number(b.dataset.canal); pintarRapido(); };
+  });
+
+  $('frecuentes').innerHTML = frecuentesDelOperador()
+    .map((m, i) => fichaHTML(m, { atajo: i + 1, conSector: true })).join('');
+
+  $('sectores').innerHTML = SECTORES.map((s) => `
+    <section class="tarjeta" style="margin-top:1rem">
+      <header><h2>${escapar(s.nombre)}</h2><p>${escapar(s.detalle)}</p></header>
+      <div class="botonera">
+        ${MOTIVOS.filter((m) => m.sector_id === s.id).map((m) => fichaHTML(m)).join('')}
+        <button type="button" class="ficha otra" data-sector="${s.id}">
+          <span class="titulo">Otra consulta</span>
+          <span class="sector">sin motivo específico</span>
+        </button>
+      </div>
+    </section>`).join('');
+
+  document.querySelectorAll('#p-rapido [data-motivo]').forEach((b) => {
+    b.onclick = () => registrar(Number(b.dataset.motivo), null, b);
+  });
+  document.querySelectorAll('#p-rapido [data-sector]').forEach((b) => {
+    b.onclick = () => registrar(null, Number(b.dataset.sector), b);
+  });
+  pintarContador();
+}
+
+function pintarContador() {
+  const deHoy = CONSULTAS.filter((c) => c.fecha === HOY);
+  $('contador').innerHTML = `<b>${num(deHoy.filter((c) => c.operador_id === USUARIO.id).length)}</b>
+    cargadas hoy por vos · <b>${num(deHoy.length)}</b> en total`;
+}
+
+function registrar(motivoId, sectorId, ficha) {
+  const motivo = motivoId ? motivoDe(motivoId) : null;
+  const sector = sectorId || (motivo && motivo.sector_id);
+  if (!sector) return;
+
+  if (ficha) {
+    ficha.classList.add('marcada');
+    setTimeout(() => ficha.classList.remove('marcada'), 450);
+  }
+
+  const ahora = new Date();
+  const hhmm = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
+  const consulta = {
+    id: Math.max(...CONSULTAS.map((c) => c.id)) + 1,
+    ts: `${HOY}T${hhmm}:00`, fecha: HOY, hora: ahora.getHours(), dow: diaSemana(HOY),
+    operador_id: USUARIO.id, puesto: USUARIO.puesto, canal_id: canalId,
+    sector_id: sector, motivo_id: motivoId, localidad_id: null,
+    socio_nro: '', estado: 'resuelta', primer_contacto: 1, duracion_seg: 0, observaciones: '',
+  };
+  CONSULTAS.push(consulta);
+  ultima = consulta;
+
+  if (motivoId) {
+    const n = hoyPorMotivo(motivoId);
+    document.querySelectorAll(`[data-veces="${motivoId}"]`).forEach((s) => {
+      s.textContent = `${n} hoy`;
+      s.classList.remove('oculto');
+    });
+  }
+  pintarContador();
+  mostrarConfirmacion(motivo ? motivo.nombre : sectorDe(sector).nombre);
+}
+
+function mostrarConfirmacion(titulo) {
+  const caja = $('brindis');
+  caja.className = 'brindis visible';
+  caja.innerHTML = `
+    <div class="linea">
+      <b>Registrada</b> · ${escapar(titulo)}
+      <span id="marca-estado" class="marca-estado"></span>
+      <span class="cuenta" id="cuenta">${SEGUNDOS_DESHACER}</span>
+    </div>
+    <div class="acciones">
+      <button type="button" data-estado="derivada">Derivada</button>
+      <button type="button" data-estado="pendiente">Pendiente</button>
+      <button type="button" data-estado="reclamo">Reclamo</button>
+      <button type="button" id="mas-datos">Agregar datos</button>
+      <button type="button" id="deshacer">Deshacer <small>(Esc)</small></button>
+    </div>`;
+
+  caja.querySelectorAll('[data-estado]').forEach((b) => {
+    b.onclick = () => {
+      if (!ultima) return;
+      ultima.estado = b.dataset.estado;
+      ultima.primer_contacto = b.dataset.estado === 'resuelta' ? 1 : 0;
+      caja.querySelectorAll('[data-estado]').forEach((x) => x.removeAttribute('aria-pressed'));
+      b.setAttribute('aria-pressed', 'true');
+      $('marca-estado').textContent = `· ${etiquetaEstado(b.dataset.estado)}`;
+    };
+  });
+  caja.querySelector('#deshacer').onclick = deshacer;
+  caja.querySelector('#mas-datos').onclick = abrirDetalle;
+
+  clearInterval(temporizador);
+  let restante = SEGUNDOS_DESHACER;
+  temporizador = setInterval(() => {
+    restante--;
+    const c = $('cuenta');
+    if (c) c.textContent = restante;
+    if (restante <= 0) cerrarConfirmacion();
+  }, 1000);
+}
+
+function cerrarConfirmacion() {
+  clearInterval(temporizador);
+  ultima = null;
+  $('brindis').className = 'brindis';
+}
+
+function aviso(mensaje) {
+  const caja = $('brindis');
+  caja.className = 'brindis visible';
+  caja.innerHTML = `<div class="linea">${escapar(mensaje)}</div>`;
+  clearInterval(temporizador);
+  ultima = null;
+  temporizador = setTimeout(() => { caja.className = 'brindis'; }, 4000);
+}
+
+function deshacer() {
+  if (!ultima) return;
+  const quitada = ultima;
+  CONSULTAS = CONSULTAS.filter((c) => c.id !== quitada.id);
+  if (quitada.motivo_id) {
+    const n = hoyPorMotivo(quitada.motivo_id);
+    document.querySelectorAll(`[data-veces="${quitada.motivo_id}"]`).forEach((s) => {
+      s.textContent = `${n} hoy`;
+      s.classList.toggle('oculto', !n);
+    });
+  }
+  pintarContador();
+  aviso('Registro deshecho');
+}
+
+function abrirDetalle() {
+  const c = ultima;
+  if (!c) return;
+  clearInterval(temporizador);
+  $('detalle-cuerpo').innerHTML = `
+    <h2>Consulta #${c.id}</h2>
+    <p class="solo-lectura">${escapar(sectorDe(c.sector_id).nombre)}${c.motivo_id ? ` · ${escapar(motivoDe(c.motivo_id).nombre)}` : ''}</p>
+    <form id="form-detalle">
+      <div class="fila" style="margin-top:.6rem">
+        <div class="campo corto"><label for="d-socio">N° de socio</label>
+          <input id="d-socio" inputmode="numeric"></div>
+        <div class="campo"><label for="d-nombre">Nombre del socio</label><input id="d-nombre"></div>
+        <div class="campo corto"><label for="d-duracion">Duración (min)</label>
+          <input id="d-duracion" type="number" min="0" step="1"></div>
+      </div>
+      <div style="margin-top:.6rem">
+        <label for="d-obs">Observaciones</label>
+        <textarea id="d-obs" placeholder="Qué se le informó al socio, a quién se derivó…"></textarea>
+      </div>
+      <div class="pie" style="border:0;padding:.8rem 0 0">
+        <button type="button" id="d-cerrar">Cancelar</button>
+        <button type="submit" class="primario">Guardar</button>
+      </div>
+    </form>`;
+  $('detalle').showModal();
+  $('d-cerrar').onclick = () => { $('detalle').close(); cerrarConfirmacion(); };
+  $('form-detalle').onsubmit = (e) => {
+    e.preventDefault();
+    c.socio_nro = $('d-socio').value.trim();
+    c.socio_nombre = $('d-nombre').value.trim();
+    c.duracion_seg = Math.round(Number($('d-duracion').value || 0) * 60);
+    c.observaciones = $('d-obs').value.trim();
+    $('detalle').close();
+    cerrarConfirmacion();
+    aviso(`Consulta #${c.id} completada`);
+  };
+}
+
+// --------------------------------------------------- pantalla consultas ---
+
+function pintarConsultas() {
+  montarFiltros($('c-filtros'), pintarConsultas);
+  const busqueda = $('c-buscar').value.trim().toLowerCase();
+  let filas = consultasFiltradas().slice().reverse();
+  if (busqueda) {
+    filas = filas.filter((c) => {
+      const m = c.motivo_id ? motivoDe(c.motivo_id).nombre : '';
+      return `${c.socio_nro} ${m} ${c.observaciones} ${sectorDe(c.sector_id).nombre}`.toLowerCase().includes(busqueda);
+    });
+  }
+  $('c-resumen').textContent = `${num(filas.length)} consulta${filas.length === 1 ? '' : 's'}
+    entre ${fechaLarga(desdeFiltro())} y ${fechaLarga(HOY)}`;
+
+  const visibles = filas.slice(0, 200);
+  $('c-tabla').innerHTML = visibles.length ? `
+    <table>
+      <thead><tr><th>Fecha</th><th>Sector</th><th>Motivo</th><th>Canal</th><th>Socio</th>
+        <th>Estado</th><th>Operador</th><th class="num">Duración</th></tr></thead>
+      <tbody>${visibles.map((c) => `
+        <tr>
+          <td>${fechaCorta(c.ts)}</td>
+          <td>${escapar(sectorDe(c.sector_id).nombre)}</td>
+          <td>${escapar(c.motivo_id ? motivoDe(c.motivo_id).nombre : '—')}</td>
+          <td>${escapar(canalDe(c.canal_id).nombre)}</td>
+          <td>${escapar(c.socio_nro || '—')}</td>
+          <td><span class="chip ${c.estado}">${etiquetaEstado(c.estado)}</span></td>
+          <td>${escapar(operadorDe(c.operador_id).nombre)}</td>
+          <td class="num">${minutos(c.duracion_seg)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    ${filas.length > visibles.length ? `<p class="solo-lectura" style="margin-top:.6rem">
+      Se muestran las ${visibles.length} más recientes de ${num(filas.length)}. En la aplicación real
+      el listado pagina y se exporta a CSV.</p>` : ''}`
+    : '<p class="vacio">No hay consultas con esos filtros</p>';
+}
+
+// ------------------------------------------------------- pantalla panel ---
+
+function pintarPanel() {
+  montarFiltros($('p-filtros'), pintarPanel);
+  const d = estadisticas();
+  const r = d.resumen;
+
+  const variacion = r.variacion_pct === null ? ''
+    : `<span class="${r.variacion_pct >= 0 ? 'sube' : 'baja'}">${r.variacion_pct >= 0 ? '▲' : '▼'} ${dec(Math.abs(r.variacion_pct))}%</span> vs. período anterior`;
+
+  $('kpis').innerHTML = `
+    <div class="kpi"><div class="etiqueta">Consultas</div>
+      <div class="valor">${num(r.total)}</div>
+      <div class="pie">${variacion || `${d.periodo.dias} días`}</div></div>
+    <div class="kpi"><div class="etiqueta">Promedio por día</div>
+      <div class="valor">${dec(r.promedio_dia)}</div>
+      <div class="pie">${d.periodo.dias} días del período</div></div>
+    <div class="kpi"><div class="etiqueta">Resueltas al 1er contacto</div>
+      <div class="valor">${pct(r.pct_primer_contacto)}</div>
+      <div class="pie">${num(r.resueltas)} cerradas en el acto</div></div>
+    <div class="kpi"><div class="etiqueta">Pendientes</div>
+      <div class="valor">${num(r.pendientes)}</div>
+      <div class="pie">${pct(r.pct_pendientes)} del total · ${num(r.derivadas)} derivadas</div></div>
+    <div class="kpi"><div class="etiqueta">Duración promedio</div>
+      <div class="valor">${r.duracion_prom_min === null ? '—' : `${dec(r.duracion_prom_min)}′`}</div>
+      <div class="pie">sobre las consultas con tiempo cargado</div></div>
+    <div class="kpi"><div class="etiqueta">Conformidad</div>
+      <div class="valor">${r.satisfaccion === null ? '—' : `${dec(r.satisfaccion, 2)}/5`}</div>
+      <div class="pie">${num(r.encuestas_respondidas)} encuestas respondidas</div></div>`;
+
+  $('sub-evolucion').textContent = `${fechaLarga(d.periodo.desde)} — ${fechaLarga(d.periodo.hasta)}`;
+
+  const etiquetaX = (v, completo) => (completo ? fechaLarga(v) : `${v.slice(8)}/${v.slice(5, 7)}`);
+
+  lineas($('g-evolucion'), [{ nombre: 'Consultas', puntos: d.serie.map((s) => ({ x: s.fecha, y: s.total })) }],
+    { alto: 250, etiquetaX });
+
+  barras($('g-sector'), d.por_sector.map((s) => ({
+    etiqueta: s.nombre, valor: s.total,
+    detalle: `${pct(s.pct)} del total · ${pct(s.pct_primer_contacto)} al 1er contacto`,
+  })));
+
+  const p = paleta();
+  const estados = ['resuelta', 'derivada', 'pendiente', 'reclamo'];
+  apiladas($('g-estado-sector'), d.por_sector.map((s) => ({
+    etiqueta: s.nombre,
+    partes: [
+      { nombre: 'Resuelta', valor: s.total - s.derivadas - s.pendientes - s.reclamos, color: p.estado.resuelta },
+      { nombre: 'Derivada', valor: s.derivadas, color: p.estado.derivada },
+      { nombre: 'Pendiente', valor: s.pendientes, color: p.estado.pendiente },
+      { nombre: 'Reclamo generado', valor: s.reclamos, color: p.estado.reclamo },
+    ],
+  })), { leyenda: estados.map((e) => ({ nombre: etiquetaEstado(e), color: p.estado[e] })) });
+
+  barras($('g-motivos'), d.por_motivo.map((m) => ({ etiqueta: m.nombre, valor: m.total, detalle: m.sector })),
+    { maxEtiqueta: 30 });
+  barras($('g-canal'), d.por_canal.map((c) => ({ etiqueta: c.nombre, valor: c.total })));
+  barras($('g-puesto'), d.por_puesto.map((c) => ({ etiqueta: etiquetaPuesto(c.nombre), valor: c.total })));
+
+  calor($('g-calor'), d.heatmap);
+  const pico = d.heatmap.slice().sort((a, b) => b.total - a.total)[0];
+  if (pico) {
+    $('sub-calor').textContent = `pico: ${DIAS[[1, 2, 3, 4, 5, 6, 0].indexOf(pico.dow)]} ${String(pico.hora).padStart(2, '0')}:00 con ${num(pico.total)} consultas`;
+  }
+
+  const fechas = d.serie.map((s) => s.fecha);
+  const seriesSector = [...new Set(d.serie_sector.map((s) => s.sector_id))].map((id) => {
+    const mapa = new Map(d.serie_sector.filter((s) => s.sector_id === id).map((s) => [s.fecha, s.total]));
+    return { nombre: sectorDe(id).nombre, puntos: fechas.map((f) => ({ x: f, y: mapa.get(f) || 0 })) };
+  });
+  multiplos($('g-sector-tiempo'), seriesSector, { etiquetaX });
+
+  $('t-sector').innerHTML = `
+    <table>
+      <thead><tr><th>Sector</th><th class="num">Consultas</th><th class="num">%</th>
+        <th class="num">1er contacto</th><th class="num">Pendientes</th><th class="num">Duración</th></tr></thead>
+      <tbody>${d.por_sector.map((s) => `
+        <tr><td>${escapar(s.nombre)}</td>
+            <td class="num">${num(s.total)}</td>
+            <td class="num">${pct(s.pct)}</td>
+            <td class="num">${pct(s.pct_primer_contacto)}</td>
+            <td class="num">${num(s.pendientes)}</td>
+            <td class="num">${s.duracion_prom_min === null ? '—' : `${dec(s.duracion_prom_min)}′`}</td></tr>`).join('')
+    || '<tr><td colspan="6" class="vacio">Sin datos</td></tr>'}
+      </tbody>
+    </table>`;
+
+  $('t-operador').innerHTML = `
+    <table>
+      <thead><tr><th>Operador</th><th>Puesto</th><th class="num">Consultas</th>
+        <th class="num">1er contacto</th><th class="num">Duración</th></tr></thead>
+      <tbody>${d.por_operador.map((o) => `
+        <tr><td>${escapar(o.nombre)}</td>
+            <td>${etiquetaPuesto(o.puesto)}</td>
+            <td class="num">${num(o.total)}</td>
+            <td class="num">${pct(o.pct_primer_contacto)}</td>
+            <td class="num">${o.duracion_prom_min === null ? '—' : `${dec(o.duracion_prom_min)}′`}</td></tr>`).join('')
+    || '<tr><td colspan="5" class="vacio">Sin datos</td></tr>'}
+      </tbody>
+    </table>`;
+}
+
+// ------------------------------------------------- pantalla satisfacción ---
+
+function pintarSatisfaccion() {
+  montarFiltros($('s-filtros'), pintarSatisfaccion);
+  const d = estadisticasEncuestas();
+  const r = d.resumen;
+
+  $('sat-kpis').innerHTML = `
+    <div class="kpi"><div class="etiqueta">Respuestas</div>
+      <div class="valor">${num(r.respondidas)}</div>
+      <div class="pie">del período elegido</div></div>
+    <div class="kpi"><div class="etiqueta">Conformidad general</div>
+      <div class="valor">${r.satisfaccion === null ? '—' : `${dec(r.satisfaccion, 2)}/5`}</div>
+      <div class="pie">promedio del período</div></div>
+    <div class="kpi"><div class="etiqueta">Socios conformes</div>
+      <div class="valor">${pct(r.csat)}</div>
+      <div class="pie">respuestas de 4 o 5</div></div>
+    <div class="kpi"><div class="etiqueta">NPS</div>
+      <div class="valor">${r.nps === null ? '—' : r.nps}</div>
+      <div class="pie">promotores − detractores</div></div>
+    <div class="kpi"><div class="etiqueta">Resolución</div>
+      <div class="valor">${r.resolucion === null ? '—' : dec(r.resolucion, 2)}</div>
+      <div class="pie">¿se resolvió lo que necesitaba?</div></div>
+    <div class="kpi"><div class="etiqueta">Tiempo de espera</div>
+      <div class="valor">${r.espera === null ? '—' : dec(r.espera, 2)}</div>
+      <div class="pie">percepción del socio</div></div>`;
+
+  distribucion($('sat-distribucion'), d.distribucion);
+
+  const p = paleta();
+  barras($('sat-dimensiones'), [
+    { etiqueta: 'Conformidad', valor: r.satisfaccion || 0 },
+    { etiqueta: 'Resolución', valor: r.resolucion || 0 },
+    { etiqueta: 'Atención', valor: r.atencion || 0 },
+    { etiqueta: 'Espera', valor: r.espera || 0 },
+  ].filter((x) => x.valor), { color: p.series[0], escala: 5 });
+
+  lineas($('sat-serie'), [{
+    nombre: 'Conformidad promedio',
+    puntos: d.serie.map((s) => ({ x: s.fecha, y: s.satisfaccion })),
+  }], {
+    alto: 220,
+    etiquetaX: (v, completo) => (completo ? fechaLarga(v) : `${v.slice(8)}/${v.slice(5, 7)}`),
+    formatoY: (v) => dec(v, 1),
+  });
+
+  $('sat-t-sector').innerHTML = d.por_sector.length ? `
+    <table>
+      <thead><tr><th>Sector</th><th class="num">Respuestas</th><th class="num">Conformidad</th>
+        <th class="num">Resolución</th><th class="num">Atención</th><th class="num">Espera</th></tr></thead>
+      <tbody>${d.por_sector.map((s) => `
+        <tr><td>${escapar(s.nombre)}</td>
+            <td class="num">${num(s.respuestas)}</td>
+            <td class="num">${dec(s.satisfaccion, 2)}</td>
+            <td class="num">${dec(s.resolucion, 2)}</td>
+            <td class="num">${dec(s.atencion, 2)}</td>
+            <td class="num">${dec(s.espera, 2)}</td></tr>`).join('')}
+      </tbody>
+    </table>` : '<p class="vacio">Sin respuestas en el período</p>';
+
+  $('sat-comentarios').innerHTML = d.comentarios.length ? d.comentarios.map((c) => `
+    <div style="border-bottom:1px solid var(--grid);padding:.5rem 0">
+      <div style="font-size:.76rem;color:var(--muted)">
+        ${fechaLarga(c.respondida || c.fecha)} · ${escapar(sectorDe(c.sector_id).nombre)} · conformidad ${c.satisfaccion}/5
+      </div>
+      <div>${escapar(c.comentario)}</div>
+    </div>`).join('') : '<p class="vacio">Sin comentarios en el período</p>';
+}
+
+// ---------------------------------------------------- encuesta del socio ---
+
+const PREGUNTAS = [
+  { id: 'satisfaccion', texto: '¿Cómo calificás la atención que recibiste?', requerida: true },
+  { id: 'resolucion', texto: '¿Se resolvió lo que necesitabas?' },
+  { id: 'atencion', texto: '¿Te explicaron con claridad?' },
+  { id: 'espera', texto: '¿Cómo fue el tiempo de espera?' },
+];
+const ESCALA = ['Muy malo', 'Malo', 'Regular', 'Bueno', 'Muy bueno'];
+
+function montarEncuesta() {
+  $('enc-sector').innerHTML = SECTORES.map((s) => `<option value="${s.id}">${escapar(s.nombre)}</option>`).join('');
+  $('enc-preguntas').innerHTML = PREGUNTAS.map((p) => `
+    <fieldset style="margin-bottom:1.1rem">
+      <label>${p.texto}${p.requerida ? ' *' : ''}</label>
+      <div class="escala">
+        ${[1, 2, 3, 4, 5].map((v) => `
+          <input type="radio" name="${p.id}" id="${p.id}-${v}" value="${v}">
+          <label for="${p.id}-${v}">${v}<small>${ESCALA[v - 1]}</small></label>`).join('')}
+      </div>
+    </fieldset>`).join('');
+
+  $('enc-nps').oninput = (e) => { $('enc-valor').textContent = e.target.value; };
+
+  $('enc-form').onsubmit = (e) => {
+    e.preventDefault();
+    const valor = (nombre) => {
+      const m = document.querySelector(`input[name="${nombre}"]:checked`);
+      return m ? Number(m.value) : null;
+    };
+    if (!valor('satisfaccion')) {
+      $('enc-aviso').className = 'aviso error';
+      $('enc-aviso').textContent = 'Elegí una calificación para la primera pregunta';
+      return;
+    }
+    ENCUESTAS.push({
+      fecha: HOY, respondida: `${HOY}T12:00:00`,
+      sector_id: Number($('enc-sector').value), canal_id: 2, operador_id: USUARIO.id,
+      satisfaccion: valor('satisfaccion'),
+      resolucion: valor('resolucion') || valor('satisfaccion'),
+      atencion: valor('atencion') || valor('satisfaccion'),
+      espera: valor('espera') || valor('satisfaccion'),
+      recomendaria: Number($('enc-nps').value),
+      comentario: $('enc-comentario').value.trim(),
+    });
+    $('enc-form').classList.add('oculto');
+    $('enc-gracias').classList.remove('oculto');
+  };
+
+  $('enc-otra').onclick = () => {
+    $('enc-form').reset();
+    $('enc-valor').textContent = '8';
+    $('enc-aviso').textContent = '';
+    $('enc-aviso').className = 'aviso';
+    $('enc-form').classList.remove('oculto');
+    $('enc-gracias').classList.add('oculto');
+  };
+}
+
+// -------------------------------------------------------------- arranque ---
+
+const PINTAR = {
+  rapido: pintarRapido,
+  consultas: pintarConsultas,
+  panel: pintarPanel,
+  satisfaccion: pintarSatisfaccion,
+  encuesta: () => {},
+};
+
+function ir(pantalla) {
+  cerrarConfirmacion();   // el aviso pertenece a la pantalla de carga
+  document.querySelectorAll('.pantalla').forEach((p) => p.classList.remove('activa'));
+  $(`p-${pantalla}`).classList.add('activa');
+  document.querySelectorAll('#nav a').forEach((a) => {
+    a.toggleAttribute('aria-current', a.dataset.ir === pantalla);
+    if (a.dataset.ir === pantalla) a.setAttribute('aria-current', 'page');
+  });
+  PINTAR[pantalla]();
+  scrollTo({ top: 0 });
+}
+
+document.querySelectorAll('#nav a').forEach((a) => {
+  a.onclick = () => ir(a.dataset.ir);
+});
+
+$('c-buscar').oninput = () => pintarConsultas();
+
+$('btn-reiniciar').onclick = () => {
+  generarDatos();
+  ir('rapido');
+  aviso('Datos de ejemplo regenerados');
+};
+
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey || e.altKey || e.metaKey) return;
+  if (!$('p-rapido').classList.contains('activa')) return;
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
+  if (e.key === 'Escape' && ultima) return deshacer();
+  const n = Number(e.key);
+  if (!n || n < 1 || n > 9) return;
+  const ficha = $('frecuentes').querySelectorAll('.ficha')[n - 1];
+  if (ficha) { e.preventDefault(); ficha.click(); }
+});
+
+// Los gráficos se redibujan cuando el lector cambia el tema de la página.
+new MutationObserver(() => window.dispatchEvent(new Event('tema-cambiado')))
+  .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+matchMedia('(prefers-color-scheme: dark)')
+  .addEventListener('change', () => window.dispatchEvent(new Event('tema-cambiado')));
+
+generarDatos();
+montarEncuesta();
+ir('rapido');
+
+</script>

@@ -425,7 +425,7 @@ export function multiplos(cont, series, opciones = {}) {
 
 // ----------------------------------------------------------------- heatmap ---
 
-const DIAS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const ORDEN_DOW = [1, 2, 3, 4, 5, 6, 0]; // la semana arranca el lunes
 
 /** datos: [{ dow, hora, total }] — magnitud continua: una sola tinta, clara a oscura. */
@@ -484,7 +484,7 @@ export function calor(cont, datos, opciones = {}) {
     const l = document.createElement('div');
     l.className = 'leyenda';
     l.innerHTML = `<span>Menos</span>${p.secuencial.map((c) =>
-      `<i style="background:${c};width:16px;height:10px;border-radius:2px"></i>`).join('')}<span>Mas (${fmt.format(max)})</span>`;
+      `<i style="background:${c};width:16px;height:10px;border-radius:2px"></i>`).join('')}<span>Más (${fmt.format(max)})</span>`;
     caja.appendChild(l);
     cont.replaceChildren(caja);
   });
