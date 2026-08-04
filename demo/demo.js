@@ -489,13 +489,12 @@ function mostrarConfirmacion(titulo) {
       <button type="button" id="deshacer">Deshacer <small>(Esc)</small></button>
     </div>`;
 
-  // La consulta entra sin resolver: se marca solucionada solo si se resolvió.
-  caja.querySelector('#solucionada').onclick = (e) => {
+  // La consulta entra sin resolver: marcarla solucionada cierra el aviso.
+  caja.querySelector('#solucionada').onclick = () => {
     if (!ultima) return;
-    const solucionada = ultima.estado !== 'resuelta';
-    ultima.estado = solucionada ? 'resuelta' : 'pendiente';
-    ultima.primer_contacto = solucionada ? 1 : 0;
-    e.currentTarget.toggleAttribute('aria-pressed', solucionada);
+    ultima.estado = 'resuelta';
+    ultima.primer_contacto = 1;
+    cerrarConfirmacion();
   };
   caja.querySelector('#deshacer').onclick = deshacer;
 
@@ -527,6 +526,7 @@ function aviso(mensaje) {
 function deshacer() {
   if (!ultima) return;
   const quitada = ultima;
+  cerrarConfirmacion();
   CONSULTAS = CONSULTAS.filter((c) => c.id !== quitada.id);
   if (quitada.motivo_id) {
     const n = hoyPorMotivo(quitada.motivo_id);
@@ -536,7 +536,6 @@ function deshacer() {
     });
   }
   pintarContador();
-  aviso('Registro deshecho');
 }
 
 // --------------------------------------------------- pantalla consultas ---

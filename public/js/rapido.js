@@ -173,7 +173,7 @@ function mostrarConfirmacion(consulta, titulo) {
       <button type="button" id="deshacer">Deshacer <small>(Esc)</small></button>
     </div>`;
 
-  caja.querySelector('#solucionada').onclick = (e) => marcarSolucionada(e.currentTarget);
+  caja.querySelector('#solucionada').onclick = marcarSolucionada;
   caja.querySelector('#deshacer').onclick = deshacer;
 
   clearInterval(temporizador);
@@ -204,16 +204,15 @@ function brindis(mensaje, tipo = 'ok') {
 
 /**
  * La consulta entra sin resolver: el operador la marca solucionada solo si
- * pudo resolverla en el momento. Se puede desmarcar mientras el aviso sigue.
+ * pudo resolverla en el momento. Marcarla cierra el aviso y deja la pantalla
+ * lista para la próxima atención.
  */
-async function marcarSolucionada(boton) {
+async function marcarSolucionada() {
   if (!ultima) return;
-  const solucionada = ultima.estado !== 'resuelta';
-  const estado = solucionada ? 'resuelta' : 'pendiente';
+  const id = ultima.id;
+  cerrarConfirmacion();
   try {
-    await put(`/api/consultas/${ultima.id}`, { estado, primer_contacto: solucionada });
-    ultima.estado = estado;
-    boton.toggleAttribute('aria-pressed', solucionada);
+    await put(`/api/consultas/${id}`, { estado: 'resuelta', primer_contacto: true });
   } catch (err) {
     brindis(err.message, 'error');
   }
@@ -222,6 +221,7 @@ async function marcarSolucionada(boton) {
 async function deshacer() {
   if (!ultima) return;
   const c = ultima;
+  cerrarConfirmacion();
   try {
     await del(`/api/consultas/${c.id}`);
     datos.hoy.mias--;
@@ -235,7 +235,6 @@ async function deshacer() {
       });
     }
     pintarContador();
-    brindis('Registro deshecho');
   } catch (err) {
     brindis(err.message, 'error');
   }
