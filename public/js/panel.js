@@ -61,12 +61,12 @@ function pintar(d) {
     <div class="kpi"><div class="etiqueta">Promedio por día</div>
       <div class="valor">${dec(r.promedio_dia)}</div>
       <div class="pie">${num(d.periodo.dias)} día${d.periodo.dias === 1 ? '' : 's'} del período</div></div>
-    <div class="kpi"><div class="etiqueta">Solucionadas al 1er contacto</div>
+    <div class="kpi"><div class="etiqueta">Solucionadas</div>
       <div class="valor">${pct(r.pct_primer_contacto)}</div>
-      <div class="pie">${num(r.resueltas)} cerradas en el acto</div></div>
-    <div class="kpi"><div class="etiqueta">Pendientes</div>
+      <div class="pie">${num(r.resueltas)} resueltas en el momento</div></div>
+    <div class="kpi"><div class="etiqueta">Sin solucionar</div>
       <div class="valor">${num(r.pendientes)}</div>
-      <div class="pie">${pct(r.pct_pendientes)} del total · ${num(r.derivadas)} derivadas</div></div>
+      <div class="pie">${pct(r.pct_pendientes)} del total</div></div>
     <div class="kpi"><div class="etiqueta">Duración promedio</div>
       <div class="valor">${r.duracion_prom_min === null ? '—' : `${dec(r.duracion_prom_min)}′`}</div>
       <div class="pie">sobre las consultas con tiempo cargado</div></div>
@@ -101,18 +101,20 @@ function pintar(d) {
     detalle: `${pct(s.pct)} del total · ${pct(s.pct_primer_contacto)} al 1er contacto`,
   })));
 
-  // --- composicion por estado (colores de estado + leyenda con nombre)
+  // --- composicion por resultado: la leyenda solo nombra lo que aparece
   const p = paleta();
-  const estados = ['resuelta', 'derivada', 'pendiente', 'reclamo'];
-  apiladas($('g-estado-sector'), d.por_sector.map((s) => ({
-    etiqueta: s.nombre,
-    partes: [
-      { nombre: 'Solucionada', valor: s.total - s.derivadas - s.pendientes - s.reclamos, color: p.estado.resuelta },
-      { nombre: 'Derivada', valor: s.derivadas, color: p.estado.derivada },
-      { nombre: 'Pendiente', valor: s.pendientes, color: p.estado.pendiente },
-      { nombre: 'Reclamo generado', valor: s.reclamos, color: p.estado.reclamo },
-    ],
-  })), { leyenda: estados.map((e) => ({ nombre: etiquetaEstado(e), color: p.estado[e] })) });
+  const partesDe = (s) => [
+    { estado: 'resuelta', valor: s.total - s.derivadas - s.pendientes - s.reclamos },
+    { estado: 'pendiente', valor: s.pendientes },
+    { estado: 'derivada', valor: s.derivadas },
+    { estado: 'reclamo', valor: s.reclamos },
+  ].map((x) => ({ ...x, nombre: etiquetaEstado(x.estado), color: p.estado[x.estado] }));
+
+  const usados = new Set();
+  for (const s of d.por_sector) for (const x of partesDe(s)) if (x.valor) usados.add(x.estado);
+  apiladas($('g-estado-sector'), d.por_sector.map((s) => ({ etiqueta: s.nombre, partes: partesDe(s) })),
+    { leyenda: partesDe(d.por_sector[0] || { total: 0, derivadas: 0, pendientes: 0, reclamos: 0 })
+      .filter((x) => usados.has(x.estado)) });
 
   // --- motivos, canal y puesto
   barras($('g-motivos'), d.por_motivo.map((m) => ({
@@ -142,7 +144,7 @@ function pintar(d) {
   $('t-sector').innerHTML = `
     <table>
       <thead><tr><th>Sector</th><th class="num">Consultas</th><th class="num">%</th>
-        <th class="num">1er contacto</th><th class="num">Pendientes</th><th class="num">Duración</th></tr></thead>
+        <th class="num">Solucionadas</th><th class="num">Sin solucionar</th><th class="num">Duración</th></tr></thead>
       <tbody>${d.por_sector.map((s) => `
         <tr><td>${escapar(s.nombre)}</td>
             <td class="num">${num(s.total)}</td>
@@ -157,7 +159,7 @@ function pintar(d) {
   $('t-operador').innerHTML = `
     <table>
       <thead><tr><th>Operador</th><th>Puesto</th><th class="num">Consultas</th>
-        <th class="num">1er contacto</th><th class="num">Duración</th></tr></thead>
+        <th class="num">Solucionadas</th><th class="num">Duración</th></tr></thead>
       <tbody>${d.por_operador.map((o) => `
         <tr><td>${escapar(o.nombre)}</td>
             <td>${etiquetaPuesto(o.puesto)}</td>

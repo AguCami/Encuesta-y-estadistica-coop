@@ -94,8 +94,9 @@ function generar() {
       const minuto = entre(0, 59);
       const ts = `${fecha}T${String(hora).padStart(2, '0')}:${String(minuto).padStart(2, '0')}:00`;
 
-      const estado = pesado(['resuelta', 'derivada', 'pendiente', 'reclamo'], [66, 14, 8, 12]);
-      const primerContacto = estado === 'resuelta' ? 1 : (Math.random() < 0.2 ? 1 : 0);
+      // El operador solo marca "solucionada" cuando pudo resolverla en el momento.
+      const estado = pesado(['resuelta', 'pendiente'], [74, 26]);
+      const primerContacto = estado === 'resuelta' ? 1 : 0;
       const duracion = entre(90, 900);
 
       const r = run(
@@ -108,7 +109,7 @@ function generar() {
           canal.id, sector.id, motivo ? motivo.id : null, azar(localidades).id,
           String(entre(1000, 9999)), '', '', estado,
           pesado(['baja', 'normal', 'alta'], [1, 8, 2]), primerContacto, duracion,
-          estado === 'reclamo' ? `OT-${entre(10000, 99999)}` : '',
+          '',
           motivo ? `Consulta por ${motivo.nombre.toLowerCase()}.` : '',
           estado === 'resuelta' ? ts : null, estado === 'resuelta' ? operador.id : null]);
       creadas++;

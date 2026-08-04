@@ -16,8 +16,8 @@ function catalogos({ res }) {
     operadores: all("SELECT id, usuario, nombre, rol, puesto, activo FROM usuarios ORDER BY nombre"),
     estados: [
       { id: 'resuelta', nombre: 'Solucionada' },
+      { id: 'pendiente', nombre: 'No solucionada' },
       { id: 'derivada', nombre: 'Derivada' },
-      { id: 'pendiente', nombre: 'Pendiente' },
       { id: 'reclamo', nombre: 'Reclamo generado' },
     ],
     puestos: [

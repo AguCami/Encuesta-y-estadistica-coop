@@ -134,7 +134,7 @@ const fechaCorta = (isoTexto) => `${isoTexto.slice(8, 10)}/${isoTexto.slice(5, 7
   (isoTexto.length > 10 ? ` ${isoTexto.slice(11, 16)}` : '');
 const minutos = (seg) => (seg ? `${Math.round(seg / 60)} min` : '—');
 
-const ESTADOS = { resuelta: 'Solucionada', derivada: 'Derivada', pendiente: 'Pendiente', reclamo: 'Reclamo generado' };
+const ESTADOS = { resuelta: 'Solucionada', pendiente: 'No solucionada', derivada: 'Derivada', reclamo: 'Reclamo generado' };
 const PUESTOS = { call_center: 'Call center', mesa_informes: 'Mesa de informes', otro: 'Otro' };
 const etiquetaEstado = (e) => ESTADOS[e] || e;
 const etiquetaPuesto = (p) => PUESTOS[p] || p;
@@ -171,7 +171,8 @@ function generarDatos() {
       const operador = uno(OPERADORES.filter((o) => o.puesto === (enMesa ? 'mesa_informes' : 'call_center')));
       const hora = pesado(horas, horas.map((h) => pesoHora[h]));
       const ts = `${fecha}T${String(hora).padStart(2, '0')}:${String(entre(0, 59)).padStart(2, '0')}:00`;
-      const estado = pesado(['resuelta', 'derivada', 'pendiente', 'reclamo'], [66, 14, 8, 12]);
+      // El operador solo marca "solucionada" cuando pudo resolverla en el momento.
+      const estado = pesado(['resuelta', 'pendiente'], [74, 26]);
 
       CONSULTAS.push({
         id: ++id,
@@ -184,7 +185,7 @@ function generarDatos() {
         localidad_id: uno(LOCALIDADES).id,
         socio_nro: String(entre(1000, 9999)),
         estado,
-        primer_contacto: estado === 'resuelta' ? 1 : (azar() < 0.2 ? 1 : 0),
+        primer_contacto: estado === 'resuelta' ? 1 : 0,
         duracion_seg: entre(90, 900),
         observaciones: `Consulta por ${motivo.nombre.toLowerCase()}.`,
       });
@@ -461,7 +462,7 @@ function registrar(motivoId, ficha) {
     ts: `${HOY}T${hhmm}:00`, fecha: HOY, hora: ahora.getHours(), dow: diaSemana(HOY),
     operador_id: USUARIO.id, puesto: puestoActual, canal_id: canalDelPuesto(),
     sector_id: motivo.sector_id, motivo_id: motivo.id, localidad_id: null,
-    socio_nro: '', estado: 'resuelta', primer_contacto: 1, duracion_seg: 0, observaciones: '',
+    socio_nro: '', estado: 'pendiente', primer_contacto: 0, duracion_seg: 0, observaciones: '',
   };
   CONSULTAS.push(consulta);
   ultima = consulta;
@@ -484,20 +485,18 @@ function mostrarConfirmacion(titulo) {
       <span class="cuenta" id="cuenta">${SEGUNDOS_DESHACER}</span>
     </div>
     <div class="acciones">
-      <button type="button" data-estado="resuelta" aria-pressed="true">Solucionada</button>
-      <button type="button" data-estado="derivada">Derivada</button>
+      <button type="button" id="solucionada">Solucionada</button>
       <button type="button" id="deshacer">Deshacer <small>(Esc)</small></button>
     </div>`;
 
-  caja.querySelectorAll('[data-estado]').forEach((b) => {
-    b.onclick = () => {
-      if (!ultima) return;
-      ultima.estado = b.dataset.estado;
-      ultima.primer_contacto = b.dataset.estado === 'resuelta' ? 1 : 0;
-      caja.querySelectorAll('[data-estado]').forEach((x) => x.removeAttribute('aria-pressed'));
-      b.setAttribute('aria-pressed', 'true');
-    };
-  });
+  // La consulta entra sin resolver: se marca solucionada solo si se resolvió.
+  caja.querySelector('#solucionada').onclick = (e) => {
+    if (!ultima) return;
+    const solucionada = ultima.estado !== 'resuelta';
+    ultima.estado = solucionada ? 'resuelta' : 'pendiente';
+    ultima.primer_contacto = solucionada ? 1 : 0;
+    e.currentTarget.toggleAttribute('aria-pressed', solucionada);
+  };
   caja.querySelector('#deshacer').onclick = deshacer;
 
   clearInterval(temporizador);
@@ -597,12 +596,12 @@ function pintarPanel() {
     <div class="kpi"><div class="etiqueta">Promedio por día</div>
       <div class="valor">${dec(r.promedio_dia)}</div>
       <div class="pie">${num(d.periodo.dias)} día${d.periodo.dias === 1 ? '' : 's'} del período</div></div>
-    <div class="kpi"><div class="etiqueta">Solucionadas al 1er contacto</div>
+    <div class="kpi"><div class="etiqueta">Solucionadas</div>
       <div class="valor">${pct(r.pct_primer_contacto)}</div>
-      <div class="pie">${num(r.resueltas)} cerradas en el acto</div></div>
-    <div class="kpi"><div class="etiqueta">Pendientes</div>
+      <div class="pie">${num(r.resueltas)} resueltas en el momento</div></div>
+    <div class="kpi"><div class="etiqueta">Sin solucionar</div>
       <div class="valor">${num(r.pendientes)}</div>
-      <div class="pie">${pct(r.pct_pendientes)} del total · ${num(r.derivadas)} derivadas</div></div>
+      <div class="pie">${pct(r.pct_pendientes)} del total</div></div>
     <div class="kpi"><div class="etiqueta">Duración promedio</div>
       <div class="valor">${r.duracion_prom_min === null ? '—' : `${dec(r.duracion_prom_min)}′`}</div>
       <div class="pie">sobre las consultas con tiempo cargado</div></div>`;
@@ -631,16 +630,16 @@ function pintarPanel() {
   })));
 
   const p = paleta();
-  const estados = ['resuelta', 'derivada', 'pendiente', 'reclamo'];
   apiladas($('g-estado-sector'), d.por_sector.map((s) => ({
     etiqueta: s.nombre,
     partes: [
-      { nombre: 'Solucionada', valor: s.total - s.derivadas - s.pendientes - s.reclamos, color: p.estado.resuelta },
-      { nombre: 'Derivada', valor: s.derivadas, color: p.estado.derivada },
-      { nombre: 'Pendiente', valor: s.pendientes, color: p.estado.pendiente },
-      { nombre: 'Reclamo generado', valor: s.reclamos, color: p.estado.reclamo },
+      { nombre: 'Solucionada', valor: s.total - s.pendientes, color: p.estado.resuelta },
+      { nombre: 'No solucionada', valor: s.pendientes, color: p.estado.pendiente },
     ],
-  })), { leyenda: estados.map((e) => ({ nombre: etiquetaEstado(e), color: p.estado[e] })) });
+  })), { leyenda: [
+    { nombre: 'Solucionada', color: p.estado.resuelta },
+    { nombre: 'No solucionada', color: p.estado.pendiente },
+  ] });
 
   barras($('g-motivos'), d.por_motivo.map((m) => ({ etiqueta: m.nombre, valor: m.total, detalle: m.sector })),
     { maxEtiqueta: 30 });
@@ -663,7 +662,7 @@ function pintarPanel() {
   $('t-sector').innerHTML = `
     <table>
       <thead><tr><th>Sector</th><th class="num">Consultas</th><th class="num">%</th>
-        <th class="num">1er contacto</th><th class="num">Pendientes</th><th class="num">Duración</th></tr></thead>
+        <th class="num">Solucionadas</th><th class="num">Sin solucionar</th><th class="num">Duración</th></tr></thead>
       <tbody>${d.por_sector.map((s) => `
         <tr><td>${escapar(s.nombre)}</td>
             <td class="num">${num(s.total)}</td>
@@ -678,7 +677,7 @@ function pintarPanel() {
   $('t-operador').innerHTML = `
     <table>
       <thead><tr><th>Operador</th><th>Puesto</th><th class="num">Consultas</th>
-        <th class="num">1er contacto</th><th class="num">Duración</th></tr></thead>
+        <th class="num">Solucionadas</th><th class="num">Duración</th></tr></thead>
       <tbody>${d.por_operador.map((o) => `
         <tr><td>${escapar(o.nombre)}</td>
             <td>${etiquetaPuesto(o.puesto)}</td>

@@ -134,8 +134,8 @@ async function registrar(motivoId, ficha) {
       canal_id: canalId,
       sector_id: motivo.sector_id,
       motivo_id: motivo.id,
-      estado: 'resuelta',
-      primer_contacto: true,
+      estado: 'pendiente',        // se marca solucionada solo si el operador la resolvió
+      primer_contacto: false,
       puesto: puestoActual,
     });
     ultima = creada;
@@ -169,14 +169,11 @@ function mostrarConfirmacion(consulta, titulo) {
       <span class="cuenta" id="cuenta">${SEGUNDOS_DESHACER}</span>
     </div>
     <div class="acciones">
-      <button type="button" data-estado="resuelta" aria-pressed="true">Solucionada</button>
-      <button type="button" data-estado="derivada">Derivada</button>
+      <button type="button" id="solucionada">Solucionada</button>
       <button type="button" id="deshacer">Deshacer <small>(Esc)</small></button>
     </div>`;
 
-  caja.querySelectorAll('[data-estado]').forEach((b) => {
-    b.onclick = () => cambiarEstado(b.dataset.estado, b);
-  });
+  caja.querySelector('#solucionada').onclick = (e) => marcarSolucionada(e.currentTarget);
   caja.querySelector('#deshacer').onclick = deshacer;
 
   clearInterval(temporizador);
@@ -206,17 +203,17 @@ function brindis(mensaje, tipo = 'ok') {
 }
 
 /**
- * Corrige el resultado de la consulta recien cargada sin cerrar el aviso:
- * el operador todavia puede agregarle datos o deshacerla.
+ * La consulta entra sin resolver: el operador la marca solucionada solo si
+ * pudo resolverla en el momento. Se puede desmarcar mientras el aviso sigue.
  */
-async function cambiarEstado(estado, boton) {
+async function marcarSolucionada(boton) {
   if (!ultima) return;
+  const solucionada = ultima.estado !== 'resuelta';
+  const estado = solucionada ? 'resuelta' : 'pendiente';
   try {
-    await put(`/api/consultas/${ultima.id}`, { estado, primer_contacto: estado === 'resuelta' });
+    await put(`/api/consultas/${ultima.id}`, { estado, primer_contacto: solucionada });
     ultima.estado = estado;
-    const caja = $('brindis');
-    caja.querySelectorAll('[data-estado]').forEach((b) => b.removeAttribute('aria-pressed'));
-    if (boton) boton.setAttribute('aria-pressed', 'true');
+    boton.toggleAttribute('aria-pressed', solucionada);
   } catch (err) {
     brindis(err.message, 'error');
   }

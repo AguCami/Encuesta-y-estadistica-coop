@@ -18,7 +18,7 @@ ni base de datos externa, ni instalar dependencias**: sólo Node.js 22 o superio
 | "El personal no va a cargar nada si le lleva tiempo" | El camino normal es **un clic**; el detalle es opcional y se agrega después |
 | "Cada sector dice que recibe mucho, pero no hay número" | Toda consulta se imputa a un sector y a un motivo dentro de ese sector |
 | "No sabemos cuándo poner más gente" | Mapa de demanda por día y hora, con el pico marcado |
-| "El socio llamó tres veces por lo mismo" | Estado (resuelta / derivada / pendiente / reclamo) con seguimiento y notas |
+| "El socio llamó tres veces por lo mismo" | Cada consulta queda solucionada o no, con seguimiento y notas |
 | "No tenemos idea de si el socio quedó conforme" | Encuesta de satisfacción por enlace, QR o carga del operador, con CSAT y NPS |
 | "El informe mensual lo armamos a mano" | Exportación a CSV (detallado y por sector) y vista lista para imprimir |
 
@@ -88,9 +88,10 @@ registrada. Sin formulario, sin guardar, sin confirmar.
   telefónico, mesa → presencial); si la consulta entró por WhatsApp o mail, el
   canal se corrige desde *Agregar datos*.
 - Cada botón muestra cuántas veces se usó hoy, así el operador ve su propio ritmo.
-- Al registrar aparece un aviso de 12 segundos con el resultado marcado y la
-  corrección a un clic: **Solucionada · Derivada · Deshacer** (`Esc`). Si el
-  operador no toca nada, queda solucionada.
+- Al registrar aparece un aviso de 12 segundos con dos acciones:
+  **Solucionada** —que el operador marca sólo si pudo resolverla en el
+  momento— y **Deshacer** (`Esc`). Lo que no se marca queda como
+  *no solucionada*, y ese porcentaje es el que mide el panel.
 - Cada botón deja igual el sector, el motivo, el canal, el operador, el puesto, la
   fecha y la hora: la estadística sale completa aunque nadie escriba una palabra.
 
