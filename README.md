@@ -88,9 +88,9 @@ registrada. Sin formulario, sin guardar, sin confirmar.
   telefónico, mesa → presencial); si la consulta entró por WhatsApp o mail, el
   canal se corrige desde *Agregar datos*.
 - Cada botón muestra cuántas veces se usó hoy, así el operador ve su propio ritmo.
-- Al registrar aparece un aviso de 12 segundos que dice qué se guardó — *"queda
-  como solucionada"* — y permite corregirlo con un clic: **Solucionada ·
-  Derivada · Deshacer** (`Esc`). Si el operador no toca nada, queda solucionada.
+- Al registrar aparece un aviso de 12 segundos con el resultado marcado y la
+  corrección a un clic: **Solucionada · Derivada · Deshacer** (`Esc`). Si el
+  operador no toca nada, queda solucionada.
 - Cada botón deja igual el sector, el motivo, el canal, el operador, el puesto, la
   fecha y la hora: la estadística sale completa aunque nadie escriba una palabra.
 

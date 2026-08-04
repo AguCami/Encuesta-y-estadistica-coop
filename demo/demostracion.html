@@ -308,7 +308,6 @@ dialog .pie { padding: .7rem 1rem; border-top: 1px solid var(--border); display:
 .brindis .acciones button { padding: .3rem .6rem; font-size: .84rem; }
 .brindis .acciones button[aria-pressed="true"] { border-color: var(--s1); color: var(--s1); }
 .brindis .acciones small { font-size: .74rem; color: var(--muted); font-weight: 500; }
-.brindis .marca-estado { color: var(--ink-2); font-size: .86rem; }
 .brindis #deshacer { margin-left: auto; }
 
 @media (max-width: 640px) {
@@ -1501,7 +1500,6 @@ function mostrarConfirmacion(titulo) {
   caja.innerHTML = `
     <div class="linea">
       <b>Registrada</b> · ${escapar(titulo)}
-      <span id="marca-estado" class="marca-estado">— queda como solucionada</span>
       <span class="cuenta" id="cuenta">${SEGUNDOS_DESHACER}</span>
     </div>
     <div class="acciones">
@@ -1517,7 +1515,6 @@ function mostrarConfirmacion(titulo) {
       ultima.primer_contacto = b.dataset.estado === 'resuelta' ? 1 : 0;
       caja.querySelectorAll('[data-estado]').forEach((x) => x.removeAttribute('aria-pressed'));
       b.setAttribute('aria-pressed', 'true');
-      $('marca-estado').textContent = `— queda como ${etiquetaEstado(b.dataset.estado).toLowerCase()}`;
     };
   });
   caja.querySelector('#deshacer').onclick = deshacer;

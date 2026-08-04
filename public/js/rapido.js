@@ -166,7 +166,6 @@ function mostrarConfirmacion(consulta, titulo) {
   caja.innerHTML = `
     <div class="linea">
       <b>Registrada</b> · ${escapar(titulo)}
-      <span id="marca-estado" class="marca-estado">— queda como solucionada</span>
       <span class="cuenta" id="cuenta">${SEGUNDOS_DESHACER}</span>
     </div>
     <div class="acciones">
@@ -218,8 +217,6 @@ async function cambiarEstado(estado, boton) {
     const caja = $('brindis');
     caja.querySelectorAll('[data-estado]').forEach((b) => b.removeAttribute('aria-pressed'));
     if (boton) boton.setAttribute('aria-pressed', 'true');
-    const marca = caja.querySelector('#marca-estado');
-    if (marca) marca.textContent = `— queda como ${etiquetaEstado(estado).toLowerCase()}`;
   } catch (err) {
     brindis(err.message, 'error');
   }

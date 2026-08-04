@@ -481,7 +481,6 @@ function mostrarConfirmacion(titulo) {
   caja.innerHTML = `
     <div class="linea">
       <b>Registrada</b> · ${escapar(titulo)}
-      <span id="marca-estado" class="marca-estado">— queda como solucionada</span>
       <span class="cuenta" id="cuenta">${SEGUNDOS_DESHACER}</span>
     </div>
     <div class="acciones">
@@ -497,7 +496,6 @@ function mostrarConfirmacion(titulo) {
       ultima.primer_contacto = b.dataset.estado === 'resuelta' ? 1 : 0;
       caja.querySelectorAll('[data-estado]').forEach((x) => x.removeAttribute('aria-pressed'));
       b.setAttribute('aria-pressed', 'true');
-      $('marca-estado').textContent = `— queda como ${etiquetaEstado(b.dataset.estado).toLowerCase()}`;
     };
   });
   caja.querySelector('#deshacer').onclick = deshacer;
