@@ -140,29 +140,21 @@ function run(sql, params = []) {
 // ------------------------------------------------------------------ seed ---
 
 const SECTORES = [
-  ['Energia Electrica', 'Suministro, cortes, medidores, conexiones', 10],
-  ['Agua Potable', 'Suministro, presion, roturas, medidores', 20],
-  ['Cloacas y Saneamiento', 'Desagues, obstrucciones, conexiones', 30],
-  ['Internet y Telefonia', 'Altas, fallas de servicio, planes', 40],
-  ['TV por Cable', 'Altas, senal, grilla, decodificadores', 50],
-  ['Facturacion y Cobranzas', 'Facturas, planes de pago, debitos, deuda', 60],
-  ['Servicio Sepelio', 'Cobertura, tramites, plan sepelio', 70],
-  ['Obras y Nuevas Conexiones', 'Factibilidad, obras, ampliaciones', 80],
-  ['Atencion al Socio', 'Altas y bajas de socio, datos, reclamos generales', 90],
-  ['Otros / Derivaciones', 'Consultas que no corresponden a un sector', 100],
+  ['Cortes por falta de pago', 'Plazos, información y reconexiones', 10],
+  ['Ventas', 'Altas de servicios y gestiones comerciales', 20],
+  ['Reclamos', 'Fallas y reclamos de servicio', 30],
+  ['TIC', 'Internet, IPTV y servicios de conectividad', 40],
+  ['Pagos', 'Acreditación e información de pagos', 50],
 ];
 
 const MOTIVOS = {
-  'Energia Electrica': ['Corte de suministro', 'Baja tension', 'Medidor con falla', 'Alumbrado publico', 'Nueva conexion', 'Consumo elevado', 'Poda / cables'],
-  'Agua Potable': ['Falta de agua', 'Baja presion', 'Perdida en la via publica', 'Rotura de cano', 'Calidad del agua', 'Nueva conexion'],
-  'Cloacas y Saneamiento': ['Obstruccion', 'Desborde', 'Olores', 'Nueva conexion'],
-  'Internet y Telefonia': ['Sin servicio', 'Servicio lento', 'Alta de servicio', 'Cambio de plan', 'Configuracion de equipo', 'Baja de servicio'],
-  'TV por Cable': ['Sin senal', 'Falla de decodificador', 'Alta de servicio', 'Grilla de canales', 'Baja de servicio'],
-  'Facturacion y Cobranzas': ['Consulta de saldo', 'Reimpresion de factura', 'Plan de pago', 'Reclamo por importe', 'Debito automatico', 'Vencimientos', 'Medios de pago'],
-  'Servicio Sepelio': ['Consulta de cobertura', 'Alta de plan', 'Tramite / servicio', 'Traslados'],
-  'Obras y Nuevas Conexiones': ['Factibilidad', 'Estado de obra', 'Presupuesto', 'Ampliacion de servicio'],
-  'Atencion al Socio': ['Alta de socio', 'Actualizacion de datos', 'Cambio de titularidad', 'Reclamo general', 'Informacion institucional', 'Asamblea / institucional'],
-  'Otros / Derivaciones': ['Consulta no relacionada', 'Derivacion a otra entidad', 'Otro'],
+  'Cortes por falta de pago': ['Plazo', 'Información', 'Reconexiones'],
+  'Ventas': ['Servicios sociales', 'TIC', 'Movilcoop', 'Luz', 'Agua', 'Cambios de titularidad',
+    'Traslados de servicios', 'Solicitar lectura', 'Baja de servicio'],
+  'Reclamos': ['Mucho consumo (luz)', 'Mucho consumo (agua)', 'Pérdida de agua', 'Poda',
+    'Sin luz', 'Sin agua', 'Error de facturación', 'Estado del reclamo'],
+  'TIC': ['Reclamos', 'Consultas', 'Lentitud', 'Micro cortes', 'Problemas IPTV', 'Sensa'],
+  'Pagos': ['Roela no impactado', 'Información'],
 };
 
 const CANALES = [['Telefonico', 10], ['Presencial', 20], ['WhatsApp', 30], ['Email', 40], ['Web / Redes', 50]];

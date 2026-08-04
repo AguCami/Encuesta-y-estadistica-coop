@@ -9,27 +9,21 @@ const $ = (id) => document.getElementById(id);
 // --------------------------------------------------------------- datos ---
 
 const SECTORES = [
-  { id: 1, nombre: 'Energía Eléctrica', detalle: 'Suministro, cortes, medidores, conexiones', peso: 9 },
-  { id: 2, nombre: 'Agua Potable', detalle: 'Suministro, presión, roturas, medidores', peso: 7 },
-  { id: 3, nombre: 'Cloacas y Saneamiento', detalle: 'Desagües, obstrucciones, conexiones', peso: 3 },
-  { id: 4, nombre: 'Internet y Telefonía', detalle: 'Altas, fallas de servicio, planes', peso: 6 },
-  { id: 5, nombre: 'TV por Cable', detalle: 'Altas, señal, grilla, decodificadores', peso: 3 },
-  { id: 6, nombre: 'Facturación y Cobranzas', detalle: 'Facturas, planes de pago, débitos, deuda', peso: 8 },
-  { id: 7, nombre: 'Servicio Sepelio', detalle: 'Cobertura, trámites, plan sepelio', peso: 2 },
-  { id: 8, nombre: 'Obras y Nuevas Conexiones', detalle: 'Factibilidad, obras, ampliaciones', peso: 2 },
-  { id: 9, nombre: 'Atención al Socio', detalle: 'Altas y bajas, datos, reclamos generales', peso: 4 },
+  { id: 1, nombre: 'Cortes por falta de pago', detalle: 'Plazos, información y reconexiones', peso: 5 },
+  { id: 2, nombre: 'Ventas', detalle: 'Altas de servicios y gestiones comerciales', peso: 7 },
+  { id: 3, nombre: 'Reclamos', detalle: 'Fallas y reclamos de servicio', peso: 9 },
+  { id: 4, nombre: 'TIC', detalle: 'Internet, IPTV y servicios de conectividad', peso: 6 },
+  { id: 5, nombre: 'Pagos', detalle: 'Acreditación e información de pagos', peso: 4 },
 ];
 
 const MOTIVOS_POR_SECTOR = {
-  1: ['Corte de suministro', 'Baja tensión', 'Medidor con falla', 'Alumbrado público', 'Nueva conexión', 'Consumo elevado', 'Poda / cables'],
-  2: ['Falta de agua', 'Baja presión', 'Pérdida en la vía pública', 'Rotura de caño', 'Calidad del agua', 'Nueva conexión'],
-  3: ['Obstrucción', 'Desborde', 'Olores', 'Nueva conexión'],
-  4: ['Sin servicio', 'Servicio lento', 'Alta de servicio', 'Cambio de plan', 'Configuración de equipo', 'Baja de servicio'],
-  5: ['Sin señal', 'Falla de decodificador', 'Alta de servicio', 'Grilla de canales', 'Baja de servicio'],
-  6: ['Consulta de saldo', 'Reimpresión de factura', 'Plan de pago', 'Reclamo por importe', 'Débito automático', 'Vencimientos', 'Medios de pago'],
-  7: ['Consulta de cobertura', 'Alta de plan', 'Trámite / servicio', 'Traslados'],
-  8: ['Factibilidad', 'Estado de obra', 'Presupuesto', 'Ampliación de servicio'],
-  9: ['Alta de socio', 'Actualización de datos', 'Cambio de titularidad', 'Reclamo general', 'Información institucional'],
+  1: ['Plazo', 'Información', 'Reconexiones'],
+  2: ['Servicios sociales', 'TIC', 'Movilcoop', 'Luz', 'Agua', 'Cambios de titularidad',
+    'Traslados de servicios', 'Solicitar lectura', 'Baja de servicio'],
+  3: ['Mucho consumo (luz)', 'Mucho consumo (agua)', 'Pérdida de agua', 'Poda',
+    'Sin luz', 'Sin agua', 'Error de facturación', 'Estado del reclamo'],
+  4: ['Reclamos', 'Consultas', 'Lentitud', 'Micro cortes', 'Problemas IPTV', 'Sensa'],
+  5: ['Roela no impactado', 'Información'],
 };
 
 const MOTIVOS = [];
@@ -39,8 +33,8 @@ for (const [sectorId, nombres] of Object.entries(MOTIVOS_POR_SECTOR)) {
 }
 
 const CANALES = [
-  { id: 1, nombre: 'Telefónico', peso: 10 },
-  { id: 2, nombre: 'Presencial', peso: 6 },
+  { id: 1, nombre: 'Telefónico', peso: 12 },
+  { id: 2, nombre: 'Presencial', peso: 4 },
   { id: 3, nombre: 'WhatsApp', peso: 5 },
   { id: 4, nombre: 'Email', peso: 2 },
   { id: 5, nombre: 'Web / Redes', peso: 1 },
@@ -64,9 +58,9 @@ const COMENTARIOS = [
   'Estuve mucho tiempo esperando en línea.',
   'Resolvieron el problema en el día.',
   'Me derivaron y nunca me llamaron.',
-  'Muy amables en el mostrador.',
+  'Me explicaron con paciencia el plazo del corte.',
   'Deberían tener más líneas telefónicas.',
-  'La chica me explicó todo con paciencia.',
+  'Reclamé por internet lento y no me llamaron.',
   'Tuve que llamar tres veces por lo mismo.',
 ];
 

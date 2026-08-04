@@ -58,9 +58,12 @@ function generar() {
   const localidades = all('SELECT * FROM localidades');
   const operadores = all("SELECT * FROM usuarios WHERE usuario <> 'admin'");
 
-  // La demanda no se reparte pareja: energia y facturacion se llevan la mayor parte.
-  const pesoSector = sectores.map((s, i) => [9, 7, 3, 6, 3, 8, 2, 2, 4, 1][i] ?? 2);
-  const pesoCanal = canales.map((c) => ({ Telefonico: 10, Presencial: 6, WhatsApp: 5, Email: 2, 'Web / Redes': 1 }[c.nombre] ?? 2));
+  // La demanda no se reparte pareja: reclamos y ventas se llevan la mayor parte.
+  const PESOS = {
+    'Reclamos': 9, 'Ventas': 7, 'TIC': 6, 'Cortes por falta de pago': 5, 'Pagos': 4,
+  };
+  const pesoSector = sectores.map((s) => PESOS[s.nombre] ?? 3);
+  const pesoCanal = canales.map((c) => ({ Telefonico: 12, Presencial: 4, WhatsApp: 5, Email: 2, 'Web / Redes': 1 }[c.nombre] ?? 2));
   const pesoHora = { 8: 6, 9: 10, 10: 12, 11: 10, 12: 6, 13: 4, 14: 5, 15: 7, 16: 8, 17: 6, 18: 3 };
   const horas = Object.keys(pesoHora).map(Number);
 
