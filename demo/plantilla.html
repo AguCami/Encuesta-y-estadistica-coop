@@ -40,8 +40,6 @@
     <a data-ir="rapido" aria-current="page">Atención rápida</a>
     <a data-ir="consultas">Consultas</a>
     <a data-ir="panel">Estadísticas</a>
-    <a data-ir="satisfaccion">Satisfacción</a>
-    <a data-ir="encuesta">Encuesta del socio</a>
   </nav>
   <div class="derecha">
     <span class="usuario"><b>Marina López</b> · Call center</span>
@@ -119,8 +117,10 @@
     <section class="tarjeta">
       <header><h2>Canal de contacto</h2></header>
       <div id="g-canal"></div>
-      <header style="margin-top:1.2rem"><h2>Puesto de atención</h2></header>
-      <div id="g-puesto"></div>
+      <div id="caja-puesto">
+        <header style="margin-top:1.2rem"><h2>Puesto de atención</h2></header>
+        <div id="g-puesto"></div>
+      </div>
     </section>
   </div>
 
@@ -143,88 +143,6 @@
       <header><h2>Actividad por operador</h2></header>
       <div class="tabla-scroll" id="t-operador"></div>
     </section>
-  </div>
-</main>
-
-<!-- ====================================================== satisfacción -->
-<main class="pantalla" id="p-satisfaccion">
-  <h1>Satisfacción del socio</h1>
-  <div class="tarjeta filtros" id="s-filtros" style="margin-top:.6rem"></div>
-  <div class="kpis" id="sat-kpis" style="margin:1rem 0"></div>
-
-  <div class="grilla g2">
-    <section class="tarjeta">
-      <header><h2>Conformidad general</h2><p>distribución de las respuestas</p></header>
-      <div id="sat-distribucion"></div>
-    </section>
-    <section class="tarjeta">
-      <header><h2>Promedio por dimensión</h2><p>escala 1 a 5</p></header>
-      <div id="sat-dimensiones"></div>
-    </section>
-  </div>
-
-  <section class="tarjeta" style="margin-top:1rem">
-    <header><h2>Evolución de la conformidad</h2><p>promedio diario</p></header>
-    <div id="sat-serie"></div>
-  </section>
-
-  <div class="grilla g2" style="margin-top:1rem">
-    <section class="tarjeta">
-      <header><h2>Conformidad por sector</h2></header>
-      <div class="tabla-scroll" id="sat-t-sector"></div>
-    </section>
-    <section class="tarjeta">
-      <header><h2>Últimos comentarios</h2></header>
-      <div id="sat-comentarios" style="max-height:420px;overflow:auto"></div>
-    </section>
-  </div>
-</main>
-
-<!-- ========================================================== encuesta -->
-<main class="pantalla" id="p-encuesta">
-  <div class="encuesta-publica">
-    <p class="solo-lectura" style="text-align:center;margin-bottom:.8rem">
-      Así ve el socio la encuesta en el celular, después de que lo atendieron.
-    </p>
-    <div class="tarjeta">
-      <h1 id="enc-titulo">¿Cómo te atendimos en la Cooperativa?</h1>
-      <p style="color:var(--ink-2);margin:.3rem 0 1rem">
-        Nos ayuda a mejorar la atención. Son 30 segundos y es anónima.
-      </p>
-
-      <form id="enc-form">
-        <div style="margin-bottom:1rem">
-          <label for="enc-sector">¿Qué sector te atendió?</label>
-          <select id="enc-sector"></select>
-        </div>
-        <div id="enc-preguntas"></div>
-
-        <div style="margin:1.1rem 0 .3rem">
-          <label for="enc-nps">¿Qué tan probable es que recomiendes la atención de la cooperativa? (0 a 10)</label>
-          <input type="range" id="enc-nps" min="0" max="10" step="1" value="8" style="padding:0">
-          <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted)">
-            <span>0 · nada probable</span><b id="enc-valor" style="color:var(--ink)">8</b><span>10 · muy probable</span>
-          </div>
-        </div>
-
-        <div style="margin-top:1rem">
-          <label for="enc-comentario">¿Querés contarnos algo más? (opcional)</label>
-          <textarea id="enc-comentario" maxlength="500"
-            placeholder="Tu comentario nos sirve para corregir lo que haga falta"></textarea>
-        </div>
-
-        <button class="primario" type="submit" style="width:100%;justify-content:center;margin-top:1rem">
-          Enviar respuesta
-        </button>
-        <p class="aviso" id="enc-aviso"></p>
-      </form>
-
-      <div id="enc-gracias" class="oculto" style="text-align:center;padding:1.5rem 0">
-        <h2>¡Gracias por responder!</h2>
-        <p style="color:var(--ink-2)">Tu respuesta ya está sumada en la pantalla de Satisfacción.</p>
-        <button class="chico" id="enc-otra" style="margin-top:.6rem">Responder otra</button>
-      </div>
-    </div>
   </div>
 </main>
 

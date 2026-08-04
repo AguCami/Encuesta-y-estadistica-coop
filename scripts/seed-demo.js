@@ -61,6 +61,7 @@ function generar() {
   // La demanda no se reparte pareja: reclamos y ventas se llevan la mayor parte.
   const PESOS = {
     'Reclamos': 9, 'Ventas': 7, 'TIC': 6, 'Cortes por falta de pago': 5, 'Pagos': 4,
+    'Mesa Sector 1': 6, 'Mesa Sector 2': 4, 'Consultas de mostrador': 7,
   };
   const pesoSector = sectores.map((s) => PESOS[s.nombre] ?? 3);
   const pesoCanal = canales.map((c) => ({ Telefonico: 12, Presencial: 4, WhatsApp: 5, Email: 2, 'Web / Redes': 1 }[c.nombre] ?? 2));
@@ -82,8 +83,13 @@ function generar() {
       const sector = pesado(sectores, pesoSector);
       const delSector = motivos.filter((m) => m.sector_id === sector.id);
       const motivo = delSector.length ? azar(delSector) : null;
-      const canal = pesado(canales, pesoCanal);
-      const operador = azar(operadores);
+      const enMesa = sector.puesto === 'mesa_informes';
+      const canal = enMesa
+        ? (canales.find((c) => c.nombre === 'Presencial') || canales[0])
+        : pesado(canales, pesoCanal);
+      // Cada puesto lo atiende su propia gente
+      const delPuesto = operadores.filter((o) => o.puesto === (enMesa ? 'mesa_informes' : 'call_center'));
+      const operador = azar(delPuesto.length ? delPuesto : operadores);
       const hora = pesado(horas, horas.map((h) => pesoHora[h]));
       const minuto = entre(0, 59);
       const ts = `${fecha}T${String(hora).padStart(2, '0')}:${String(minuto).padStart(2, '0')}:00`;
@@ -98,7 +104,7 @@ function generar() {
             primer_contacto, duracion_seg, reclamo_nro, observaciones, cerrada_ts, cerrada_por)
          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [ts, fecha, hora, dow, operador.id,
-          canal.nombre === 'Presencial' ? 'mesa_informes' : operador.puesto,
+          sector.puesto === 'mesa_informes' ? 'mesa_informes' : 'call_center',
           canal.id, sector.id, motivo ? motivo.id : null, azar(localidades).id,
           String(entre(1000, 9999)), '', '', estado,
           pesado(['baja', 'normal', 'alta'], [1, 8, 2]), primerContacto, duracion,

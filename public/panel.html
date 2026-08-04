@@ -16,6 +16,11 @@
     <button class="chico" onclick="print()">Imprimir</button>
   </div>
 
+  <div class="tarjeta canal-barra" style="margin-top:.6rem">
+    <label style="margin:0 .6rem 0 0;align-self:center">Estadísticas de</label>
+    <div class="segmentado" id="puesto-panel"></div>
+  </div>
+
   <div id="filtros" style="margin-top:.6rem"></div>
 
   <div class="kpis" id="kpis" style="margin:1rem 0"></div>
@@ -44,8 +49,10 @@
     <section class="tarjeta">
       <header><h2>Canal de contacto</h2></header>
       <div id="g-canal"></div>
-      <header style="margin-top:1.2rem"><h2>Puesto de atención</h2></header>
-      <div id="g-puesto"></div>
+      <div id="caja-puesto">
+        <header style="margin-top:1.2rem"><h2>Puesto de atención</h2></header>
+        <div id="g-puesto"></div>
+      </div>
     </section>
   </div>
 

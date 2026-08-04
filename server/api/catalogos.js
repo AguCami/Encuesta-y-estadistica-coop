@@ -7,7 +7,7 @@ const { requiere } = require('../auth');
 /** Todo lo que la interfaz necesita para dibujar los selectores. */
 function catalogos({ res }) {
   json(res, {
-    sectores: all('SELECT id, nombre, detalle, orden, activo FROM sectores ORDER BY orden, nombre'),
+    sectores: all('SELECT id, nombre, detalle, orden, puesto, activo FROM sectores ORDER BY orden, nombre'),
     motivos: all('SELECT id, sector_id, nombre, activo FROM motivos ORDER BY nombre'),
     canales: all('SELECT id, nombre, orden, activo FROM canales ORDER BY orden, nombre'),
     localidades: all('SELECT id, nombre, activo FROM localidades ORDER BY nombre'),
@@ -32,7 +32,7 @@ function catalogos({ res }) {
 }
 
 const TABLAS = {
-  sectores: { campos: ['nombre', 'detalle', 'orden', 'activo'] },
+  sectores: { campos: ['nombre', 'detalle', 'orden', 'puesto', 'activo'] },
   motivos: { campos: ['sector_id', 'nombre', 'activo'] },
   canales: { campos: ['nombre', 'orden', 'activo'] },
   localidades: { campos: ['nombre', 'activo'] },
@@ -45,6 +45,10 @@ function normalizar(tabla, body) {
   if (body.orden !== undefined) d.orden = enteroONull(body.orden) ?? 100;
   if (body.activo !== undefined) d.activo = body.activo ? 1 : 0;
   if (tabla === 'motivos' && body.sector_id !== undefined) d.sector_id = enteroONull(body.sector_id);
+  // El puesto decide en qué tablero de atención rápida aparece el grupo.
+  if (tabla === 'sectores' && body.puesto !== undefined) {
+    d.puesto = ['call_center', 'mesa_informes', 'ambos'].includes(body.puesto) ? body.puesto : 'ambos';
+  }
   return d;
 }
 

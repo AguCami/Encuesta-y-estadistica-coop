@@ -49,6 +49,10 @@ function canalDelPuesto(puesto = puestoActual) {
   return c ? c.id : null;
 }
 
+/** Los grupos del puesto elegido (más los marcados para ambos). */
+const sectoresDelPuesto = () =>
+  datos.sectores.filter((s) => !s.puesto || s.puesto === 'ambos' || s.puesto === puestoActual);
+
 function pintarPuestos() {
   $('puestos').innerHTML = PUESTOS.map((p) => `
     <button type="button" data-puesto="${p.id}"${p.id === puestoActual ? ' aria-pressed="true"' : ''}>
@@ -58,6 +62,8 @@ function pintarPuestos() {
       puestoActual = b.dataset.puesto;
       localStorage.setItem('puesto', puestoActual);
       pintarPuestos();
+      pintarFrecuentes();
+      pintarSectores();
     };
   });
 }
@@ -76,16 +82,17 @@ function boton(motivo, { conSector = false } = {}) {
 }
 
 function pintarFrecuentes() {
+  const delPuesto = new Set(sectoresDelPuesto().map((s) => s.id));
   const lista = datos.frecuentes
     .map((id) => datos.motivos.find((m) => m.id === id))
-    .filter(Boolean);
+    .filter((m) => m && delPuesto.has(m.sector_id));
   $('caja-frecuentes').classList.toggle('oculto', !lista.length);
   $('frecuentes').innerHTML = lista.map((m) => boton(m, { conSector: true })).join('');
   enlazarFichas($('frecuentes'));
 }
 
 function pintarSectores() {
-  const conMotivos = datos.sectores.filter((s) => datos.motivos.some((m) => m.sector_id === s.id));
+  const conMotivos = sectoresDelPuesto().filter((s) => datos.motivos.some((m) => m.sector_id === s.id));
   $('sin-datos').classList.toggle('oculto', conMotivos.length > 0);
   $('sectores').innerHTML = conMotivos.map((s) => `
     <section class="tarjeta" style="margin-top:1rem">

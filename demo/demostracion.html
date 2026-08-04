@@ -364,8 +364,6 @@ dialog .pie { padding: .7rem 1rem; border-top: 1px solid var(--border); display:
     <a data-ir="rapido" aria-current="page">Atención rápida</a>
     <a data-ir="consultas">Consultas</a>
     <a data-ir="panel">Estadísticas</a>
-    <a data-ir="satisfaccion">Satisfacción</a>
-    <a data-ir="encuesta">Encuesta del socio</a>
   </nav>
   <div class="derecha">
     <span class="usuario"><b>Marina López</b> · Call center</span>
@@ -443,8 +441,10 @@ dialog .pie { padding: .7rem 1rem; border-top: 1px solid var(--border); display:
     <section class="tarjeta">
       <header><h2>Canal de contacto</h2></header>
       <div id="g-canal"></div>
-      <header style="margin-top:1.2rem"><h2>Puesto de atención</h2></header>
-      <div id="g-puesto"></div>
+      <div id="caja-puesto">
+        <header style="margin-top:1.2rem"><h2>Puesto de atención</h2></header>
+        <div id="g-puesto"></div>
+      </div>
     </section>
   </div>
 
@@ -467,88 +467,6 @@ dialog .pie { padding: .7rem 1rem; border-top: 1px solid var(--border); display:
       <header><h2>Actividad por operador</h2></header>
       <div class="tabla-scroll" id="t-operador"></div>
     </section>
-  </div>
-</main>
-
-<!-- ====================================================== satisfacción -->
-<main class="pantalla" id="p-satisfaccion">
-  <h1>Satisfacción del socio</h1>
-  <div class="tarjeta filtros" id="s-filtros" style="margin-top:.6rem"></div>
-  <div class="kpis" id="sat-kpis" style="margin:1rem 0"></div>
-
-  <div class="grilla g2">
-    <section class="tarjeta">
-      <header><h2>Conformidad general</h2><p>distribución de las respuestas</p></header>
-      <div id="sat-distribucion"></div>
-    </section>
-    <section class="tarjeta">
-      <header><h2>Promedio por dimensión</h2><p>escala 1 a 5</p></header>
-      <div id="sat-dimensiones"></div>
-    </section>
-  </div>
-
-  <section class="tarjeta" style="margin-top:1rem">
-    <header><h2>Evolución de la conformidad</h2><p>promedio diario</p></header>
-    <div id="sat-serie"></div>
-  </section>
-
-  <div class="grilla g2" style="margin-top:1rem">
-    <section class="tarjeta">
-      <header><h2>Conformidad por sector</h2></header>
-      <div class="tabla-scroll" id="sat-t-sector"></div>
-    </section>
-    <section class="tarjeta">
-      <header><h2>Últimos comentarios</h2></header>
-      <div id="sat-comentarios" style="max-height:420px;overflow:auto"></div>
-    </section>
-  </div>
-</main>
-
-<!-- ========================================================== encuesta -->
-<main class="pantalla" id="p-encuesta">
-  <div class="encuesta-publica">
-    <p class="solo-lectura" style="text-align:center;margin-bottom:.8rem">
-      Así ve el socio la encuesta en el celular, después de que lo atendieron.
-    </p>
-    <div class="tarjeta">
-      <h1 id="enc-titulo">¿Cómo te atendimos en la Cooperativa?</h1>
-      <p style="color:var(--ink-2);margin:.3rem 0 1rem">
-        Nos ayuda a mejorar la atención. Son 30 segundos y es anónima.
-      </p>
-
-      <form id="enc-form">
-        <div style="margin-bottom:1rem">
-          <label for="enc-sector">¿Qué sector te atendió?</label>
-          <select id="enc-sector"></select>
-        </div>
-        <div id="enc-preguntas"></div>
-
-        <div style="margin:1.1rem 0 .3rem">
-          <label for="enc-nps">¿Qué tan probable es que recomiendes la atención de la cooperativa? (0 a 10)</label>
-          <input type="range" id="enc-nps" min="0" max="10" step="1" value="8" style="padding:0">
-          <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted)">
-            <span>0 · nada probable</span><b id="enc-valor" style="color:var(--ink)">8</b><span>10 · muy probable</span>
-          </div>
-        </div>
-
-        <div style="margin-top:1rem">
-          <label for="enc-comentario">¿Querés contarnos algo más? (opcional)</label>
-          <textarea id="enc-comentario" maxlength="500"
-            placeholder="Tu comentario nos sirve para corregir lo que haga falta"></textarea>
-        </div>
-
-        <button class="primario" type="submit" style="width:100%;justify-content:center;margin-top:1rem">
-          Enviar respuesta
-        </button>
-        <p class="aviso" id="enc-aviso"></p>
-      </form>
-
-      <div id="enc-gracias" class="oculto" style="text-align:center;padding:1.5rem 0">
-        <h2>¡Gracias por responder!</h2>
-        <p style="color:var(--ink-2)">Tu respuesta ya está sumada en la pantalla de Satisfacción.</p>
-        <button class="chico" id="enc-otra" style="margin-top:.6rem">Responder otra</button>
-      </div>
-    </div>
   </div>
 </main>
 
@@ -1112,11 +1030,16 @@ const $ = (id) => document.getElementById(id);
 // --------------------------------------------------------------- datos ---
 
 const SECTORES = [
-  { id: 1, nombre: 'Cortes por falta de pago', detalle: 'Plazos, información y reconexiones', peso: 5 },
-  { id: 2, nombre: 'Ventas', detalle: 'Altas de servicios y gestiones comerciales', peso: 7 },
-  { id: 3, nombre: 'Reclamos', detalle: 'Fallas y reclamos de servicio', peso: 9 },
-  { id: 4, nombre: 'TIC', detalle: 'Internet, IPTV y servicios de conectividad', peso: 6 },
-  { id: 5, nombre: 'Pagos', detalle: 'Acreditación e información de pagos', peso: 4 },
+  // call center
+  { id: 1, nombre: 'Cortes por falta de pago', detalle: 'Plazos, información y reconexiones', puesto: 'call_center', peso: 5 },
+  { id: 2, nombre: 'Ventas', detalle: 'Altas de servicios y gestiones comerciales', puesto: 'call_center', peso: 7 },
+  { id: 3, nombre: 'Reclamos', detalle: 'Fallas y reclamos de servicio', puesto: 'call_center', peso: 9 },
+  { id: 4, nombre: 'TIC', detalle: 'Internet, IPTV y servicios de conectividad', puesto: 'call_center', peso: 6 },
+  { id: 5, nombre: 'Pagos', detalle: 'Acreditación e información de pagos', puesto: 'call_center', peso: 4 },
+  // mesa de informes: las areas del totem de turnos
+  { id: 6, nombre: 'Mesa Sector 1', detalle: 'Reclamos, trámites, notas y proveedores', puesto: 'mesa_informes', peso: 6 },
+  { id: 7, nombre: 'Mesa Sector 2', detalle: 'RRHH, internet, obras y bienestar', puesto: 'mesa_informes', peso: 4 },
+  { id: 8, nombre: 'Consultas de mostrador', detalle: 'Lo que se resuelve en el momento, sin turno', puesto: 'mesa_informes', peso: 7 },
 ];
 
 const MOTIVOS_POR_SECTOR = {
@@ -1127,6 +1050,10 @@ const MOTIVOS_POR_SECTOR = {
     'Sin luz', 'Sin agua', 'Error de facturación', 'Estado del reclamo'],
   4: ['Reclamos', 'Consultas', 'Lentitud', 'Micro cortes', 'Problemas IPTV', 'Sensa'],
   5: ['Roela no impactado', 'Información'],
+  6: ['Reclamos', 'Trámites y ventas', 'Entrega de notas', 'Proveedores'],
+  7: ['Recursos humanos', 'Reclamos internet / IPTV', 'Oficina técnica', 'Red Bienestar Cooperativo'],
+  8: ['Estados de cuenta', 'Información general', 'Boletas', 'Actualización de datos',
+    'Reconexiones', 'Apros', 'Prórroga'],
 };
 
 const MOTIVOS = [];
@@ -1156,22 +1083,10 @@ const LOCALIDADES = [
   { id: 4, nombre: 'Colonia San José' }, { id: 5, nombre: 'Zona rural' },
 ];
 
-const COMENTARIOS = [
-  'Me atendieron muy bien y rápido.',
-  'Estuve mucho tiempo esperando en línea.',
-  'Resolvieron el problema en el día.',
-  'Me derivaron y nunca me llamaron.',
-  'Me explicaron con paciencia el plazo del corte.',
-  'Deberían tener más líneas telefónicas.',
-  'Reclamé por internet lento y no me llamaron.',
-  'Tuve que llamar tres veces por lo mismo.',
-];
-
 const USUARIO = OPERADORES[0];   // el operador con el que se navega la demo
 const DIAS_DEMO = 90;
 
 let CONSULTAS = [];
-let ENCUESTAS = [];
 
 // ------------------------------------------------------------- helpers ---
 
@@ -1242,7 +1157,6 @@ const operadorDe = (id) => OPERADORES.find((o) => o.id === id);
 function generarDatos() {
   azar = generador(20260804);
   CONSULTAS = [];
-  ENCUESTAS = [];
   let id = 0;
 
   const pesoHora = { 8: 6, 9: 10, 10: 12, 11: 10, 12: 6, 13: 4, 14: 5, 15: 7, 16: 8, 17: 6, 18: 3 };
@@ -1259,8 +1173,10 @@ function generarDatos() {
     for (let i = 0; i < cantidad; i++) {
       const sector = pesado(SECTORES, SECTORES.map((s) => s.peso));
       const motivo = uno(MOTIVOS.filter((m) => m.sector_id === sector.id));
-      const canal = pesado(CANALES, CANALES.map((c) => c.peso));
-      const operador = uno(OPERADORES);
+      const enMesa = sector.puesto === 'mesa_informes';
+      const canal = enMesa ? CANALES[1] : pesado(CANALES, CANALES.map((c) => c.peso));
+      // Cada puesto lo atiende su propia gente
+      const operador = uno(OPERADORES.filter((o) => o.puesto === (enMesa ? 'mesa_informes' : 'call_center')));
       const hora = pesado(horas, horas.map((h) => pesoHora[h]));
       const ts = `${fecha}T${String(hora).padStart(2, '0')}:${String(entre(0, 59)).padStart(2, '0')}:00`;
       const estado = pesado(['resuelta', 'derivada', 'pendiente', 'reclamo'], [66, 14, 8, 12]);
@@ -1269,7 +1185,7 @@ function generarDatos() {
         id: ++id,
         ts, fecha, hora, dow,
         operador_id: operador.id,
-        puesto: canal.nombre === 'Presencial' ? 'mesa_informes' : operador.puesto,
+        puesto: enMesa ? 'mesa_informes' : 'call_center',
         canal_id: canal.id,
         sector_id: sector.id,
         motivo_id: motivo.id,
@@ -1281,21 +1197,6 @@ function generarDatos() {
         observaciones: `Consulta por ${motivo.nombre.toLowerCase()}.`,
       });
 
-      if (azar() < 0.17) {
-        const base = estado === 'resuelta' ? 4 : 3;
-        const nota = Math.max(1, Math.min(5, base + entre(-1, 1)));
-        const acotar = (v) => Math.max(1, Math.min(5, v));
-        ENCUESTAS.push({
-          fecha, sector_id: sector.id, canal_id: canal.id, operador_id: operador.id,
-          respondida: ts,
-          satisfaccion: nota,
-          resolucion: acotar(nota + entre(-1, 0)),
-          atencion: acotar(nota + entre(0, 1)),
-          espera: acotar(nota + entre(-1, 1)),
-          recomendaria: Math.max(0, Math.min(10, nota * 2 + entre(-2, 1))),
-          comentario: azar() < 0.25 ? uno(COMENTARIOS) : '',
-        });
-      }
     }
   }
   CONSULTAS.sort((a, b) => (a.ts < b.ts ? -1 : 1));
@@ -1303,27 +1204,33 @@ function generarDatos() {
 
 // ------------------------------------------------------------- filtros ---
 
-const filtro = { dias: 30, sector_id: '' };
+// Cada puesto se mira por separado; '' muestra los dos juntos.
+const filtro = { dias: 30, sector_id: '', puesto: 'call_center' };
+const PUESTOS_PANEL = [
+  ['call_center', 'Call center'], ['mesa_informes', 'Mesa de informes'], ['', 'Los dos juntos'],
+];
 const desdeFiltro = () => sumarDias(HOY, -(filtro.dias - 1));
 
 function consultasFiltradas() {
   const desde = desdeFiltro();
   return CONSULTAS.filter((c) => c.fecha >= desde && c.fecha <= HOY
+    && (!filtro.puesto || c.puesto === filtro.puesto)
     && (!filtro.sector_id || c.sector_id === Number(filtro.sector_id)));
-}
-
-function encuestasFiltradas() {
-  const desde = desdeFiltro();
-  return ENCUESTAS.filter((e) => e.fecha >= desde && e.fecha <= HOY
-    && (!filtro.sector_id || e.sector_id === Number(filtro.sector_id)));
 }
 
 const RANGOS = [[7, 'Últimos 7 días'], [30, 'Últimos 30 días'], [90, 'Últimos 90 días']];
 
 /** Barra de filtros de la demo: rango de fechas y sector. */
 function montarFiltros(contenedor, alCambiar) {
+  const sectores = SECTORES.filter((x) => !filtro.puesto || x.puesto === 'ambos' || x.puesto === filtro.puesto);
   contenedor.innerHTML = `
     <div class="fila" style="align-items:flex-end">
+      <div class="campo" style="flex:0 0 auto">
+        <label>Estadísticas de</label>
+        <div class="segmentado">
+          ${PUESTOS_PANEL.map(([id, t]) => `<button type="button" data-puesto="${id}"${filtro.puesto === id ? ' aria-pressed="true"' : ''}>${t}</button>`).join('')}
+        </div>
+      </div>
       <div class="campo" style="flex:0 0 auto">
         <label>Período</label>
         <div class="segmentado">
@@ -1333,11 +1240,14 @@ function montarFiltros(contenedor, alCambiar) {
       <div class="campo"><label>Sector</label>
         <select data-sector>
           <option value="">Todos</option>
-          ${SECTORES.map((s) => `<option value="${s.id}"${String(s.id) === String(filtro.sector_id) ? ' selected' : ''}>${escapar(s.nombre)}</option>`).join('')}
+          ${sectores.map((s) => `<option value="${s.id}"${String(s.id) === String(filtro.sector_id) ? ' selected' : ''}>${escapar(s.nombre)}</option>`).join('')}
         </select></div>
       <span style="flex:1"></span>
       <span class="solo-lectura">${fechaLarga(desdeFiltro())} — ${fechaLarga(HOY)}</span>
     </div>`;
+  contenedor.querySelectorAll('[data-puesto]').forEach((b) => {
+    b.onclick = () => { filtro.puesto = b.dataset.puesto; filtro.sector_id = ''; alCambiar(); };
+  });
   contenedor.querySelectorAll('[data-dias]').forEach((b) => {
     b.onclick = () => { filtro.dias = Number(b.dataset.dias); alCambiar(); };
   });
@@ -1434,8 +1344,6 @@ function estadisticas() {
     for (const [fecha, tot] of delSector) serieSector.push({ sector_id: sid, fecha, total: tot });
   }
 
-  const enc = encuestasFiltradas();
-
   return {
     periodo: { desde, hasta: HOY, dias },
     resumen: {
@@ -1449,8 +1357,6 @@ function estadisticas() {
       duracion_prom_min: conDuracion.length
         ? redondear(conDuracion.reduce((a, c) => a + c.duracion_seg, 0) / conDuracion.length / 60, 1) : null,
       variacion_pct: anterior ? redondear(((total - anterior) / anterior) * 100, 1) : null,
-      satisfaccion: enc.length ? redondear(enc.reduce((a, e) => a + e.satisfaccion, 0) / enc.length, 2) : null,
-      encuestas_respondidas: enc.length,
     },
     por_sector: porSector,
     por_motivo: porMotivo,
@@ -1461,49 +1367,6 @@ function estadisticas() {
     serie,
     serie_sector: serieSector,
     heatmap,
-  };
-}
-
-function estadisticasEncuestas() {
-  const filas = encuestasFiltradas();
-  const n = filas.length;
-  const prom = (campo) => (n ? redondear(filas.reduce((a, e) => a + (e[campo] || 0), 0) / n, 2) : null);
-
-  const promotores = filas.filter((e) => e.recomendaria >= 9).length;
-  const detractores = filas.filter((e) => e.recomendaria <= 6).length;
-
-  const porSector = SECTORES.map((s) => {
-    const suyas = filas.filter((e) => e.sector_id === s.id);
-    if (!suyas.length) return null;
-    const p = (campo) => redondear(suyas.reduce((a, e) => a + (e[campo] || 0), 0) / suyas.length, 2);
-    return {
-      nombre: s.nombre, respuestas: suyas.length,
-      satisfaccion: p('satisfaccion'), resolucion: p('resolucion'),
-      atencion: p('atencion'), espera: p('espera'),
-    };
-  }).filter(Boolean).sort((a, b) => b.respuestas - a.respuestas);
-
-  const porFecha = new Map();
-  for (const e of filas) {
-    const acc = porFecha.get(e.fecha) || { n: 0, suma: 0 };
-    acc.n++; acc.suma += e.satisfaccion;
-    porFecha.set(e.fecha, acc);
-  }
-
-  return {
-    resumen: {
-      respondidas: n,
-      satisfaccion: prom('satisfaccion'),
-      resolucion: prom('resolucion'),
-      atencion: prom('atencion'),
-      espera: prom('espera'),
-      csat: n ? redondear((filas.filter((e) => e.satisfaccion >= 4).length / n) * 100, 1) : null,
-      nps: n ? Math.round(((promotores - detractores) / n) * 100) : null,
-    },
-    distribucion: [1, 2, 3, 4, 5].map((v) => ({ valor: v, total: filas.filter((e) => e.satisfaccion === v).length })),
-    por_sector: porSector,
-    serie: [...porFecha.entries()].sort().map(([fecha, a]) => ({ fecha, satisfaccion: redondear(a.suma / a.n, 2) })),
-    comentarios: filas.filter((e) => e.comentario).slice(-30).reverse(),
   };
 }
 
@@ -1519,7 +1382,8 @@ let temporizador = null;
 const SEGUNDOS_DESHACER = 12;
 
 function frecuentesDelOperador() {
-  const suyas = CONSULTAS.filter((c) => c.operador_id === USUARIO.id && c.motivo_id);
+  const delPuesto = new Set(sectoresDelPuesto().map((s) => s.id));
+  const suyas = CONSULTAS.filter((c) => c.motivo_id && delPuesto.has(c.sector_id));
   return [...agrupar(suyas, (c) => c.motivo_id)]
     .sort((a, b) => b[1] - a[1]).slice(0, 9).map(([id]) => motivoDe(id));
 }
@@ -1543,6 +1407,10 @@ function fichaHTML(motivo, { conSector = false } = {}) {
  */
 const canalDelPuesto = () => (PUESTOS_ATENCION.find((p) => p.id === puestoActual) || PUESTOS_ATENCION[0]).canal;
 
+/** Los grupos del puesto elegido. */
+const sectoresDelPuesto = () =>
+  SECTORES.filter((s) => s.puesto === 'ambos' || s.puesto === puestoActual);
+
 function pintarRapido() {
   $('puestos').innerHTML = PUESTOS_ATENCION.map((p) => `
     <button type="button" data-puesto="${p.id}"${p.id === puestoActual ? ' aria-pressed="true"' : ''}>
@@ -1554,7 +1422,7 @@ function pintarRapido() {
   $('frecuentes').innerHTML = frecuentesDelOperador()
     .map((m) => fichaHTML(m, { conSector: true })).join('');
 
-  $('sectores').innerHTML = SECTORES.map((s) => `
+  $('sectores').innerHTML = sectoresDelPuesto().map((s) => `
     <section class="tarjeta" style="margin-top:1rem">
       <header><h2>${escapar(s.nombre)}</h2><p>${escapar(s.detalle)}</p></header>
       <div class="botonera">
@@ -1714,6 +1582,7 @@ function pintarConsultas() {
 
 function pintarPanel() {
   montarFiltros($('p-filtros'), pintarPanel);
+  $('caja-puesto').classList.toggle('oculto', !!filtro.puesto);
   const d = estadisticas();
   const r = d.resumen;
 
@@ -1735,10 +1604,7 @@ function pintarPanel() {
       <div class="pie">${pct(r.pct_pendientes)} del total · ${num(r.derivadas)} derivadas</div></div>
     <div class="kpi"><div class="etiqueta">Duración promedio</div>
       <div class="valor">${r.duracion_prom_min === null ? '—' : `${dec(r.duracion_prom_min)}′`}</div>
-      <div class="pie">sobre las consultas con tiempo cargado</div></div>
-    <div class="kpi"><div class="etiqueta">Conformidad</div>
-      <div class="valor">${r.satisfaccion === null ? '—' : `${dec(r.satisfaccion, 2)}/5`}</div>
-      <div class="pie">${num(r.encuestas_respondidas)} encuestas respondidas</div></div>`;
+      <div class="pie">sobre las consultas con tiempo cargado</div></div>`;
 
   $('sub-evolucion').textContent = `${fechaLarga(d.periodo.desde)} — ${fechaLarga(d.periodo.hasta)}`;
 
@@ -1812,142 +1678,12 @@ function pintarPanel() {
     </table>`;
 }
 
-// ------------------------------------------------- pantalla satisfacción ---
-
-function pintarSatisfaccion() {
-  montarFiltros($('s-filtros'), pintarSatisfaccion);
-  const d = estadisticasEncuestas();
-  const r = d.resumen;
-
-  $('sat-kpis').innerHTML = `
-    <div class="kpi"><div class="etiqueta">Respuestas</div>
-      <div class="valor">${num(r.respondidas)}</div>
-      <div class="pie">del período elegido</div></div>
-    <div class="kpi"><div class="etiqueta">Conformidad general</div>
-      <div class="valor">${r.satisfaccion === null ? '—' : `${dec(r.satisfaccion, 2)}/5`}</div>
-      <div class="pie">promedio del período</div></div>
-    <div class="kpi"><div class="etiqueta">Socios conformes</div>
-      <div class="valor">${pct(r.csat)}</div>
-      <div class="pie">respuestas de 4 o 5</div></div>
-    <div class="kpi"><div class="etiqueta">NPS</div>
-      <div class="valor">${r.nps === null ? '—' : r.nps}</div>
-      <div class="pie">promotores − detractores</div></div>
-    <div class="kpi"><div class="etiqueta">Resolución</div>
-      <div class="valor">${r.resolucion === null ? '—' : dec(r.resolucion, 2)}</div>
-      <div class="pie">¿se resolvió lo que necesitaba?</div></div>
-    <div class="kpi"><div class="etiqueta">Tiempo de espera</div>
-      <div class="valor">${r.espera === null ? '—' : dec(r.espera, 2)}</div>
-      <div class="pie">percepción del socio</div></div>`;
-
-  distribucion($('sat-distribucion'), d.distribucion);
-
-  const p = paleta();
-  barras($('sat-dimensiones'), [
-    { etiqueta: 'Conformidad', valor: r.satisfaccion || 0 },
-    { etiqueta: 'Resolución', valor: r.resolucion || 0 },
-    { etiqueta: 'Atención', valor: r.atencion || 0 },
-    { etiqueta: 'Espera', valor: r.espera || 0 },
-  ].filter((x) => x.valor), { color: p.series[0], escala: 5 });
-
-  lineas($('sat-serie'), [{
-    nombre: 'Conformidad promedio',
-    puntos: d.serie.map((s) => ({ x: s.fecha, y: s.satisfaccion })),
-  }], {
-    alto: 220,
-    etiquetaX: (v, completo) => (completo ? fechaLarga(v) : `${v.slice(8)}/${v.slice(5, 7)}`),
-    formatoY: (v) => dec(v, 1),
-  });
-
-  $('sat-t-sector').innerHTML = d.por_sector.length ? `
-    <table>
-      <thead><tr><th>Sector</th><th class="num">Respuestas</th><th class="num">Conformidad</th>
-        <th class="num">Resolución</th><th class="num">Atención</th><th class="num">Espera</th></tr></thead>
-      <tbody>${d.por_sector.map((s) => `
-        <tr><td>${escapar(s.nombre)}</td>
-            <td class="num">${num(s.respuestas)}</td>
-            <td class="num">${dec(s.satisfaccion, 2)}</td>
-            <td class="num">${dec(s.resolucion, 2)}</td>
-            <td class="num">${dec(s.atencion, 2)}</td>
-            <td class="num">${dec(s.espera, 2)}</td></tr>`).join('')}
-      </tbody>
-    </table>` : '<p class="vacio">Sin respuestas en el período</p>';
-
-  $('sat-comentarios').innerHTML = d.comentarios.length ? d.comentarios.map((c) => `
-    <div style="border-bottom:1px solid var(--grid);padding:.5rem 0">
-      <div style="font-size:.76rem;color:var(--muted)">
-        ${fechaLarga(c.respondida || c.fecha)} · ${escapar(sectorDe(c.sector_id).nombre)} · conformidad ${c.satisfaccion}/5
-      </div>
-      <div>${escapar(c.comentario)}</div>
-    </div>`).join('') : '<p class="vacio">Sin comentarios en el período</p>';
-}
-
-// ---------------------------------------------------- encuesta del socio ---
-
-const PREGUNTAS = [
-  { id: 'satisfaccion', texto: '¿Cómo calificás la atención que recibiste?', requerida: true },
-  { id: 'resolucion', texto: '¿Se resolvió lo que necesitabas?' },
-  { id: 'atencion', texto: '¿Te explicaron con claridad?' },
-  { id: 'espera', texto: '¿Cómo fue el tiempo de espera?' },
-];
-const ESCALA = ['Muy malo', 'Malo', 'Regular', 'Bueno', 'Muy bueno'];
-
-function montarEncuesta() {
-  $('enc-sector').innerHTML = SECTORES.map((s) => `<option value="${s.id}">${escapar(s.nombre)}</option>`).join('');
-  $('enc-preguntas').innerHTML = PREGUNTAS.map((p) => `
-    <fieldset style="margin-bottom:1.1rem">
-      <label>${p.texto}${p.requerida ? ' *' : ''}</label>
-      <div class="escala">
-        ${[1, 2, 3, 4, 5].map((v) => `
-          <input type="radio" name="${p.id}" id="${p.id}-${v}" value="${v}">
-          <label for="${p.id}-${v}">${v}<small>${ESCALA[v - 1]}</small></label>`).join('')}
-      </div>
-    </fieldset>`).join('');
-
-  $('enc-nps').oninput = (e) => { $('enc-valor').textContent = e.target.value; };
-
-  $('enc-form').onsubmit = (e) => {
-    e.preventDefault();
-    const valor = (nombre) => {
-      const m = document.querySelector(`input[name="${nombre}"]:checked`);
-      return m ? Number(m.value) : null;
-    };
-    if (!valor('satisfaccion')) {
-      $('enc-aviso').className = 'aviso error';
-      $('enc-aviso').textContent = 'Elegí una calificación para la primera pregunta';
-      return;
-    }
-    ENCUESTAS.push({
-      fecha: HOY, respondida: `${HOY}T12:00:00`,
-      sector_id: Number($('enc-sector').value), canal_id: 2, operador_id: USUARIO.id,
-      satisfaccion: valor('satisfaccion'),
-      resolucion: valor('resolucion') || valor('satisfaccion'),
-      atencion: valor('atencion') || valor('satisfaccion'),
-      espera: valor('espera') || valor('satisfaccion'),
-      recomendaria: Number($('enc-nps').value),
-      comentario: $('enc-comentario').value.trim(),
-    });
-    $('enc-form').classList.add('oculto');
-    $('enc-gracias').classList.remove('oculto');
-  };
-
-  $('enc-otra').onclick = () => {
-    $('enc-form').reset();
-    $('enc-valor').textContent = '8';
-    $('enc-aviso').textContent = '';
-    $('enc-aviso').className = 'aviso';
-    $('enc-form').classList.remove('oculto');
-    $('enc-gracias').classList.add('oculto');
-  };
-}
-
 // -------------------------------------------------------------- arranque ---
 
 const PINTAR = {
   rapido: pintarRapido,
   consultas: pintarConsultas,
   panel: pintarPanel,
-  satisfaccion: pintarSatisfaccion,
-  encuesta: () => {},
 };
 
 function ir(pantalla) {
@@ -1986,7 +1722,6 @@ matchMedia('(prefers-color-scheme: dark)')
   .addEventListener('change', () => window.dispatchEvent(new Event('tema-cambiado')));
 
 generarDatos();
-montarEncuesta();
 ir('rapido');
 
 </script>

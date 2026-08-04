@@ -20,8 +20,11 @@ async function inicio() {
   $('caja-usuarios').classList.toggle('oculto', !puede(usuario, 'admin'));
   await recargar();
 
-  enlazar('form-sector', () => post('/api/catalogos/sectores',
-    { nombre: $('s-nombre').value, orden: Number($('s-orden').value || 100) }));
+  enlazar('form-sector', () => post('/api/catalogos/sectores', {
+    nombre: $('s-nombre').value,
+    puesto: $('s-puesto').value,
+    orden: Number($('s-orden').value || 100),
+  }));
   enlazar('form-motivo', () => post('/api/catalogos/motivos',
     { sector_id: $('m-sector').value, nombre: $('m-nombre').value }));
   enlazar('form-canal', () => post('/api/catalogos/canales', { nombre: $('c-nombre').value }));
@@ -66,14 +69,19 @@ async function recargar() {
   $('m-filtro').innerHTML = opcionesSector;
   if (anterior) $('m-filtro').value = anterior;
 
-  pintarCatalogo('t-sectores', 'sectores', catalogos.sectores, ['nombre', 'orden']);
+  pintarCatalogo('t-sectores', 'sectores', catalogos.sectores, ['nombre', 'orden'], true);
   pintarCatalogo('t-canales', 'canales', catalogos.canales, ['nombre']);
   pintarCatalogo('t-localidades', 'localidades', catalogos.localidades, ['nombre']);
   pintarMotivos();
   pintarUsuarios();
 }
 
-function pintarCatalogo(destino, tabla, filas, columnas) {
+const PUESTOS_SECTOR = [
+  ['call_center', 'Call center'], ['mesa_informes', 'Mesa de informes'], ['ambos', 'Los dos'],
+];
+
+/** `conPuesto` agrega el selector que decide en qué tablero aparece el sector. */
+function pintarCatalogo(destino, tabla, filas, columnas, conPuesto = false) {
   const cont = $(destino);
   if (!filas.length) { cont.innerHTML = '<p class="vacio">Todavía no hay registros</p>'; return; }
   cont.innerHTML = `
@@ -81,12 +89,24 @@ function pintarCatalogo(destino, tabla, filas, columnas) {
       ${filas.map((f) => `
         <tr data-id="${f.id}" style="${f.activo ? '' : 'opacity:.5'}">
           ${columnas.map((c) => `<td>${escapar(f[c])}</td>`).join('')}
+          ${conPuesto ? `<td><select data-puesto style="width:auto">
+            ${PUESTOS_SECTOR.map(([v, t]) => `<option value="${v}"${(f.puesto || 'ambos') === v ? ' selected' : ''}>${t}</option>`).join('')}
+          </select></td>` : ''}
           <td class="num" style="white-space:nowrap">
             <button class="chico" data-accion="renombrar">Renombrar</button>
             <button class="chico" data-accion="estado">${f.activo ? 'Desactivar' : 'Activar'}</button>
           </td>
         </tr>`).join('')}
     </tbody></table>`;
+
+  cont.querySelectorAll('[data-puesto]').forEach((sel) => {
+    sel.onchange = async () => {
+      try {
+        await put(`/api/catalogos/${tabla}/${sel.closest('tr').dataset.id}`, { puesto: sel.value });
+        await recargar();
+      } catch (err) { avisar($('aviso'), err.message, 'error'); }
+    };
+  });
 
   cont.querySelectorAll('button').forEach((b) => {
     b.onclick = async () => {

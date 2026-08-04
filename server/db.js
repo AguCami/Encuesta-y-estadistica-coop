@@ -125,6 +125,13 @@ CREATE INDEX IF NOT EXISTS ix_enc_sector ON encuestas(sector_id);
 
 db.exec(SCHEMA);
 
+// Migraciones livianas: agregan columnas a bases ya creadas sin perder datos.
+const columnas = (tabla) => db.prepare(`PRAGMA table_info(${tabla})`).all().map((c) => c.name);
+if (!columnas('sectores').includes('puesto')) {
+  // call_center | mesa_informes | ambos — define en qué tablero aparece el grupo
+  db.exec("ALTER TABLE sectores ADD COLUMN puesto TEXT NOT NULL DEFAULT 'ambos'");
+}
+
 // ---------------------------------------------------------------- helpers ---
 
 function all(sql, params = []) {
@@ -140,11 +147,16 @@ function run(sql, params = []) {
 // ------------------------------------------------------------------ seed ---
 
 const SECTORES = [
-  ['Cortes por falta de pago', 'Plazos, información y reconexiones', 10],
-  ['Ventas', 'Altas de servicios y gestiones comerciales', 20],
-  ['Reclamos', 'Fallas y reclamos de servicio', 30],
-  ['TIC', 'Internet, IPTV y servicios de conectividad', 40],
-  ['Pagos', 'Acreditación e información de pagos', 50],
+  // call center
+  ['Cortes por falta de pago', 'Plazos, información y reconexiones', 10, 'call_center'],
+  ['Ventas', 'Altas de servicios y gestiones comerciales', 20, 'call_center'],
+  ['Reclamos', 'Fallas y reclamos de servicio', 30, 'call_center'],
+  ['TIC', 'Internet, IPTV y servicios de conectividad', 40, 'call_center'],
+  ['Pagos', 'Acreditación e información de pagos', 50, 'call_center'],
+  // mesa de informes: las areas del totem de turnos, agrupadas como en el salon
+  ['Mesa Sector 1', 'Reclamos, trámites, notas y proveedores', 60, 'mesa_informes'],
+  ['Mesa Sector 2', 'RRHH, internet, obras y bienestar', 70, 'mesa_informes'],
+  ['Consultas de mostrador', 'Lo que se resuelve en el momento, sin turno', 80, 'mesa_informes'],
 ];
 
 const MOTIVOS = {
@@ -155,6 +167,11 @@ const MOTIVOS = {
     'Sin luz', 'Sin agua', 'Error de facturación', 'Estado del reclamo'],
   'TIC': ['Reclamos', 'Consultas', 'Lentitud', 'Micro cortes', 'Problemas IPTV', 'Sensa'],
   'Pagos': ['Roela no impactado', 'Información'],
+  'Mesa Sector 1': ['Reclamos', 'Trámites y ventas', 'Entrega de notas', 'Proveedores'],
+  'Mesa Sector 2': ['Recursos humanos', 'Reclamos internet / IPTV', 'Oficina técnica',
+    'Red Bienestar Cooperativo'],
+  'Consultas de mostrador': ['Estados de cuenta', 'Información general', 'Boletas',
+    'Actualización de datos', 'Reconexiones', 'Apros', 'Prórroga'],
 };
 
 const CANALES = [['Telefonico', 10], ['Presencial', 20], ['WhatsApp', 30], ['Email', 40], ['Web / Redes', 50]];
@@ -162,8 +179,9 @@ const CANALES = [['Telefonico', 10], ['Presencial', 20], ['WhatsApp', 30], ['Ema
 function seed() {
   const yaHay = get('SELECT COUNT(*) AS n FROM sectores').n;
   if (!yaHay) {
-    for (const [nombre, detalle, orden] of SECTORES) {
-      run('INSERT INTO sectores (nombre, detalle, orden) VALUES (?, ?, ?)', [nombre, detalle, orden]);
+    for (const [nombre, detalle, orden, puesto] of SECTORES) {
+      run('INSERT INTO sectores (nombre, detalle, orden, puesto) VALUES (?, ?, ?, ?)',
+        [nombre, detalle, orden, puesto]);
     }
     for (const [nombreSector, motivos] of Object.entries(MOTIVOS)) {
       const s = get('SELECT id FROM sectores WHERE nombre = ?', [nombreSector]);

@@ -11,15 +11,41 @@ let filtros;
 
 inicio().catch((e) => console.error(e));
 
+const PUESTOS_PANEL = [
+  ['call_center', 'Call center'], ['mesa_informes', 'Mesa de informes'], ['', 'Los dos juntos'],
+];
+
 async function inicio() {
   const usuario = await exigirSesion();
   await montarBarra(usuario);
   const catalogos = await get('/api/catalogos');
   filtros = leerFiltros();
-  montarFiltros($('filtros'), catalogos, filtros, (nuevos) => escribirFiltros(nuevos));
+  // Cada puesto se mira por separado; "los dos juntos" es una opción explícita.
+  if (filtros.puesto === undefined) filtros.puesto = usuario.puesto === 'mesa_informes' ? 'mesa_informes' : 'call_center';
+  montarPuestos();
+
+  // Los sectores del otro puesto no aplican al período que se está mirando.
+  const propios = {
+    ...catalogos,
+    sectores: catalogos.sectores.filter((s) => !filtros.puesto || !s.puesto
+      || s.puesto === 'ambos' || s.puesto === filtros.puesto),
+  };
+  montarFiltros($('filtros'), propios, filtros, (nuevos) => escribirFiltros({ ...nuevos, puesto: filtros.puesto }),
+    { campos: ['sector', 'canal', 'estado', 'operador'] });
+  $('caja-puesto').classList.toggle('oculto', !!filtros.puesto);
   $('exp-detalle').href = `/api/consultas/export?${qs(filtros)}`;
   $('exp-resumen').href = `/api/estadisticas/export?${qs(filtros)}`;
   pintar(await get(`/api/estadisticas?${qs(filtros)}`));
+}
+
+function montarPuestos() {
+  $('puesto-panel').innerHTML = PUESTOS_PANEL.map(([id, texto]) => `
+    <button type="button" data-puesto="${id}"${(filtros.puesto || '') === id ? ' aria-pressed="true"' : ''}>
+      ${texto}</button>`).join('');
+  $('puesto-panel').querySelectorAll('[data-puesto]').forEach((b) => {
+    // Cambiar de puesto limpia el sector: los grupos no se comparten.
+    b.onclick = () => escribirFiltros({ ...filtros, puesto: b.dataset.puesto, sector_id: '' });
+  });
 }
 
 function pintar(d) {

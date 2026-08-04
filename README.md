@@ -83,7 +83,8 @@ registrada. Sin formulario, sin guardar, sin confirmar.
   **"Los que más usás"** que se arma sola con los nueve motivos que ese operador
   más registra.
 - Arriba, una sola decisión: **Call center** o **Mesa de informes**. Se elige al
-  empezar el turno y queda fija. De ahí se deduce el canal (call center →
+  empezar el turno, queda fija y **define qué botones se ven**: cada puesto tiene
+  su propio tablero (se configura por sector en Administración). De ahí se deduce el canal (call center →
   telefónico, mesa → presencial); si la consulta entró por WhatsApp o mail, el
   canal se corrige desde *Agregar datos*.
 - Cada botón muestra cuántas veces se usó hoy, así el operador ve su propio ritmo.
@@ -109,6 +110,8 @@ línea de tiempo de seguimiento, cambio de estado y exportación a CSV.
 ### 4. Estadísticas
 El panel que mira la gerencia o el consejo:
 
+- **Call center y mesa de informes se miran por separado**: un selector arriba de
+  todo cambia el panel entero, con la opción de verlos juntos.
 - **KPIs**: total, promedio por día, % resuelto en el primer contacto, pendientes,
   duración promedio, conformidad, y la variación contra el período anterior.
 - Evolución diaria, ranking por sector, **cómo se cierra** cada consulta por sector,

@@ -13,9 +13,15 @@
 
   <div class="grilla g2">
     <section class="tarjeta">
-      <header><h2>Sectores</h2><p>cada consulta se imputa a uno</p></header>
+      <header><h2>Sectores</h2><p>cada consulta se imputa a uno · definen el tablero de cada puesto</p></header>
       <form class="fila" id="form-sector">
         <div class="campo"><label for="s-nombre">Nuevo sector</label><input id="s-nombre" required></div>
+        <div class="campo corto"><label for="s-puesto">Aparece en</label>
+          <select id="s-puesto">
+            <option value="call_center">Call center</option>
+            <option value="mesa_informes">Mesa de informes</option>
+            <option value="ambos">Los dos</option>
+          </select></div>
         <div class="campo corto"><label for="s-orden">Orden</label><input id="s-orden" type="number" value="100"></div>
         <button class="primario">Agregar</button>
       </form>

@@ -14,11 +14,11 @@ const tablero = requiere('operador', ({ res, usuario }) => {
   const desde30 = sumarDias(dia, -29);
 
   const sectores = all(`
-    SELECT id, nombre, detalle FROM sectores WHERE activo = 1 ORDER BY orden, nombre`);
+    SELECT id, nombre, detalle, puesto FROM sectores WHERE activo = 1 ORDER BY orden, nombre`);
   const motivos = all(`
     SELECT id, sector_id, nombre FROM motivos WHERE activo = 1 ORDER BY nombre`);
 
-  // Los mas usados por este operador: van arriba, con atajo de teclado.
+  // Los mas usados por este operador: se muestran arriba de todo.
   const frecuentes = all(`
     SELECT c.motivo_id, COUNT(*) AS total
       FROM consultas c
