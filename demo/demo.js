@@ -911,6 +911,12 @@ PINTAR.informacion = pintarInformacion;
    ============================================================ */
 
 const quietito = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function desvanecer(tarjeta) {
+  tarjeta.style.transition = 'opacity .5s ease';
+  tarjeta.style.opacity = '0';
+  return new Promise((listo) => setTimeout(listo, 520));
+}
 const formIngreso = $('form-ingreso');
 
 const nombreDePila = (completo) => {
@@ -998,15 +1004,13 @@ formIngreso.addEventListener('submit', async (e) => {
   formIngreso.querySelector('button').disabled = true;
 
   $('nombre-bienvenida').textContent = nombreDePila(USUARIO.nombre);
-  if (!quietito) await hacerPolvo(formIngreso);
+  await (quietito ? desvanecer(formIngreso) : hacerPolvo(formIngreso));
   $('p-ingreso').classList.add('oculto');
   const saludo = $('bienvenida');
   saludo.classList.remove('oculto');
-  await new Promise((r) => setTimeout(r, quietito ? 900 : 2600));
-  if (!quietito) {
-    saludo.classList.add('saliendo');
-    await new Promise((r) => setTimeout(r, 420));
-  }
+  await new Promise((r) => setTimeout(r, 3400));
+  saludo.classList.add('saliendo');
+  await new Promise((r) => setTimeout(r, 420));
   saludo.classList.add('oculto');
   document.body.classList.remove('sin-ingresar');
   ir('rapido');

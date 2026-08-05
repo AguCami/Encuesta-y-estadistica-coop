@@ -86,7 +86,15 @@ form.addEventListener('input', () => {
 
 // ------------------------------------------------------------------ polvo ---
 
+// Quien tenga activado "reducir movimiento" en su sistema no ve el polvo
+// volando: en su lugar la tarjeta se desvanece. El saludo dura lo mismo.
 const quietito = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function desvanecer(tarjeta) {
+  tarjeta.style.transition = 'opacity .5s ease';
+  tarjeta.style.opacity = '0';
+  return new Promise((listo) => setTimeout(listo, 520));
+}
 
 /**
  * Deshace la tarjeta en partículas y se las lleva el viento hacia la derecha.
@@ -179,18 +187,16 @@ form.addEventListener('submit', async (e) => {
 
     $('nombre').textContent = nombreDePila(usuario.nombre);
     // primero se lo lleva el viento, después aparece el saludo
-    if (!quietito) await hacerPolvo(form);
+    await (quietito ? desvanecer(form) : hacerPolvo(form));
     $('pantalla').classList.add('oculto');
     const saludo = $('bienvenida');
     saludo.classList.remove('oculto');
 
     // El saludo tiene que durar lo suficiente para leerlo: entra en medio
     // segundo, se queda quieto un rato y recién ahí se va desvaneciendo.
-    await new Promise((r) => setTimeout(r, quietito ? 900 : 2600));
-    if (!quietito) {
-      saludo.classList.add('saliendo');
-      await new Promise((r) => setTimeout(r, 420));
-    }
+    await new Promise((r) => setTimeout(r, 3400));
+    saludo.classList.add('saliendo');
+    await new Promise((r) => setTimeout(r, 420));
     location.href = destino();
   } catch (err) {
     marcarError(err.message);

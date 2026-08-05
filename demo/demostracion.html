@@ -2838,34 +2838,49 @@ function derrumbar() {
 }
 
 // ------------------------------------------------------------------ mapa ---
-// # pared · . bolita · o bolita grande · espacio vacío · P pacman · G fantasma
+//
+// '#' pared · '.' bolita · 'o' bolita grande · ',' pasillo sin bolita (túnel)
+// '-' puerta de la casa: solo la cruzan los fantasmas, para salir
+// 'G' arranque de fantasma · 'P' arranque de Pac-Man · ' ' relleno macizo
+//
+// El laberinto está verificado: no hay bolitas encerradas, ningún pasillo
+// termina cortado y los fantasmas pueden salir de la casa y llegar hasta
+// Pac-Man.
 
 const MAPA = [
-  '####################',
-  '#.........##.......#',
-  '#o##.####.##.####.o#',
-  '#.##.####.##.####..#',
-  '#..................#',
-  '#.##.#.######.#.##.#',
-  '#....#...##...#....#',
-  '####.###.##.###.####',
-  '   #.#...GG...#.#   ',
-  '####.#.##--##.#.####',
-  '....... #GG G#......',
-  '####.#.##P####.#.###',
-  '   #.#........#.#   ',
-  '####.#.######.#.####',
-  '#........##........#',
-  '#.##.###.##.###.##.#',
-  '#o.#...........#..o#',
-  '##.#.#.######.#.#.##',
-  '#....#...##...#....#',
-  '#.########..########',
-  '####################',
+  '############################',
+  '#............##............#',
+  '#.####.#####.##.#####.####.#',
+  '#o####.#####.##.#####.####o#',
+  '#.####.#####.##.#####.####.#',
+  '#..........................#',
+  '#.####.##.########.##.####.#',
+  '#.####.##.########.##.####.#',
+  '#......##....##....##......#',
+  '######.#####.##.#####.######',
+  '######.#####.##.#####.######',
+  '######.##..........##.######',
+  '######.##.###--###.##.######',
+  '######.##.#GGGGGG#.##.######',
+  ',,,,,,....#GGGGGG#....,,,,,,',
+  '######.##.########.##.######',
+  '######.##..........##.######',
+  '######.##.########.##.######',
+  '######.##.########.##.######',
+  '#............##............#',
+  '#.####.#####.##.#####.####.#',
+  '#.####.#####.##.#####.####.#',
+  '#o..##.......P........##..o#',
+  '###.##.##.########.##.##.###',
+  '#......##....##....##......#',
+  '#.##########.##.##########.#',
+  '#..........................#',
+  '############################',
 ];
 
 const FILAS = MAPA.length;
 const COLS = MAPA[0].length;
+const FILA_PUERTA = 12;   // por encima de esta fila, el fantasma ya salió
 
 // -------------------------------------------------------------- el juego ---
 
@@ -2874,114 +2889,143 @@ function crearJuego(lienzo, alPuntuar, alPerder) {
   let lado = 0;
 
   const grilla = MAPA.map((f) => f.split(''));
-  const comida = grilla.map((f) => f.map((c) => (c === '.' ? 1 : c === 'o' ? 2 : 0)));
-  let quedan = comida.flat().filter(Boolean).length;
+  const comida = grilla.map((f) => f.map(() => 0));
 
-  const esPared = (c, f) => {
+  const casilla = (c, f) => grilla[f][((c % COLS) + COLS) % COLS];
+
+  /** La puerta de la casa solo la cruzan los fantasmas que todavía no salieron. */
+  function pared(c, f, puedeCruzarPuerta = false) {
     if (f < 0 || f >= FILAS) return true;
-    const fila = grilla[f];
-    const col = ((c % COLS) + COLS) % COLS;
-    return fila[col] === '#' || fila[col] === '-';
-  };
+    const x = casilla(c, f);
+    if (x === '#' || x === ' ') return true;
+    if (x === '-') return !puedeCruzarPuerta;
+    return false;
+  }
 
-  const inicioPac = { c: 9, f: 16 };
-  const iniciosFantasma = [{ c: 9, f: 8 }, { c: 10, f: 8 }, { c: 9, f: 10 }, { c: 10, f: 10 }];
+  let inicioPac = { c: 13, f: 22 };
+  const iniciosFantasma = [];
+  for (let f = 0; f < FILAS; f++) {
+    for (let c = 0; c < COLS; c++) {
+      if (grilla[f][c] === 'P') inicioPac = { c, f };
+      if (grilla[f][c] === 'G' && iniciosFantasma.length < 4) {
+        // los cuatro repartidos en la casa, no todos encima
+        if ((c + f) % 2 === 0) iniciosFantasma.push({ c, f });
+      }
+    }
+  }
   const COLORES = ['#e34948', '#e87ba4', '#43c6dc', '#eda100'];
 
   let pac, fantasmas, puntos, vidas, nivel, asustados, terminado, pausa, reloj;
 
+  function sembrarComida() {
+    for (let f = 0; f < FILAS; f++) {
+      for (let c = 0; c < COLS; c++) {
+        comida[f][c] = grilla[f][c] === '.' ? 1 : grilla[f][c] === 'o' ? 2 : 0;
+      }
+    }
+  }
+  const quedanBolitas = () => comida.some((f) => f.some(Boolean));
+
   function reiniciarPosiciones() {
-    pac = { ...inicioPac, dx: -1, dy: 0, sig: [-1, 0], avance: 0, boca: 0 };
+    pac = { x: inicioPac.c, y: inicioPac.f, dx: -1, dy: 0, sig: [-1, 0], boca: 0 };
     fantasmas = iniciosFantasma.map((p, i) => ({
-      ...p, dx: 0, dy: -1, avance: 0, color: COLORES[i], salida: 90 + i * 75,
+      x: p.c, y: p.f, dx: 0, dy: -1, color: COLORES[i],
+      espera: 70 + i * 70, afuera: false,
     }));
     asustados = 0;
-    pausa = 75;
+    pausa = 80;
     reloj = 0;
   }
 
   function nuevaPartida() {
     puntos = 0; vidas = 3; nivel = 1; terminado = false;
-    for (let f = 0; f < FILAS; f++) {
-      for (let c = 0; c < COLS; c++) comida[f][c] = grilla[f][c] === '.' ? 1 : grilla[f][c] === 'o' ? 2 : 0;
-    }
-    quedan = comida.flat().filter(Boolean).length;
+    sembrarComida();
     reiniciarPosiciones();
   }
 
-  const VEL_PAC = 0.13;
-  const VEL_FAN = 0.105;
+  const VEL_PAC = 0.115;
+  const VEL_FANTASMA = 0.098;
 
-  function mover(ente, velocidad) {
-    ente.avance += velocidad;
-    if (ente.avance < 1) return false;
-    ente.avance = 0;
-    const c = ente.c + ente.dx, f = ente.f + ente.dy;
-    if (esPared(c, f)) return false;
-    ente.c = ((c % COLS) + COLS) % COLS;
-    ente.f = f;
-    return true;
+  /**
+   * Movimiento continuo: el personaje avanza una fracción de casillero por
+   * cuadro y solo puede doblar cuando está justo sobre el centro de uno. Eso
+   * es lo que hace que se deslice en vez de saltar de casillero en casillero.
+   */
+  function avanzar(e, vel, puedeCruzarPuerta) {
+    const cx = Math.round(e.x), cy = Math.round(e.y);
+    const enElCentro = Math.abs(e.x - cx) < vel && Math.abs(e.y - cy) < vel;
+
+    if (enElCentro) {
+      e.x = cx; e.y = cy;
+      if (e.sig && !pared(cx + e.sig[0], cy + e.sig[1], puedeCruzarPuerta)) {
+        e.dx = e.sig[0]; e.dy = e.sig[1];
+      }
+      if (pared(cx + e.dx, cy + e.dy, puedeCruzarPuerta)) return true;  // contra la pared
+    }
+
+    e.x += e.dx * vel;
+    e.y += e.dy * vel;
+    if (e.x < -0.5) e.x += COLS;            // túnel de un lado al otro
+    if (e.x > COLS - 0.5) e.x -= COLS;
+    return enElCentro;
   }
 
   function pasoPac() {
-    // Si el giro pedido es posible, se toma; si no, sigue derecho.
-    const [sx, sy] = pac.sig;
-    if (!esPared(pac.c + sx, pac.f + sy)) { pac.dx = sx; pac.dy = sy; }
-    if (mover(pac, VEL_PAC)) {
-      pac.boca = (pac.boca + 1) % 8;
-      const bocado = comida[pac.f][pac.c];
-      if (bocado) {
-        comida[pac.f][pac.c] = 0;
-        quedan--;
-        puntos += bocado === 2 ? 50 : 10;
-        if (bocado === 2) asustados = 420;
-        if (!quedan) { nivel++; reiniciarPosiciones();
-          for (let f = 0; f < FILAS; f++) {
-            for (let c = 0; c < COLS; c++) comida[f][c] = grilla[f][c] === '.' ? 1 : grilla[f][c] === 'o' ? 2 : 0;
-          }
-          quedan = comida.flat().filter(Boolean).length;
-        }
-      }
-    }
+    const antesC = Math.round(pac.x), antesF = Math.round(pac.y);
+    avanzar(pac, VEL_PAC, false);
+    pac.boca += 0.28;
+
+    const c = ((Math.round(pac.x) % COLS) + COLS) % COLS, f = Math.round(pac.y);
+    if (c === antesC && f === antesF && comida[f][c] === 0) return;
+    const bocado = comida[f][c];
+    if (!bocado) return;
+    comida[f][c] = 0;
+    puntos += bocado === 2 ? 50 : 10;
+    if (bocado === 2) asustados = 460;
+    if (!quedanBolitas()) { nivel++; sembrarComida(); reiniciarPosiciones(); }
   }
 
-  /** Persecución simple: en cada cruce elige la salida que más lo acerca. */
+  const ESQUINAS = [[1, 1], [COLS - 2, 1], [1, FILAS - 2], [COLS - 2, FILAS - 2]];
+
   function pasoFantasma(g, i) {
-    if (g.salida > 0) { g.salida--; return; }
-    g.avance += VEL_FAN * (asustados ? 0.72 : 1);
-    if (g.avance < 1) return;
-    g.avance = 0;
+    if (g.espera > 0) { g.espera--; return; }
+    if (!g.afuera && g.y <= FILA_PUERTA - 1) g.afuera = true;
 
-    const opciones = [[1, 0], [-1, 0], [0, 1], [0, -1]]
-      .filter(([dx, dy]) => !esPared(g.c + dx, g.f + dy))
-      .filter(([dx, dy]) => !(dx === -g.dx && dy === -g.dy) || false);
-    const posibles = opciones.length ? opciones : [[-g.dx, -g.dy]];
+    const vel = VEL_FANTASMA * (asustados ? 0.68 : 1) * (g.afuera ? 1 : 0.8);
+    const cx = Math.round(g.x), cy = Math.round(g.y);
+    const enElCentro = Math.abs(g.x - cx) < vel && Math.abs(g.y - cy) < vel;
 
-    // Al principio se dispersan a las esquinas, como en el original: da tiempo
-    // a acomodarse antes de que empiece la persecución en serio.
-    const disperso = reloj < 420;
-    const esquinas = [[1, 1], [COLS - 2, 1], [1, FILAS - 2], [COLS - 2, FILAS - 2]];
-    // Cada fantasma apunta un poco distinto, para que no vayan todos en fila.
-    const metaC = asustados ? COLS - pac.c : disperso ? esquinas[i][0] : pac.c + (i === 1 ? pac.dx * 4 : 0);
-    const metaF = asustados ? FILAS - pac.f : disperso ? esquinas[i][1] : pac.f + (i === 2 ? pac.dy * 4 : 0);
+    if (enElCentro) {
+      // Mientras está adentro apunta a la puerta; después, a lo suyo.
+      const meta = !g.afuera ? [13, FILA_PUERTA - 1]
+        : asustados ? [COLS - 1 - pac.x, FILAS - 1 - pac.y]
+          : reloj < 460 ? ESQUINAS[i]
+            : [pac.x + (i === 1 ? pac.dx * 4 : 0), pac.y + (i === 2 ? pac.dy * 4 : 0)];
 
-    let mejor = posibles[0], mejorD = Infinity;
-    for (const [dx, dy] of posibles) {
-      const d = Math.hypot(g.c + dx - metaC, g.f + dy - metaF) + Math.random() * 0.6;
-      if (d < mejorD) { mejorD = d; mejor = [dx, dy]; }
+      const opciones = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+        .filter(([dx, dy]) => !pared(cx + dx, cy + dy, !g.afuera));
+      // No se dan media vuelta en mitad de un pasillo, salvo que no quede otra.
+      const derechas = opciones.filter(([dx, dy]) => !(dx === -g.dx && dy === -g.dy));
+      const posibles = derechas.length ? derechas : opciones;
+
+      let mejor = [g.dx, g.dy], mejorD = Infinity;
+      for (const [dx, dy] of posibles) {
+        const d = Math.hypot(cx + dx - meta[0], cy + dy - meta[1]) + Math.random() * 0.4;
+        if (d < mejorD) { mejorD = d; mejor = [dx, dy]; }
+      }
+      g.sig = mejor;
     }
-    [g.dx, g.dy] = mejor;
-    g.c = ((g.c + g.dx) % COLS + COLS) % COLS;
-    g.f += g.dy;
+    avanzar(g, vel, !g.afuera);
   }
 
   function chocar() {
     if (pausa > 0 || terminado) return;
     for (const g of fantasmas) {
-      if (g.c !== pac.c || g.f !== pac.f) continue;
+      if (Math.hypot(g.x - pac.x, g.y - pac.y) > 0.7) continue;
       if (asustados) {
         puntos += 200;
-        Object.assign(g, iniciosFantasma[fantasmas.indexOf(g)], { salida: 60 });
+        const i = fantasmas.indexOf(g);
+        Object.assign(g, { x: iniciosFantasma[i].c, y: iniciosFantasma[i].f, espera: 80, afuera: false });
       } else {
         vidas--;
         if (vidas <= 0) { terminado = true; alPerder(puntos, nivel); }
@@ -2992,58 +3036,68 @@ function crearJuego(lienzo, alPuntuar, alPerder) {
   }
 
   function dibujar() {
-    const w = lienzo.width, h = lienzo.height;
-    ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = '#07070c';
-    ctx.fillRect(0, 0, w, h);
+    ctx.fillRect(0, 0, lienzo.width, lienzo.height);
 
     for (let f = 0; f < FILAS; f++) {
       for (let c = 0; c < COLS; c++) {
-        const x = c * lado, y = f * lado;
-        if (grilla[f][c] === '#') {
+        const x = c * lado, y = f * lado, t = grilla[f][c];
+        if (t === '#') {
+          // Los bloques van enteros: las paredes vecinas se unen y se lee
+          // como un laberinto, no como un damero.
           ctx.fillStyle = PARED;
-          ctx.fillRect(x + lado * 0.12, y + lado * 0.12, lado * 0.76, lado * 0.76);
-        } else if (grilla[f][c] === '-') {
+          ctx.fillRect(x, y, lado + 0.5, lado + 0.5);
+        } else if (t === '-') {
           ctx.fillStyle = '#d55181';
-          ctx.fillRect(x, y + lado * 0.42, lado, lado * 0.16);
+          ctx.fillRect(x, y + lado * 0.4, lado + 0.5, lado * 0.2);
         }
         if (comida[f][c] === 1) {
           ctx.fillStyle = '#f2e6c8';
-          ctx.beginPath(); ctx.arc(x + lado / 2, y + lado / 2, lado * 0.09, 0, 7); ctx.fill();
+          ctx.beginPath(); ctx.arc(x + lado / 2, y + lado / 2, Math.max(1, lado * 0.09), 0, 7); ctx.fill();
         } else if (comida[f][c] === 2) {
           ctx.fillStyle = AMARILLO;
-          ctx.beginPath(); ctx.arc(x + lado / 2, y + lado / 2, lado * 0.26, 0, 7); ctx.fill();
+          ctx.beginPath();
+          ctx.arc(x + lado / 2, y + lado / 2, lado * (0.22 + Math.sin(reloj / 9) * 0.05), 0, 7);
+          ctx.fill();
         }
       }
     }
 
-    // pacman
-    const px = pac.c * lado + lado / 2, py = pac.f * lado + lado / 2;
-    const abertura = (Math.sin(pac.boca / 8 * Math.PI * 2) * 0.5 + 0.5) * 0.9;
+    const px = pac.x * lado + lado / 2, py = pac.y * lado + lado / 2;
+    const abertura = (Math.sin(pac.boca) * 0.5 + 0.5) * 0.85;
     const giro = Math.atan2(pac.dy, pac.dx);
     ctx.fillStyle = AMARILLO;
     ctx.beginPath();
     ctx.moveTo(px, py);
-    ctx.arc(px, py, lado * 0.44, giro + abertura / 2, giro - abertura / 2 + Math.PI * 2);
+    ctx.arc(px, py, lado * 0.46, giro + abertura / 2, giro - abertura / 2 + Math.PI * 2);
     ctx.closePath();
     ctx.fill();
 
     for (const g of fantasmas) {
-      const gx = g.c * lado + lado / 2, gy = g.f * lado + lado / 2;
-      ctx.fillStyle = asustados ? (asustados < 90 && Math.floor(asustados / 10) % 2 ? '#fff' : AZUL) : g.color;
+      const gx = g.x * lado + lado / 2, gy = g.y * lado + lado / 2;
+      const parpadea = asustados && asustados < 110 && Math.floor(asustados / 12) % 2;
+      ctx.fillStyle = asustados ? (parpadea ? '#fff' : AZUL) : g.color;
       ctx.beginPath();
-      ctx.arc(gx, gy, lado * 0.42, Math.PI, 0);
-      ctx.lineTo(gx + lado * 0.42, gy + lado * 0.36);
+      ctx.arc(gx, gy, lado * 0.44, Math.PI, 0);
+      ctx.lineTo(gx + lado * 0.44, gy + lado * 0.4);
       for (let k = 0; k < 3; k++) {
-        ctx.lineTo(gx + lado * 0.42 - lado * 0.28 * k - lado * 0.14, gy + lado * (k % 2 ? 0.36 : 0.2));
+        ctx.lineTo(gx + lado * 0.44 - lado * 0.293 * (k + 0.5), gy + lado * (k % 2 ? 0.4 : 0.24));
       }
-      ctx.lineTo(gx - lado * 0.42, gy + lado * 0.36);
+      ctx.lineTo(gx - lado * 0.44, gy + lado * 0.4);
       ctx.closePath();
       ctx.fill();
+      ctx.fillStyle = asustados ? (parpadea ? AZUL : '#fff') : '#fff';
+      for (const lx of [-0.16, 0.16]) {
+        ctx.beginPath();
+        ctx.ellipse(gx + lado * lx, gy - lado * 0.07, lado * 0.115, lado * 0.145, 0, 0, 7);
+        ctx.fill();
+      }
       if (!asustados) {
-        ctx.fillStyle = '#fff';
-        for (const lx of [-0.15, 0.15]) {
-          ctx.beginPath(); ctx.ellipse(gx + lado * lx, gy - lado * 0.06, lado * 0.11, lado * 0.14, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = '#243';
+        for (const lx of [-0.16, 0.16]) {
+          ctx.beginPath();
+          ctx.arc(gx + lado * (lx + g.dx * 0.05), gy - lado * (0.07 - g.dy * 0.05), lado * 0.06, 0, 7);
+          ctx.fill();
         }
       }
     }
@@ -3051,8 +3105,8 @@ function crearJuego(lienzo, alPuntuar, alPerder) {
 
   function cuadro() {
     if (terminado) return;
-    if (pausa > 0) { pausa--; dibujar(); return; }
     reloj++;
+    if (pausa > 0) { pausa--; dibujar(); return; }
     if (asustados) asustados--;
     pasoPac();
     chocar();
@@ -3068,11 +3122,12 @@ function crearJuego(lienzo, alPuntuar, alPerder) {
     girar(dx, dy) { pac.sig = [dx, dy]; },
     get terminado() { return terminado; },
     redimensionar(ancho) {
-      lado = Math.floor(ancho / COLS);
+      lado = Math.max(6, Math.floor(ancho / COLS));
       lienzo.width = lado * COLS;
       lienzo.height = lado * FILAS;
       lienzo.style.width = `${lienzo.width}px`;
       lienzo.style.height = `${lienzo.height}px`;
+      if (pac) dibujar();
     },
   };
 }
@@ -3148,12 +3203,26 @@ async function arrancar(puntajes) {
   medir();
   addEventListener('resize', medir);
 
-  let lazo = 0;
+  let lazo = 0, sobrante = 0, previo = 0;
+  const PASO = 1000 / 60;
+
+  function tic(ahora) {
+    if (!lazo) return;
+    sobrante += Math.min(120, ahora - previo);
+    previo = ahora;
+    // Paso fijo: el juego corre siempre a la misma velocidad, vaya la pantalla
+    // a 60 o a 120 cuadros por segundo.
+    while (sobrante >= PASO) { juego.cuadro(); sobrante -= PASO; }
+    lazo = requestAnimationFrame(tic);
+  }
+
   function comenzar() {
     $$('pm-cartel').classList.add('oculto');
     juego.nuevaPartida();
-    clearInterval(lazo);
-    lazo = setInterval(() => juego.cuadro(), 1000 / 60);
+    cancelAnimationFrame(lazo);
+    sobrante = 0;
+    previo = performance.now();
+    lazo = requestAnimationFrame(tic);
   }
   $$('pm-jugar').onclick = comenzar;
 
@@ -3169,7 +3238,8 @@ async function arrancar(puntajes) {
   addEventListener('keydown', alTeclado);
 
   function salir() {
-    clearInterval(lazo);
+    cancelAnimationFrame(lazo);
+    lazo = 0;
     removeEventListener('keydown', alTeclado);
     removeEventListener('resize', medir);
     detener();
@@ -4095,6 +4165,12 @@ PINTAR.informacion = pintarInformacion;
    ============================================================ */
 
 const quietito = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function desvanecer(tarjeta) {
+  tarjeta.style.transition = 'opacity .5s ease';
+  tarjeta.style.opacity = '0';
+  return new Promise((listo) => setTimeout(listo, 520));
+}
 const formIngreso = $('form-ingreso');
 
 const nombreDePila = (completo) => {
@@ -4182,15 +4258,13 @@ formIngreso.addEventListener('submit', async (e) => {
   formIngreso.querySelector('button').disabled = true;
 
   $('nombre-bienvenida').textContent = nombreDePila(USUARIO.nombre);
-  if (!quietito) await hacerPolvo(formIngreso);
+  await (quietito ? desvanecer(formIngreso) : hacerPolvo(formIngreso));
   $('p-ingreso').classList.add('oculto');
   const saludo = $('bienvenida');
   saludo.classList.remove('oculto');
-  await new Promise((r) => setTimeout(r, quietito ? 900 : 2600));
-  if (!quietito) {
-    saludo.classList.add('saliendo');
-    await new Promise((r) => setTimeout(r, 420));
-  }
+  await new Promise((r) => setTimeout(r, 3400));
+  saludo.classList.add('saliendo');
+  await new Promise((r) => setTimeout(r, 420));
   saludo.classList.add('oculto');
   document.body.classList.remove('sin-ingresar');
   ir('rapido');
