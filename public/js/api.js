@@ -29,10 +29,8 @@ export async function exigirSesion() {
 
 const PAGINAS = [
   { href: '/rapido.html', texto: 'Atención rápida' },
-  { href: '/carga.html', texto: 'Carga detallada' },
   { href: '/consultas.html', texto: 'Consultas' },
   { href: '/panel.html', texto: 'Estadisticas' },
-  { href: '/satisfaccion.html', texto: 'Satisfaccion' },
   { href: '/admin.html', texto: 'Administracion', rol: 'supervisor' },
 ];
 
