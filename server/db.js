@@ -173,6 +173,17 @@ const MOTIVOS = {
 
 const CANALES = [['Telefonico', 10], ['Presencial', 20], ['WhatsApp', 30], ['Email', 40], ['Web / Redes', 50]];
 
+// Clave con la que entra cada uno la primera vez; se cambia desde "Mi clave".
+const CLAVE_INICIAL = process.env.CLAVE_INICIAL || 'coop2026';
+
+const USUARIOS = [
+  ['acami', 'Cami, Agustini', 'admin', 'otro'],
+  ['alenarduzzi', 'Lenarduzzi, Andres Alejandro', 'operador', 'call_center'],
+  ['crodriguez', 'Rodriguez, Cristian Adrian', 'operador', 'call_center'],
+  ['emoyano', 'Moyano, Emilio Noel', 'operador', 'call_center'],
+  ['proggero', 'Roggero, Pablo Gustavo', 'operador', 'mesa_informes'],
+];
+
 function seed() {
   const yaHay = get('SELECT COUNT(*) AS n FROM sectores').n;
   if (!yaHay) {
@@ -194,10 +205,12 @@ function seed() {
     }
   }
 
-  if (!get('SELECT COUNT(*) AS n FROM usuarios').n) {
-    const creado = new Date().toISOString();
+  // El personal de la cooperativa. Se crea el que falte, sin tocar los que ya
+  // existen: si alguien cambió su clave o fue desactivado, queda como está.
+  for (const [usuario, nombre, rol, puesto] of USUARIOS) {
+    if (get('SELECT id FROM usuarios WHERE usuario = ?', [usuario])) continue;
     run('INSERT INTO usuarios (usuario, nombre, hash, rol, puesto, creado) VALUES (?, ?, ?, ?, ?, ?)',
-      ['admin', 'Administrador', hashPassword('admin'), 'admin', 'otro', creado]);
+      [usuario, nombre, hashPassword(CLAVE_INICIAL), rol, puesto, new Date().toISOString()]);
   }
 }
 

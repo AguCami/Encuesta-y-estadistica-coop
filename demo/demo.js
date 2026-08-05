@@ -48,11 +48,10 @@ const CANALES = [
 ];
 
 const OPERADORES = [
-  { id: 1, nombre: 'Marina López', puesto: 'call_center' },
-  { id: 2, nombre: 'Julián Pérez', puesto: 'call_center' },
-  { id: 3, nombre: 'Rocío Gómez', puesto: 'mesa_informes' },
-  { id: 4, nombre: 'Diego Sosa', puesto: 'mesa_informes' },
-  { id: 5, nombre: 'Silvia Vera', puesto: 'call_center' },
+  { id: 1, nombre: 'Lenarduzzi, Andres Alejandro', puesto: 'call_center' },
+  { id: 2, nombre: 'Rodriguez, Cristian Adrian', puesto: 'call_center' },
+  { id: 3, nombre: 'Moyano, Emilio Noel', puesto: 'call_center' },
+  { id: 4, nombre: 'Roggero, Pablo Gustavo', puesto: 'mesa_informes' },
 ];
 
 const LOCALIDADES = [

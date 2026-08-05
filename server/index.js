@@ -145,5 +145,5 @@ servidor.listen(PORT, HOST, () => {
   console.log(`  Servidor:  http://localhost:${PORT}`);
   console.log(`  Base:      ${DB_FILE}`);
   console.log(`  Zona:      ${TZ}`);
-  console.log('  Usuario inicial: admin / admin  (cambialo desde Administracion)\n');
+  console.log('  Usuarios cargados con la clave inicial: cambiala desde Administracion\n');
 });

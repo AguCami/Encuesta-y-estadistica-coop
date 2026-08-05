@@ -8,19 +8,10 @@
 
 const crypto = require('node:crypto');
 const { all, get, run } = require('../server/db');
-const { hashPassword } = require('../server/auth-hash');
-const { partesFecha, sumarDias, hoy } = require('../server/util');
+const { sumarDias, hoy } = require('../server/util');
 
 const DIAS = Number(process.argv[2] || 90);
 const POR_DIA = Number(process.argv[3] || 28);
-
-const OPERADORES = [
-  ['mlopez', 'Marina Lopez', 'call_center'],
-  ['jperez', 'Julian Perez', 'call_center'],
-  ['rgomez', 'Rocio Gomez', 'mesa_informes'],
-  ['dsosa', 'Diego Sosa', 'mesa_informes'],
-  ['svera', 'Silvia Vera', 'call_center'],
-];
 
 const LOCALIDADES = ['Centro', 'Barrio Norte', 'Villa Elisa', 'Colonia San Jose', 'Zona rural'];
 
@@ -36,12 +27,6 @@ function pesado(items, pesos) {
 }
 
 function crearOperadores() {
-  for (const [usuario, nombre, puesto] of OPERADORES) {
-    if (get('SELECT id FROM usuarios WHERE usuario = ?', [usuario])) continue;
-    run('INSERT INTO usuarios (usuario, nombre, hash, rol, puesto, creado) VALUES (?,?,?,?,?,?)',
-      [usuario, nombre, hashPassword('1234'), usuario === 'mlopez' ? 'supervisor' : 'operador',
-        puesto, partesFecha().ts]);
-  }
   for (const nombre of LOCALIDADES) {
     if (!get('SELECT id FROM localidades WHERE nombre = ?', [nombre])) {
       run('INSERT INTO localidades (nombre) VALUES (?)', [nombre]);
@@ -56,7 +41,7 @@ function generar() {
   const motivos = all('SELECT * FROM motivos WHERE activo = 1');
   const canales = all('SELECT * FROM canales WHERE activo = 1');
   const localidades = all('SELECT * FROM localidades');
-  const operadores = all("SELECT * FROM usuarios WHERE usuario <> 'admin'");
+  const operadores = all("SELECT * FROM usuarios WHERE activo = 1 AND puesto <> 'otro'");
 
   // La demanda no se reparte pareja: reclamos y ventas se llevan la mayor parte.
   const PESOS = {
@@ -136,7 +121,7 @@ function generar() {
   }
 
   console.log(`Listo: ${creadas} consultas y ${encuestas} encuestas en los ultimos ${DIAS} dias.`);
-  console.log('Usuarios de prueba: mlopez (supervisor), jperez, rgomez, dsosa, svera — clave 1234');
+  console.log(`Consultas repartidas entre ${operadores.length} operadores del padron.`);
 }
 
 generar();

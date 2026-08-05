@@ -31,8 +31,21 @@ node -v            # tiene que decir v22 o superior
 npm start          # levanta el servidor en http://localhost:3000
 ```
 
-Primer ingreso: usuario **`admin`**, clave **`admin`**.
-Cambiala en *Administración → Mi clave* antes de usarlo con datos reales.
+### Usuarios
+
+El sistema arranca con el personal ya cargado. La clave inicial de todos es
+**`coop2026`** (se puede cambiar antes de la primera puesta en marcha con la
+variable `CLAVE_INICIAL`); cada uno la cambia desde *Administración → Mi clave*.
+
+| Usuario | Nombre | Rol | Puesto |
+|---|---|---|---|
+| `acami` | Cami, Agustini | Administrador | — |
+| `alenarduzzi` | Lenarduzzi, Andres Alejandro | Operador | Call center |
+| `crodriguez` | Rodriguez, Cristian Adrian | Operador | Call center |
+| `emoyano` | Moyano, Emilio Noel | Operador | Call center |
+| `proggero` | Roggero, Pablo Gustavo | Operador | Mesa de informes |
+
+El administrador da de alta al resto desde *Administración → Usuarios*.
 
 Para ver la aplicación con datos de ejemplo (no usar en producción):
 
