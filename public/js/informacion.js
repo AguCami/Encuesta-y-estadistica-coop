@@ -117,7 +117,7 @@ function pintarInternos() {
   const q = sinAcentos($('q-internos').value.trim());
   const filas = INTERNOS.filter((i) => {
     if (sectorInternos !== 'todos' && i.sector !== sectorInternos) return false;
-    return !q || sinAcentos(`${i.nombre} ${i.sector} ${i.num} ${i.tel}`).includes(q);
+    return !q || sinAcentos(`${i.nombre} ${i.sector} ${i.num}`).includes(q);
   });
   $('internos').innerHTML = filas.length
     ? filas.map((i) => `
@@ -125,9 +125,8 @@ function pintarInternos() {
         <td><b class="interno">${escapar(i.num)}</b></td>
         <td>${escapar(i.sector)}</td>
         <td>${escapar(i.nombre)}</td>
-        <td><a href="tel:03525${escapar(i.tel)}">${escapar(i.tel)}</a></td>
       </tr>`).join('')
-    : '<tr><td colspan="4" class="solo-lectura">No se encontraron internos.</td></tr>';
+    : '<tr><td colspan="3" class="solo-lectura">No se encontraron internos.</td></tr>';
 }
 
 // --------------------------------------------------------------- pagos ---

@@ -818,12 +818,12 @@ function pintarInternos() {
   const q = sinTildes($('q-internos').value.trim());
   const filas = INTERNOS.filter((i) => {
     if (sectorInternos !== 'todos' && i.sector !== sectorInternos) return false;
-    return !q || sinTildes(`${i.nombre} ${i.sector} ${i.num} ${i.tel}`).includes(q);
+    return !q || sinTildes(`${i.nombre} ${i.sector} ${i.num}`).includes(q);
   });
   $('internos').innerHTML = filas.length ? filas.map((i) => `
     <tr><td><b class="interno">${escapar(i.num)}</b></td><td>${escapar(i.sector)}</td>
-      <td>${escapar(i.nombre)}</td><td><a href="tel:03525${escapar(i.tel)}">${escapar(i.tel)}</a></td></tr>`).join('')
-    : '<tr><td colspan="4" class="solo-lectura">No se encontraron internos.</td></tr>';
+      <td>${escapar(i.nombre)}</td></tr>`).join('')
+    : '<tr><td colspan="3" class="solo-lectura">No se encontraron internos.</td></tr>';
 }
 
 function pintarPagos() {
