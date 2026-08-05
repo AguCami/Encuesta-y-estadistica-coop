@@ -632,12 +632,12 @@ function pintarPanel() {
   apiladas($('g-estado-sector'), d.por_sector.map((s) => ({
     etiqueta: s.nombre,
     partes: [
-      { nombre: 'Solucionada', valor: s.total - s.pendientes, color: p.estado.resuelta },
-      { nombre: 'Otras', valor: s.pendientes, color: p.estado.pendiente },
+      { nombre: 'Otros', valor: s.pendientes, color: p.estado.pendiente },
+      { nombre: 'Solucionadas', valor: s.total - s.pendientes, color: p.estado.resuelta },
     ],
   })), { leyenda: [
-    { nombre: 'Solucionada', color: p.estado.resuelta },
-    { nombre: 'Otras', color: p.estado.pendiente },
+    { nombre: 'Otros', color: p.estado.pendiente },
+    { nombre: 'Solucionadas', color: p.estado.resuelta },
   ] });
 
   barras($('g-motivos'), d.por_motivo.map((m) => ({ etiqueta: m.nombre, valor: m.total, detalle: m.sector })),

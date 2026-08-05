@@ -108,14 +108,14 @@ function pintar(d) {
 
   // --- composicion por resultado: la leyenda solo nombra lo que aparece
   const p = paleta();
-  // No toda consulta es un problema a resolver: lo que no se marcó como
-  // solucionado es simplemente el resto, sin connotación de falla.
-  const NOMBRE_PARTE = { resuelta: 'Solucionada', pendiente: 'Otras', derivada: 'Derivada', reclamo: 'Reclamo generado' };
+  // El resto de las consultas va primero y lo solucionado cierra la barra en
+  // verde: se lee de un vistazo cuánto se resolvió en el momento.
+  const NOMBRE_PARTE = { pendiente: 'Otros', derivada: 'Derivada', reclamo: 'Reclamo generado', resuelta: 'Solucionadas' };
   const partesDe = (s) => [
-    { estado: 'resuelta', valor: s.total - s.derivadas - s.pendientes - s.reclamos },
     { estado: 'pendiente', valor: s.pendientes },
     { estado: 'derivada', valor: s.derivadas },
     { estado: 'reclamo', valor: s.reclamos },
+    { estado: 'resuelta', valor: s.total - s.derivadas - s.pendientes - s.reclamos },
   ].map((x) => ({ ...x, nombre: NOMBRE_PARTE[x.estado], color: p.estado[x.estado] }));
 
   const usados = new Set();

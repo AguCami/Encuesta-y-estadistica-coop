@@ -33,8 +33,9 @@ export function paleta() {
     muted: v('--muted'),
     grid: v('--grid'),
     axis: v('--axis'),
-    // "pendiente" en el tablero rapido es simplemente el resto: tono neutro.
-    estado: { resuelta: v('--ok'), pendiente: v('--resto'), derivada: v('--s1'), reclamo: v('--serio') },
+    // Lo solucionado se destaca en verde; el resto usa el azul del resto de
+    // los graficos, porque no es un problema sino simplemente lo demas.
+    estado: { resuelta: v('--ok'), pendiente: v('--s1'), derivada: v('--s7'), reclamo: v('--serio') },
   };
 }
 

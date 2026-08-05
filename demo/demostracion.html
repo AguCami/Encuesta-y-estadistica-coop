@@ -26,8 +26,6 @@
 
   --ok: #0ca30c; --warn: #fab219; --serio: #ec835a; --critico: #d03b3b;
   --ok-texto: #006300;
-  /* el resto de las consultas: neutro, no es un problema */
-  --resto: #a3a29a;
 
   --radio: 10px;
   --fuente: system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -48,13 +46,11 @@
     --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
     --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
     --ok-texto: #0ca30c;
-    --resto: #6b6a63;
   }
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --resto: #6b6a63;
   --surface-1: #1a1a19;
   --plane: #0d0d0d;
   --ink: #ffffff;
@@ -169,8 +165,8 @@ fieldset { border: 0; padding: 0; margin: 0; }
 }
 .chip::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: currentColor; }
 .chip.resuelta { color: var(--ok-texto); }
-.chip.pendiente { color: var(--ink-2); }
-.chip.derivada { color: var(--s1); }
+.chip.pendiente { color: var(--s1); }
+.chip.derivada { color: var(--s7); }
 .chip.reclamo { color: var(--serio); }
 .chip.alta { color: var(--critico); }
 
@@ -521,8 +517,9 @@ function paleta() {
     muted: v('--muted'),
     grid: v('--grid'),
     axis: v('--axis'),
-    // "pendiente" en el tablero rapido es simplemente el resto: tono neutro.
-    estado: { resuelta: v('--ok'), pendiente: v('--resto'), derivada: v('--s1'), reclamo: v('--serio') },
+    // Lo solucionado se destaca en verde; el resto usa el azul del resto de
+    // los graficos, porque no es un problema sino simplemente lo demas.
+    estado: { resuelta: v('--ok'), pendiente: v('--s1'), derivada: v('--s7'), reclamo: v('--serio') },
   };
 }
 
@@ -1656,12 +1653,12 @@ function pintarPanel() {
   apiladas($('g-estado-sector'), d.por_sector.map((s) => ({
     etiqueta: s.nombre,
     partes: [
-      { nombre: 'Solucionada', valor: s.total - s.pendientes, color: p.estado.resuelta },
-      { nombre: 'Otras', valor: s.pendientes, color: p.estado.pendiente },
+      { nombre: 'Otros', valor: s.pendientes, color: p.estado.pendiente },
+      { nombre: 'Solucionadas', valor: s.total - s.pendientes, color: p.estado.resuelta },
     ],
   })), { leyenda: [
-    { nombre: 'Solucionada', color: p.estado.resuelta },
-    { nombre: 'Otras', color: p.estado.pendiente },
+    { nombre: 'Otros', color: p.estado.pendiente },
+    { nombre: 'Solucionadas', color: p.estado.resuelta },
   ] });
 
   barras($('g-motivos'), d.por_motivo.map((m) => ({ etiqueta: m.nombre, valor: m.total, detalle: m.sector })),
