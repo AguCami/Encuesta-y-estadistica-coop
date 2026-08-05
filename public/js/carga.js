@@ -1,7 +1,7 @@
 /* Pantalla de carga rapida: pensada para completar durante la llamada. */
 
 import {
-  get, post, exigirSesion, montarBarra, avisar, escapar, num, hoyISO,
+  get, getGuardado, post, exigirSesion, montarBarra, avisar, escapar, num, hoyISO,
   etiquetaEstado, fechaCorta,
 } from '/js/api.js';
 
@@ -18,7 +18,7 @@ inicio().catch((e) => console.error(e));
 async function inicio() {
   // Las tres en paralelo: en la nube cada una es una ida y vuelta, y hacerlas
   // en fila se notaba al cambiar de pantalla.
-  [usuario, catalogos] = await Promise.all([exigirSesion(), get('/api/catalogos')]);
+  [usuario, catalogos] = await Promise.all([exigirSesion(), getGuardado('/api/catalogos')]);
   montarBarra(usuario);
   llenarSelectores();
   await Promise.all([cargarFrecuentes(), refrescarPanelLateral()]);

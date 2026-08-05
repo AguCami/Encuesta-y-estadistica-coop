@@ -39,9 +39,53 @@ export const post = (ruta, body) => api(ruta, { method: 'POST', body });
 export const put = (ruta, body) => api(ruta, { method: 'PUT', body });
 export const del = (ruta) => api(ruta, { method: 'DELETE' });
 
+/**
+ * Guardado corto de las respuestas que se repiten en todas las pantallas.
+ *
+ * Cambiar de pestaña es una carga entera de página, y antes de dibujar nada
+ * había que preguntar de nuevo quién sos, cómo se llama la cooperativa y toda
+ * la lista de sectores y motivos. Con la base en la nube eso son tres viajes
+ * de ida y vuelta cada vez, y se siente.
+ *
+ * Ahora se guardan en la memoria de la pestaña: la pantalla se dibuja al
+ * instante con lo guardado y, por atrás, se vuelve a pedir para que quede
+ * fresco para la próxima. Nada de esto es un permiso: el servidor sigue
+ * controlando la sesión en cada pedido de verdad.
+ */
+const VIGENCIA = {
+  '/api/config': 30 * 60 * 1000,
+  '/api/catalogos': 10 * 60 * 1000,
+  '/api/yo': 5 * 60 * 1000,
+};
+
+const guardar = (clave, datos) => {
+  try { sessionStorage.setItem(clave, JSON.stringify({ ts: Date.now(), datos })); } catch { /* sin espacio */ }
+};
+
+export async function getGuardado(ruta) {
+  const vigencia = VIGENCIA[ruta];
+  if (!vigencia) return get(ruta);
+  const clave = `cache:${ruta}`;
+  let previo = null;
+  try { previo = JSON.parse(sessionStorage.getItem(clave) || 'null'); } catch { /* ilegible */ }
+
+  if (previo && Date.now() - previo.ts < vigencia) {
+    get(ruta).then((d) => guardar(clave, d)).catch(() => { /* se reintenta la próxima */ });
+    return previo.datos;
+  }
+  const datos = await get(ruta);
+  guardar(clave, datos);
+  return datos;
+}
+
+/** Se llama al cambiar algo que está guardado, para que se vuelva a pedir. */
+export function olvidar(ruta) {
+  try { sessionStorage.removeItem(`cache:${ruta}`); } catch { /* nada que hacer */ }
+}
+
 /** Exige sesion iniciada; si no hay, manda al login. Devuelve el usuario. */
 export async function exigirSesion() {
-  const usuario = await get('/api/yo');
+  const usuario = await getGuardado('/api/yo');
   if (!usuario) {
     location.href = `/index.html?volver=${encodeURIComponent(location.pathname + location.search)}`;
     throw new Error('sin sesion');
@@ -61,7 +105,7 @@ export const puede = (usuario, rol) => NIVEL[usuario.rol] >= NIVEL[rol];
 
 /** Dibuja la barra superior con la navegacion y el usuario conectado. */
 export async function montarBarra(usuario) {
-  const config = await get('/api/config');
+  const config = await getGuardado('/api/config');
   const actual = location.pathname;
   const enlaces = PAGINAS
     .filter((p) => !p.rol || puede(usuario, p.rol))
@@ -88,6 +132,7 @@ export async function montarBarra(usuario) {
 
   barra.querySelector('#btn-salir').onclick = async () => {
     await post('/api/logout', {});
+    try { sessionStorage.clear(); } catch { /* nada que hacer */ }
     location.href = '/index.html';
   };
   barra.querySelector('#btn-tema').onclick = () => {

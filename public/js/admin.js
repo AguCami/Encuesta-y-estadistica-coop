@@ -1,7 +1,7 @@
 /* Administracion de catalogos y usuarios. */
 
 import {
-  get, post, put, del, exigirSesion, montarBarra, avisar, escapar, puede,
+  get, post, put, del, olvidar, exigirSesion, montarBarra, avisar, escapar, puede,
   etiquetaRol, etiquetaPuesto,
 } from '/js/api.js';
 
@@ -59,6 +59,9 @@ function enlazar(idForm, accion) {
 }
 
 async function recargar() {
+  // Acá se editan los catálogos: lo guardado en la pestaña queda viejo y el
+  // resto de las pantallas tiene que volver a pedirlos.
+  olvidar('/api/catalogos');
   catalogos = await get('/api/catalogos');
   if (puede(usuario, 'admin')) usuarios = await get('/api/usuarios');
 

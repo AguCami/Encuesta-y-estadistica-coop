@@ -1,7 +1,7 @@
 /* Listado, busqueda, detalle y seguimiento de las consultas. */
 
 import {
-  get, post, put, del, exigirSesion, montarBarra, montarFiltros, leerFiltros, escribirFiltros,
+  get, getGuardado, post, put, del, exigirSesion, montarBarra, montarFiltros, leerFiltros, escribirFiltros,
   qs, escapar, num, fechaLarga, fechaCorta, minutos, etiquetaEstado, etiquetaPuesto, puede, avisar,
 } from '/js/api.js';
 
@@ -13,7 +13,7 @@ inicio().catch((e) => console.error(e));
 async function inicio() {
   // Las tres en paralelo: en la nube cada una es una ida y vuelta, y hacerlas
   // en fila se notaba al cambiar de pantalla.
-  [usuario, catalogos] = await Promise.all([exigirSesion(), get('/api/catalogos')]);
+  [usuario, catalogos] = await Promise.all([exigirSesion(), getGuardado('/api/catalogos')]);
   montarBarra(usuario);
   filtros = leerFiltros();
   $('buscar').value = filtros.q || '';

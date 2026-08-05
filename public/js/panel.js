@@ -1,7 +1,7 @@
 /* Panel de estadisticas: todo el periodo filtrado, en una sola pantalla. */
 
 import {
-  get, exigirSesion, montarBarra, montarFiltros, leerFiltros, escribirFiltros, qs,
+  get, getGuardado, exigirSesion, montarBarra, montarFiltros, leerFiltros, escribirFiltros, qs,
   escapar, num, dec, pct, fechaLarga, etiquetaEstado, etiquetaPuesto,
 } from '/js/api.js';
 import { barras, apiladas, lineas, multiplos, calor, paleta, DIAS } from '/js/charts.js';
@@ -22,7 +22,7 @@ const PUESTOS_PANEL = [
 
 async function inicio() {
   // Las dos en paralelo: en la nube cada una es una ida y vuelta.
-  const [usuario, catalogos] = await Promise.all([exigirSesion(), get('/api/catalogos')]);
+  const [usuario, catalogos] = await Promise.all([exigirSesion(), getGuardado('/api/catalogos')]);
   montarBarra(usuario);
   filtros = leerFiltros();
   // Cada puesto se mira por separado; "los dos juntos" es una opción explícita.

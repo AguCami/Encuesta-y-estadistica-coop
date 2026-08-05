@@ -1,7 +1,7 @@
 /* Panel de la encuesta de satisfaccion + carga manual de respuestas. */
 
 import {
-  get, post, exigirSesion, montarBarra, montarFiltros, leerFiltros, escribirFiltros, qs,
+  get, getGuardado, post, exigirSesion, montarBarra, montarFiltros, leerFiltros, escribirFiltros, qs,
   escapar, num, dec, pct, fechaLarga, avisar, puede,
 } from '/js/api.js';
 import { barras, lineas, distribucion, paleta } from '/js/charts.js';
@@ -14,7 +14,7 @@ inicio().catch((e) => console.error(e));
 async function inicio() {
   // Las tres en paralelo: en la nube cada una es una ida y vuelta, y hacerlas
   // en fila se notaba al cambiar de pantalla.
-  [usuario, catalogos] = await Promise.all([exigirSesion(), get('/api/catalogos')]);
+  [usuario, catalogos] = await Promise.all([exigirSesion(), getGuardado('/api/catalogos')]);
   montarBarra(usuario);
   filtros = leerFiltros();
   montarFiltros($('filtros'), catalogos, filtros, (nuevos) => escribirFiltros(nuevos),
