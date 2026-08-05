@@ -216,6 +216,11 @@ scripts/
   seed-demo.js      datos de ejemplo
   reset-db.js       reinicio de la base
   build-demo.js     arma la demostración autónoma
+  backup.js         copia de seguridad en caliente
+deploy/
+  README.md         pasos para la puesta en producción
+  consultas.service servicio de systemd
+  Caddyfile         HTTPS automático
 ```
 
 Los gráficos usan una paleta verificada para **daltonismo** y **modo claro y
@@ -229,15 +234,31 @@ el color nunca sea la única forma de leer el dato.
 Toda la información está en un solo archivo: `data/coop.db`.
 
 ```bash
-# copia en caliente, sin parar el servidor
-mkdir -p respaldos
-sqlite3 data/coop.db ".backup 'respaldos/coop-$(date +%F).db'"
+# copia en caliente, sin parar el servidor ni instalar nada
+node scripts/backup.js                      # deja la copia en ./respaldos
+node scripts/backup.js /var/respaldos 30    # o donde quieras, conservando 30 días
 ```
 
-Si no está instalado `sqlite3`, alcanza con copiar `data/coop.db`, `data/coop.db-wal`
-y `data/coop.db-shm` con el servidor detenido.
+Para que corra sola, una línea en el cron del usuario que ejecuta la aplicación:
+
+```
+0 22 * * * cd /opt/consultas && /usr/bin/node scripts/backup.js /var/respaldos 30
+```
+
+Cada copia es un archivo `.db` que se abre con cualquier herramienta de SQLite y
+que, ante un problema, reemplaza a `data/coop.db` con el servidor detenido.
 
 ---
+
+## Llevarlo a producción
+
+Todo lo necesario está en [`deploy/`](deploy/README.md): el servicio de systemd,
+la configuración de HTTPS y los pasos, con las dos decisiones a tomar (servidor
+propio en la cooperativa o en internet, y qué se publica hacia afuera).
+
+Lo que la aplicación hace por su cuenta cuando sale a internet: marca la cookie
+de sesión como `Secure` si detecta HTTPS y frena los intentos de adivinar claves
+(ocho fallidos por usuario e IP y hay que esperar diez minutos).
 
 ## Dejarlo andando siempre (Linux)
 

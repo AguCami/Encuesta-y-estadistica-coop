@@ -1,0 +1,21 @@
+# HTTPS automático (certificado gratuito, se renueva solo).
+#   sudo cp deploy/Caddyfile /etc/caddy/Caddyfile   → cambiá el dominio
+#   sudo systemctl reload caddy
+consultas.tucooperativa.com.ar {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:3000
+}
+
+# Si la encuesta al socio se publica y el resto queda puertas adentro, se
+# reemplaza el bloque de arriba por este, que deja pasar solo la encuesta:
+#
+# consultas.tucooperativa.com.ar {
+#     encode zstd gzip
+#     @publico path /encuesta.html /api/publico/* /css/* /js/api.js /js/charts.js
+#     handle @publico {
+#         reverse_proxy 127.0.0.1:3000
+#     }
+#     handle {
+#         respond "No disponible" 404
+#     }
+# }

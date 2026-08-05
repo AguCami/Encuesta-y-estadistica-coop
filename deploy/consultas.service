@@ -1,0 +1,31 @@
+# Deja la aplicación corriendo y la levanta sola si el servidor se reinicia.
+#   sudo cp deploy/consultas.service /etc/systemd/system/
+#   sudo systemctl enable --now consultas
+[Unit]
+Description=Consultas — mesa de informes y call center
+After=network.target
+
+[Service]
+Type=simple
+User=consultas
+WorkingDirectory=/opt/consultas
+ExecStart=/usr/bin/node --no-warnings server/index.js
+Restart=always
+RestartSec=3
+
+# Nombre que se ve en pantalla, puerto y zona horaria de la cooperativa.
+Environment=ORG_NOMBRE=Cooperativa
+Environment=PORT=3000
+Environment=TZ_APP=America/Argentina/Buenos_Aires
+# Solo se atiende al proxy que pone HTTPS adelante; nadie entra por el puerto pelado.
+Environment=HOST=127.0.0.1
+
+# Endurecimiento básico: la aplicación solo escribe en su carpeta de datos.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/consultas/data
+
+[Install]
+WantedBy=multi-user.target
