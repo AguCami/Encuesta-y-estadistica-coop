@@ -17,7 +17,7 @@ inicio().catch((e) => console.error(e));
 
 async function inicio() {
   usuario = await exigirSesion();
-  await montarBarra(usuario);
+  montarBarra(usuario);
   await recargar();
   document.addEventListener('keydown', atajos);
 }

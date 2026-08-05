@@ -62,6 +62,11 @@ async function ejecutar(sql) {
 // ------------------------------------------------------------------ esquema ---
 
 const SCHEMA = `
+CREATE TABLE IF NOT EXISTS meta (
+  clave     TEXT PRIMARY KEY,
+  valor     TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS sectores (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
   nombre    TEXT NOT NULL UNIQUE,
@@ -252,15 +257,34 @@ async function seed() {
 }
 
 /**
- * Prepara la base una sola vez por proceso. En un entorno sin servidor cada
- * arranque en frío la vuelve a llamar, por eso tiene que ser barata y no
- * romper si ya está todo hecho.
+ * Versión de la preparación. Se sube cuando hay algo nuevo que aplicar sobre
+ * una base que ya venía andando (una tabla, una columna, un catálogo que
+ * cambia). Mientras coincida, no se toca nada.
+ */
+const VERSION = '3';
+
+/**
+ * Prepara la base una sola vez por proceso.
+ *
+ * En un entorno sin servidor cada arranque en frío vuelve a pasar por acá, y
+ * la base está del otro lado de la red: rehacer el esquema y el sembrado cada
+ * vez costaba unas treinta idas y vueltas y se notaba en cada pantalla. Ahora
+ * la primera consulta pregunta la versión, y si ya está al día no hace nada
+ * más: una sola ida y vuelta.
  */
 let preparacion;
 function iniciar() {
   preparacion ||= (async () => {
+    try {
+      const v = await get("SELECT valor FROM meta WHERE clave = 'version'");
+      if (v && v.valor === VERSION) return;
+    } catch {
+      // Todavía no existe ni la tabla meta: es una base nueva.
+    }
     await ejecutar(SCHEMA);
     await seed();
+    await run("INSERT INTO meta (clave, valor) VALUES ('version', ?) "
+      + 'ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor', [VERSION]);
   })();
   return preparacion;
 }

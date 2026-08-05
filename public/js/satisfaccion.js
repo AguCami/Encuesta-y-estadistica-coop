@@ -12,9 +12,10 @@ let filtros, catalogos, usuario;
 inicio().catch((e) => console.error(e));
 
 async function inicio() {
-  usuario = await exigirSesion();
-  await montarBarra(usuario);
-  catalogos = await get('/api/catalogos');
+  // Las tres en paralelo: en la nube cada una es una ida y vuelta, y hacerlas
+  // en fila se notaba al cambiar de pantalla.
+  [usuario, catalogos] = await Promise.all([exigirSesion(), get('/api/catalogos')]);
+  montarBarra(usuario);
   filtros = leerFiltros();
   montarFiltros($('filtros'), catalogos, filtros, (nuevos) => escribirFiltros(nuevos),
     { campos: ['sector', 'canal', 'operador'] });

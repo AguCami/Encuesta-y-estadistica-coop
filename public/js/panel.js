@@ -21,9 +21,9 @@ const PUESTOS_PANEL = [
 ];
 
 async function inicio() {
-  const usuario = await exigirSesion();
-  await montarBarra(usuario);
-  const catalogos = await get('/api/catalogos');
+  // Las dos en paralelo: en la nube cada una es una ida y vuelta.
+  const [usuario, catalogos] = await Promise.all([exigirSesion(), get('/api/catalogos')]);
+  montarBarra(usuario);
   filtros = leerFiltros();
   // Cada puesto se mira por separado; "los dos juntos" es una opción explícita.
   if (filtros.puesto === undefined) filtros.puesto = usuario.puesto === 'mesa_informes' ? 'mesa_informes' : 'call_center';

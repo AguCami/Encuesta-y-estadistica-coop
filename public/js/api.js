@@ -1,15 +1,37 @@
 /* Utilidades compartidas: llamadas al servidor, sesion, formato y filtros. */
 
+/**
+ * Barrita de progreso arriba de todo. Con la base en la nube cada pedido
+ * tarda un momento, y sin esto la pantalla queda en blanco y parece colgada.
+ * Se cuenta cuántos pedidos hay en curso para que no desaparezca a mitad.
+ */
+let enCurso = 0;
+function progreso(delta) {
+  enCurso = Math.max(0, enCurso + delta);
+  let barra = document.getElementById('cargando');
+  if (!barra) {
+    barra = document.createElement('div');
+    barra.id = 'cargando';
+    document.documentElement.appendChild(barra);
+  }
+  barra.classList.toggle('activa', enCurso > 0);
+}
+
 export async function api(ruta, opciones = {}) {
-  const res = await fetch(ruta, {
-    headers: { 'content-type': 'application/json' },
-    ...opciones,
-    body: opciones.body ? JSON.stringify(opciones.body) : undefined,
-  });
-  let datos = null;
-  try { datos = await res.json(); } catch { /* respuesta sin cuerpo */ }
-  if (!res.ok) throw new Error((datos && datos.error) || `Error ${res.status}`);
-  return datos;
+  progreso(1);
+  try {
+    const res = await fetch(ruta, {
+      headers: { 'content-type': 'application/json' },
+      ...opciones,
+      body: opciones.body ? JSON.stringify(opciones.body) : undefined,
+    });
+    let datos = null;
+    try { datos = await res.json(); } catch { /* respuesta sin cuerpo */ }
+    if (!res.ok) throw new Error((datos && datos.error) || `Error ${res.status}`);
+    return datos;
+  } finally {
+    progreso(-1);
+  }
 }
 
 export const get = (ruta) => api(ruta);
