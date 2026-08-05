@@ -7,7 +7,7 @@
  */
 
 const crypto = require('node:crypto');
-const { all, get, run } = require('../server/db');
+const { all, get, run, iniciar } = require('../server/db');
 const { sumarDias, hoy } = require('../server/util');
 
 const DIAS = Number(process.argv[2] || 90);
@@ -26,22 +26,23 @@ function pesado(items, pesos) {
   return items[items.length - 1];
 }
 
-function crearOperadores() {
+async function crearOperadores() {
   for (const nombre of LOCALIDADES) {
-    if (!get('SELECT id FROM localidades WHERE nombre = ?', [nombre])) {
-      run('INSERT INTO localidades (nombre) VALUES (?)', [nombre]);
+    if (!await get('SELECT id FROM localidades WHERE nombre = ?', [nombre])) {
+      await run('INSERT INTO localidades (nombre) VALUES (?)', [nombre]);
     }
   }
 }
 
-function generar() {
-  crearOperadores();
+async function generar() {
+  await iniciar();
+  await crearOperadores();
 
-  const sectores = all('SELECT * FROM sectores WHERE activo = 1 ORDER BY orden');
-  const motivos = all('SELECT * FROM motivos WHERE activo = 1');
-  const canales = all('SELECT * FROM canales WHERE activo = 1');
-  const localidades = all('SELECT * FROM localidades');
-  const operadores = all("SELECT * FROM usuarios WHERE activo = 1 AND puesto <> 'otro'");
+  const sectores = await all('SELECT * FROM sectores WHERE activo = 1 ORDER BY orden');
+  const motivos = await all('SELECT * FROM motivos WHERE activo = 1');
+  const canales = await all('SELECT * FROM canales WHERE activo = 1');
+  const localidades = await all('SELECT * FROM localidades');
+  const operadores = await all("SELECT * FROM usuarios WHERE activo = 1 AND puesto <> 'otro'");
 
   // La demanda no se reparte pareja: reclamos y ventas se llevan la mayor parte.
   const PESOS = {
@@ -84,7 +85,7 @@ function generar() {
       const primerContacto = estado === 'resuelta' ? 1 : 0;
       const duracion = entre(90, 900);
 
-      const r = run(
+      const r = await run(
         `INSERT INTO consultas (ts, fecha, hora, dow, operador_id, puesto, canal_id, sector_id,
             motivo_id, localidad_id, socio_nro, socio_nombre, contacto, estado, prioridad,
             primer_contacto, duracion_seg, reclamo_nro, observaciones, cerrada_ts, cerrada_por)
@@ -103,7 +104,7 @@ function generar() {
       if (Math.random() < 0.17) {
         const base = estado === 'resuelta' ? 4 : 3;
         const nota = Math.max(1, Math.min(5, base + entre(-1, 1)));
-        run(`INSERT INTO encuestas (token, consulta_id, sector_id, canal_id, operador_id, origen,
+        await run(`INSERT INTO encuestas (token, consulta_id, sector_id, canal_id, operador_id, origen,
                 creada, respondida, fecha, satisfaccion, resolucion, atencion, espera, recomendaria, comentario)
              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
           [crypto.randomBytes(9).toString('base64url'), Number(r.lastInsertRowid), sector.id, canal.id,
@@ -124,4 +125,4 @@ function generar() {
   console.log(`Consultas repartidas entre ${operadores.length} operadores del padron.`);
 }
 
-generar();
+generar().catch((e) => { console.error(e); process.exit(1); });

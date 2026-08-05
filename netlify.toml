@@ -1,0 +1,21 @@
+# Netlify sirve las páginas de `public/` desde su red y manda todo lo que
+# empieza con /api/ a una sola función (netlify/functions/api.mjs).
+
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+  command = "echo 'sin build: el front es HTML/CSS/JS a mano'"
+
+[functions]
+  node_bundler = "esbuild"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "same-origin"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "no-cache"

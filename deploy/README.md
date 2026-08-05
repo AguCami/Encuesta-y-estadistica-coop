@@ -1,87 +1,132 @@
-# Puesta en línea
+# Cómo ponerlo en internet (gratis, sin servidor propio)
 
-La aplicación va a estar **en internet**, no en una PC de la cooperativa. Se
-entra desde cualquier lado con la dirección web y la clave de cada uno.
+La aplicación queda en una dirección pública (`https://…`), entra cualquiera desde
+el navegador de la PC del call center, del mostrador o del celular, y **no hay
+ninguna máquina de la cooperativa que mantener, ni prendida, ni actualizada**.
 
-Lo único que hay que resolver bien es **dónde vive la base de datos**: es un
-archivo, así que el servicio elegido tiene que darle un **disco que sobreviva a
-cada actualización**. Los servicios que no lo dan borran los datos en cada
-despliegue, y ese es el error que hay que evitar.
+Son dos servicios, los dos con plan gratuito y los dos permiten uso comercial:
 
-## Opción recomendada: Render
-
-Se conecta el repositorio de GitHub y se despliega solo con cada cambio. Trae
-HTTPS y dominio propio sin configurar nada.
-
-1. Crear la cuenta en <https://render.com> y conectar el repositorio.
-2. **New → Blueprint**: Render lee `render.yaml` y arma todo (servicio, disco de
-   1 GB montado en `/var/datos`, chequeo de salud).
-3. En *Environment*, cargar `CLAVE_INICIAL` con la clave de arranque del
-   personal — se escribe ahí, nunca en el repositorio.
-4. Cuando termina, queda una dirección `https://consultas-coop.onrender.com`.
-   Para usar el dominio de la cooperativa: *Settings → Custom Domain*, agregar
-   `consultas.tucoop.com.ar` y cargar el CNAME que indica Render en el panel
-   del dominio.
-
-**Importante**: el plan gratuito **no sirve** para esto — no admite disco y se
-apaga solo cuando nadie lo usa. El plan pago más chico alcanza y sobra para
-cinco personas (unos 7 USD al mes, más centavos por el disco).
-
-Cada `git push` a la rama publica la versión nueva. La base no se toca: las
-columnas nuevas se agregan solas al arrancar.
-
-## Alternativas
-
-| Servicio | Cómo | Cuándo conviene |
+| Servicio | Qué hace | Plan gratis |
 |---|---|---|
-| **Railway** | Conecta el repositorio, agregar un *Volume* montado en `/var/datos` y la variable `DATA_DIR=/var/datos` | Si preferís su panel; cuesta parecido |
-| **Fly.io** | Usa el `Dockerfile` de la raíz; `fly volumes create datos` y montarlo en `/var/datos` | Si querés el servidor más cerca (San Pablo) y pagar por uso |
-| **VPS** (Hetzner, DigitalOcean) | Los archivos `consultas.service` y `Caddyfile` de esta carpeta | Si querés control total y el costo más bajo; hay que mantener el servidor |
+| **Turso** | Guarda los datos (es la misma base SQLite, pero en la nube) | 500 bases, 5 GB, 1000 millones de lecturas por mes |
+| **Netlify** | Sirve las páginas y corre el código del servidor | 100 GB de tráfico y 125.000 pedidos de función por mes |
 
-En todos los casos la regla es la misma: **`DATA_DIR` tiene que apuntar a un
-disco persistente**.
+Para lo que necesita la cooperativa (5 personas, unas cuantas miles de consultas
+por mes) esos límites sobran por lejos: no se llega ni al 5 %.
 
-## Respaldos estando en la nube
+> **Los datos no se borran.** Turso es una base de verdad, persistente. Lo que se
+> carga hoy sigue estando el año que viene. La aplicación **no** guarda nada en el
+> disco de Netlify — ahí sí se borraría en cada actualización.
 
-El servicio hace copias de su disco, pero conviene tener una afuera. Entrando
-como administrador:
+---
 
+## Paso 1 — Crear la base en Turso
+
+1. Entrar a <https://turso.tech> y crear la cuenta (se puede con GitHub).
+2. Crear una base nueva. Nombre sugerido: `coop-consultas`.
+   Región: la más cercana, **São Paulo (`gru`)**.
+3. En la pantalla de la base, copiar dos cosas:
+   - la **URL**, que empieza con `libsql://` — ej. `libsql://coop-consultas-agucami.turso.io`
+   - un **token de acceso** ("Create Token", con permiso de lectura y escritura).
+
+Guardá los dos: se pegan en el paso 3 y el token no se vuelve a mostrar.
+
+## Paso 2 — Conectar el repositorio a Netlify
+
+1. Entrar a <https://netlify.com> y crear la cuenta **con GitHub**.
+2. *Add new site → Import an existing project → GitHub*.
+3. Elegir el repositorio `Encuesta-y-estadistica-coop` y la rama que corresponda.
+4. Netlify lee `netlify.toml` y ya sabe qué hacer: publica `public/`, arma la
+   función de `netlify/functions` y le manda todo lo que empieza con `/api/`.
+   **No hay que cambiar ninguna opción.**
+5. *Deploy site*.
+
+## Paso 3 — Cargar las variables de entorno
+
+En Netlify: *Site configuration → Environment variables → Add a variable*.
+
+| Variable | Valor | ¿Obligatoria? |
+|---|---|---|
+| `DB_URL` | la URL `libsql://…` del paso 1 | sí |
+| `DB_TOKEN` | el token del paso 1 | sí |
+| `CLAVE_INICIAL` | la clave con la que entran todos la primera vez | recomendado |
+| `ORG_NOMBRE` | el nombre que aparece arriba, ej. `Cooperativa Eléctrica` | opcional |
+| `TZ_APP` | `America/Argentina/Buenos_Aires` | opcional (ya es el valor por defecto) |
+
+Después de cargarlas: *Deploys → Trigger deploy → Clear cache and deploy site*.
+Las variables se leen recién en el despliegue siguiente.
+
+## Paso 4 — Entrar
+
+Netlify da una dirección tipo `https://coop-consultas.netlify.app`. Se abre, se
+inicia sesión y **la primera vez se crean solos** el esquema de la base, los
+sectores, los motivos y los cinco usuarios.
+
+Lo primero que tiene que hacer cada uno: *Administración → Mi clave*, y cambiar la
+clave inicial.
+
+### Dirección propia (opcional)
+
+Si la cooperativa tiene dominio, en *Domain management → Add a domain* se apunta
+un subdominio (ej. `consultas.lacoope.coop`) y Netlify emite el certificado HTTPS
+solo, sin costo.
+
+---
+
+## Respaldos
+
+- **Automático:** Turso guarda su propio historial y permite volver la base a un
+  punto anterior en el tiempo.
+- **A mano:** con sesión de administrador, entrar a `/api/respaldo` — baja un
+  archivo `coop-AAAA-MM-DD.json` con todos los datos. Una vez por mes alcanza.
+- **Programado:** `node scripts/backup.js /carpeta 30` hace lo mismo desde
+  cualquier PC que tenga cargadas `DB_URL` y `DB_TOKEN`.
+
+## Verificar que está viva
+
+`GET /api/salud` responde sin necesidad de sesión:
+
+```json
+{ "ok": true, "consultas": 1234, "hora": "2026-08-05T11:09:08.931Z" }
 ```
-https://<tu-dirección>/api/respaldo
-```
 
-descarga la base entera en un archivo, tomado en caliente y sin frenar a nadie.
-Guardalo donde la cooperativa guarda el resto de sus respaldos. Con hacerlo una
-vez por semana alcanza para el volumen que maneja esta aplicación.
-
-Para restaurar: se reemplaza el archivo `coop.db` del disco por la copia.
-
-## Después de publicar
-
-1. Entrá como `acami` con la clave inicial y cambiala desde
-   *Administración → Mi clave*.
-2. Que cada uno del equipo haga lo mismo en su primer ingreso.
-3. Revisá sectores y motivos en *Administración*: son los botones que va a ver
-   el personal.
-4. Probá `https://<tu-dirección>/api/salud` — tiene que responder `ok`. Sirve
-   para engancharle un monitor gratuito (UptimeRobot y similares) que avise si
-   se cae.
+Sirve para engancharle un monitor gratuito (UptimeRobot o similar) y enterarse si
+alguna vez se cae.
 
 ## Qué queda expuesto
 
 Estando en internet, cualquiera con la dirección llega a la pantalla de ingreso
-—que pide usuario y clave— y a la encuesta del socio, que es pública a
-propósito. El resto necesita sesión iniciada.
+—que pide usuario y clave— y a la encuesta del socio, que es pública a propósito.
+El resto necesita sesión iniciada.
 
-La aplicación, cuando detecta HTTPS, marca la cookie de sesión como `Secure`, y
+Cuando detecta HTTPS, la aplicación marca la cookie de sesión como `Secure`, y
 frena los intentos de adivinar claves: ocho fallidos por usuario e IP y hay que
 esperar diez minutos.
 
-## Los archivos de esta carpeta
+---
 
-- `consultas.service` — servicio de systemd, sólo si se elige un VPS.
-- `Caddyfile` — HTTPS automático en un VPS, con la variante que publica
-  únicamente la encuesta al socio.
+## Para probar en una PC antes de subirlo
 
-En la raíz del repositorio: `render.yaml` (Render), `Dockerfile` (Fly, Railway y
-cualquier hosting de contenedores) y `.node-version`.
+Sin `DB_URL`, la aplicación usa un archivo local y no toca la nube:
+
+```bash
+npm install
+npm start            # http://localhost:3000
+npm run seed:demo    # datos de ejemplo para ver los gráficos
+```
+
+Para probar contra la base de la nube desde la PC:
+
+```bash
+DB_URL=libsql://… DB_TOKEN=… npm start
+```
+
+## Otras formas de subirlo
+
+Están armadas y funcionan, pero **no hacen falta** si se sigue lo de arriba:
+
+- `Dockerfile` — cualquier hosting que corra contenedores (Fly.io, Railway).
+- `render.yaml` — despliegue en Render.
+- `consultas.service` + `Caddyfile` — servidor propio con Linux, systemd y HTTPS.
+
+Todas necesitan una máquina prendida; Netlify + Turso, no.

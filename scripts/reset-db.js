@@ -1,12 +1,20 @@
 'use strict';
 
-/** Borra la base de datos y la vuelve a crear vacia (con los catalogos base). */
+/**
+ * Vacía la base y la vuelve a crear con los catálogos iniciales.
+ *   npm run reset
+ * Funciona igual contra el archivo local o contra la base en la nube.
+ */
 
-const fs = require('node:fs');
-const { DB_FILE } = require('../server/config');
+const { ejecutar, seed, SCHEMA } = require('../server/db');
+const { DB_URL } = require('../server/config');
 
-for (const archivo of [DB_FILE, `${DB_FILE}-wal`, `${DB_FILE}-shm`, `${DB_FILE}-journal`]) {
-  if (fs.existsSync(archivo)) fs.rmSync(archivo);
-}
-require('../server/db'); // recrea el esquema y los catalogos iniciales
-console.log(`Base reiniciada: ${DB_FILE}`);
+const TABLAS = ['seguimientos', 'encuestas', 'consultas', 'sesiones',
+  'motivos', 'sectores', 'canales', 'localidades', 'usuarios'];
+
+(async () => {
+  await ejecutar(TABLAS.map((t) => `DROP TABLE IF EXISTS ${t}`).join(';'));
+  await ejecutar(SCHEMA);
+  await seed();
+  console.log(`Base reiniciada: ${DB_URL}`);
+})().catch((e) => { console.error(e); process.exit(1); });

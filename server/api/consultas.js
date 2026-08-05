@@ -24,40 +24,40 @@ const ESTADOS = new Set(['resuelta', 'derivada', 'pendiente', 'reclamo']);
 const PRIORIDADES = new Set(['baja', 'normal', 'alta']);
 const PUESTOS = new Set(['call_center', 'mesa_informes', 'otro']);
 
-const listar = requiere('operador', ({ res, query }) => {
+const listar = requiere('operador', async ({ res, query }) => {
   const f = filtroConsultas(query);
   const limite = Math.min(Math.max(enteroONull(query.limite) ?? 100, 1), 500);
   const offset = Math.max(enteroONull(query.offset) ?? 0, 0);
-  const total = get(`SELECT COUNT(*) AS n FROM consultas c WHERE ${f.sql}`, f.params).n;
-  const filas = all(`${SELECT_BASE} WHERE ${f.sql} ORDER BY c.ts DESC LIMIT ? OFFSET ?`,
+  const total = (await get(`SELECT COUNT(*) AS n FROM consultas c WHERE ${f.sql}`, f.params)).n;
+  const filas = await all(`${SELECT_BASE} WHERE ${f.sql} ORDER BY c.ts DESC LIMIT ? OFFSET ?`,
     [...f.params, limite, offset]);
   json(res, { total, limite, offset, filas });
 });
 
-const ver = requiere('operador', ({ res, params }) => {
+const ver = requiere('operador', async ({ res, params }) => {
   const id = enteroONull(params.id);
-  const fila = get(`${SELECT_BASE} WHERE c.id = ?`, [id]);
+  const fila = await get(`${SELECT_BASE} WHERE c.id = ?`, [id]);
   if (!fila) return error(res, 404, 'Consulta no encontrada');
-  fila.seguimientos = all(
+  fila.seguimientos = await all(
     `SELECT g.*, u.nombre AS usuario FROM seguimientos g
        LEFT JOIN usuarios u ON u.id = g.usuario_id
       WHERE g.consulta_id = ? ORDER BY g.ts`, [id]);
-  fila.encuesta = get('SELECT * FROM encuestas WHERE consulta_id = ?', [id]) || null;
+  fila.encuesta = await get('SELECT * FROM encuestas WHERE consulta_id = ?', [id]) || null;
   json(res, fila);
 });
 
-const crear = requiere('operador', ({ res, body, usuario }) => {
+const crear = requiere('operador', async ({ res, body, usuario }) => {
   const sectorId = enteroONull(body.sector_id);
-  if (!sectorId || !get('SELECT id FROM sectores WHERE id = ?', [sectorId])) {
+  if (!sectorId || !await get('SELECT id FROM sectores WHERE id = ?', [sectorId])) {
     return error(res, 400, 'Elegi un sector');
   }
   const canalId = enteroONull(body.canal_id);
-  if (!canalId || !get('SELECT id FROM canales WHERE id = ?', [canalId])) {
+  if (!canalId || !await get('SELECT id FROM canales WHERE id = ?', [canalId])) {
     return error(res, 400, 'Elegi un canal de contacto');
   }
   const motivoId = enteroONull(body.motivo_id);
   if (motivoId) {
-    const m = get('SELECT sector_id FROM motivos WHERE id = ?', [motivoId]);
+    const m = await get('SELECT sector_id FROM motivos WHERE id = ?', [motivoId]);
     if (!m) return error(res, 400, 'Motivo inexistente');
     if (m.sector_id !== sectorId) return error(res, 400, 'El motivo no pertenece al sector elegido');
   }
@@ -68,7 +68,7 @@ const crear = requiere('operador', ({ res, body, usuario }) => {
   const prioridad = PRIORIDADES.has(body.prioridad) ? body.prioridad : 'normal';
   const duracion = Math.max(0, Math.min(enteroONull(body.duracion_seg) ?? 0, 24 * 3600));
 
-  const r = run(
+  const r = await run(
     `INSERT INTO consultas
        (ts, fecha, hora, dow, operador_id, puesto, canal_id, sector_id, motivo_id, localidad_id,
         socio_nro, socio_nombre, contacto, estado, prioridad, primer_contacto, duracion_seg,
@@ -87,17 +87,17 @@ const crear = requiere('operador', ({ res, body, usuario }) => {
   let encuesta = null;
   if (body.generar_encuesta) {
     const token = crypto.randomBytes(9).toString('base64url');
-    run(`INSERT INTO encuestas (token, consulta_id, sector_id, canal_id, operador_id, origen, creada)
+    await run(`INSERT INTO encuestas (token, consulta_id, sector_id, canal_id, operador_id, origen, creada)
          VALUES (?,?,?,?,?,?,?)`, [token, id, sectorId, canalId, usuario.id, 'operador', p.ts]);
     encuesta = { token, url: `/encuesta.html?t=${token}` };
   }
 
-  json(res, { ...get(`${SELECT_BASE} WHERE c.id = ?`, [id]), encuesta }, 201);
+  json(res, { ...await get(`${SELECT_BASE} WHERE c.id = ?`, [id]), encuesta }, 201);
 });
 
-const editar = requiere('operador', ({ res, params, body, usuario }) => {
+const editar = requiere('operador', async ({ res, params, body, usuario }) => {
   const id = enteroONull(params.id);
-  const actual = get('SELECT * FROM consultas WHERE id = ?', [id]);
+  const actual = await get('SELECT * FROM consultas WHERE id = ?', [id]);
   if (!actual) return error(res, 404, 'Consulta no encontrada');
   if (actual.operador_id !== usuario.id && !esSupervisor(usuario)) {
     return error(res, 403, 'Solo el operador que la cargo o un supervisor pueden modificarla');
@@ -123,30 +123,30 @@ const editar = requiere('operador', ({ res, params, body, usuario }) => {
 
   const campos = Object.keys(d);
   if (!campos.length) return error(res, 400, 'Nada para actualizar');
-  run(`UPDATE consultas SET ${campos.map((c) => `${c} = ?`).join(', ')} WHERE id = ?`,
+  await run(`UPDATE consultas SET ${campos.map((c) => `${c} = ?`).join(', ')} WHERE id = ?`,
     [...campos.map((c) => d[c]), id]);
 
   if (d.estado && d.estado !== actual.estado) {
-    run('INSERT INTO seguimientos (consulta_id, ts, usuario_id, estado, nota) VALUES (?,?,?,?,?)',
+    await run('INSERT INTO seguimientos (consulta_id, ts, usuario_id, estado, nota) VALUES (?,?,?,?,?)',
       [id, partesFecha().ts, usuario.id, d.estado, `Cambio de estado: ${actual.estado} -> ${d.estado}`]);
   }
-  json(res, get(`${SELECT_BASE} WHERE c.id = ?`, [id]));
+  json(res, await get(`${SELECT_BASE} WHERE c.id = ?`, [id]));
 });
 
-const agregarSeguimiento = requiere('operador', ({ res, params, body, usuario }) => {
+const agregarSeguimiento = requiere('operador', async ({ res, params, body, usuario }) => {
   const id = enteroONull(params.id);
-  if (!get('SELECT id FROM consultas WHERE id = ?', [id])) return error(res, 404, 'Consulta no encontrada');
+  if (!await get('SELECT id FROM consultas WHERE id = ?', [id])) return error(res, 404, 'Consulta no encontrada');
   const nota = texto(body.nota, 1000);
   if (!nota) return error(res, 400, 'Escribi la nota del seguimiento');
   const p = partesFecha();
   const estado = ESTADOS.has(body.estado) ? body.estado : '';
-  run('INSERT INTO seguimientos (consulta_id, ts, usuario_id, estado, nota) VALUES (?,?,?,?,?)',
+  await run('INSERT INTO seguimientos (consulta_id, ts, usuario_id, estado, nota) VALUES (?,?,?,?,?)',
     [id, p.ts, usuario.id, estado, nota]);
   if (estado) {
-    run('UPDATE consultas SET estado = ?, cerrada_ts = ?, cerrada_por = ? WHERE id = ?',
+    await run('UPDATE consultas SET estado = ?, cerrada_ts = ?, cerrada_por = ? WHERE id = ?',
       [estado, estado === 'resuelta' ? p.ts : null, estado === 'resuelta' ? usuario.id : null, id]);
   }
-  json(res, all(`SELECT g.*, u.nombre AS usuario FROM seguimientos g
+  json(res, await all(`SELECT g.*, u.nombre AS usuario FROM seguimientos g
                    LEFT JOIN usuarios u ON u.id = g.usuario_id
                   WHERE g.consulta_id = ? ORDER BY g.ts`, [id]), 201);
 });
@@ -154,9 +154,9 @@ const agregarSeguimiento = requiere('operador', ({ res, params, body, usuario })
 /** Ventana para que el operador deshaga un registro recien cargado. */
 const MINUTOS_DESHACER = 10;
 
-const borrar = requiere('operador', ({ res, params, usuario }) => {
+const borrar = requiere('operador', async ({ res, params, usuario }) => {
   const id = enteroONull(params.id);
-  const c = get('SELECT id, ts, operador_id FROM consultas WHERE id = ?', [id]);
+  const c = await get('SELECT id, ts, operador_id FROM consultas WHERE id = ?', [id]);
   if (!c) return error(res, 404, 'Consulta no encontrada');
 
   if (!esSupervisor(usuario)) {
@@ -168,13 +168,13 @@ const borrar = requiere('operador', ({ res, params, usuario }) => {
       return error(res, 403, `Pasaron más de ${MINUTOS_DESHACER} minutos: pedile a un supervisor que la elimine`);
     }
   }
-  run('DELETE FROM consultas WHERE id = ?', [id]);
+  await run('DELETE FROM consultas WHERE id = ?', [id]);
   json(res, { ok: true });
 });
 
-const exportar = requiere('operador', ({ res, query }) => {
+const exportar = requiere('operador', async ({ res, query }) => {
   const f = filtroConsultas(query);
-  const filas = all(`${SELECT_BASE} WHERE ${f.sql} ORDER BY c.ts`, f.params);
+  const filas = await all(`${SELECT_BASE} WHERE ${f.sql} ORDER BY c.ts`, f.params);
   const cabecera = ['ID', 'Fecha', 'Hora', 'Puesto', 'Operador', 'Canal', 'Sector', 'Motivo',
     'Localidad', 'Socio N', 'Socio', 'Contacto', 'Estado', 'Prioridad', 'Primer contacto',
     'Duracion (min)', 'Reclamo N', 'Observaciones'];

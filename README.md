@@ -5,8 +5,11 @@ teléfono, mostrador, WhatsApp, mail o redes), imputarlas al **sector** que
 corresponde y sacar de ahí **estadística detallada**: cuánto recibe cada sector, por
 qué motivo, en qué franja horaria, cómo se resolvió y qué opina el socio.
 
-Corre en una PC de la cooperativa o en un servidor propio. **No necesita internet,
-ni base de datos externa, ni instalar dependencias**: sólo Node.js 22 o superior.
+Vive **en internet**, en una dirección `https://…` a la que entra cada uno con su
+usuario y su clave: no hay ninguna máquina de la cooperativa que mantener. El
+alojamiento es gratuito (Netlify + Turso) y los pasos están en
+[`deploy/README.md`](deploy/README.md). También corre en una PC, contra un
+archivo local, para probar: sólo hace falta Node.js 22 o superior.
 
 ---
 
@@ -82,7 +85,9 @@ Todo se controla con variables de entorno (opcionales):
 | `HOST` | `0.0.0.0` | Interfaz donde escucha |
 | `ORG_NOMBRE` | `Cooperativa` | Nombre que se muestra en el encabezado y en la encuesta |
 | `TZ_APP` | `America/Argentina/Buenos_Aires` | Zona horaria con la que se fechan las consultas |
-| `DATA_DIR` | `./data` | Carpeta de la base de datos — **en la nube, el disco persistente** |
+| `DB_URL` | `file:./data/coop.db` | La base. En la nube, la dirección `libsql://…` de Turso |
+| `DB_TOKEN` | *(vacío)* | Token de acceso a la base de la nube |
+| `DATA_DIR` | `./data` | Carpeta de la base cuando es un archivo local |
 | `SESSION_HORAS` | `12` | Duración de la sesión de cada operador |
 | `CLAVE_INICIAL` | `coop2026` | Clave con la que entra el personal la primera vez |
 
@@ -253,16 +258,22 @@ que, ante un problema, reemplaza a `data/coop.db` con el servidor detenido.
 
 ## Llevarlo a la web
 
-Los pasos están en [`deploy/`](deploy/README.md). La aplicación vive en internet
-con `render.yaml` (Render) o con el `Dockerfile` (Fly, Railway y cualquier
-hosting de contenedores); lo único que no se puede pasar por alto es que
-**`DATA_DIR` apunte a un disco persistente**, porque la base es un archivo.
+Los pasos completos están en [`deploy/README.md`](deploy/README.md). En resumen:
+la base va a **Turso** (SQLite en la nube, plan gratuito) y el resto a
+**Netlify**, que sirve `public/` desde su red y manda todo `/api/*` a una única
+función (`netlify/functions/api.mjs`). Las dos cosas son gratis, permiten uso
+comercial y no dejan nada que administrar. Los datos viven en Turso, así que no
+se pierden en cada actualización.
 
 Estando en línea, la aplicación marca la cookie de sesión como `Secure` al
 detectar HTTPS y frena los intentos de adivinar claves (ocho fallidos por
 usuario e IP y hay que esperar diez minutos). El administrador descarga una
-copia de la base cuando quiere desde `/api/respaldo`, y `/api/salud` sirve para
-engancharle un monitor que avise si se cae.
+copia de todos los datos cuando quiere desde `/api/respaldo`, y `/api/salud`
+sirve para engancharle un monitor que avise si se cae.
+
+Siguen disponibles, por si alguna vez conviene, el `Dockerfile`, el
+`render.yaml` y los archivos de `deploy/` para un servidor propio; todos ésos sí
+necesitan una máquina prendida.
 
 ## Dejarlo andando siempre (Linux)
 

@@ -20,34 +20,34 @@ function parseCookies(req) {
 /** Detras de un proxy con HTTPS la cookie tiene que viajar solo por HTTPS. */
 const porHttps = (req) => req.headers['x-forwarded-proto'] === 'https' || !!req.socket.encrypted;
 
-function crearSesion(req, res, usuarioId) {
+async function crearSesion(req, res, usuarioId) {
   const id = crypto.randomBytes(24).toString('hex');
   const ahora = new Date();
   const expira = new Date(ahora.getTime() + SESSION_HORAS * 3600 * 1000);
-  run('INSERT INTO sesiones (id, usuario_id, creada, expira) VALUES (?, ?, ?, ?)',
+  await run('INSERT INTO sesiones (id, usuario_id, creada, expira) VALUES (?, ?, ?, ?)',
     [id, usuarioId, ahora.toISOString(), expira.toISOString()]);
-  run("DELETE FROM sesiones WHERE expira < ?", [ahora.toISOString()]);
+  await run("DELETE FROM sesiones WHERE expira < ?", [ahora.toISOString()]);
   res.setHeader('set-cookie', `${SESSION_COOKIE}=${id}; Path=/; HttpOnly; SameSite=Lax`
     + `; Max-Age=${SESSION_HORAS * 3600}${porHttps(req) ? '; Secure' : ''}`);
   return id;
 }
 
-function cerrarSesion(req, res) {
+async function cerrarSesion(req, res) {
   const sid = parseCookies(req)[SESSION_COOKIE];
-  if (sid) run('DELETE FROM sesiones WHERE id = ?', [sid]);
+  if (sid) await run('DELETE FROM sesiones WHERE id = ?', [sid]);
   res.setHeader('set-cookie', `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
 }
 
 /** Usuario de la request o null. */
-function usuarioActual(req) {
+async function usuarioActual(req) {
   const sid = parseCookies(req)[SESSION_COOKIE];
   if (!sid) return null;
-  const fila = get(`SELECT u.id, u.usuario, u.nombre, u.rol, u.puesto, u.activo, s.expira
+  const fila = await get(`SELECT u.id, u.usuario, u.nombre, u.rol, u.puesto, u.activo, s.expira
                       FROM sesiones s JOIN usuarios u ON u.id = s.usuario_id
                      WHERE s.id = ?`, [sid]);
   if (!fila) return null;
   if (new Date(fila.expira) < new Date() || !fila.activo) {
-    run('DELETE FROM sesiones WHERE id = ?', [sid]);
+    await run('DELETE FROM sesiones WHERE id = ?', [sid]);
     return null;
   }
   return { id: fila.id, usuario: fila.usuario, nombre: fila.nombre, rol: fila.rol, puesto: fila.puesto };
@@ -89,7 +89,7 @@ async function login(ctx) {
     return error(ctx.res, 429, 'Demasiados intentos: esperá unos minutos o pedile la clave al administrador');
   }
 
-  const fila = get('SELECT * FROM usuarios WHERE usuario = ? AND activo = 1', [nombre]);
+  const fila = await get('SELECT * FROM usuarios WHERE usuario = ? AND activo = 1', [nombre]);
   if (!fila || !verifyPassword(clave || '', fila.hash)) {
     const registro = intentos.get(llave);
     const vigente = registro && Date.now() - registro.desde <= ESPERA_MS;
@@ -99,7 +99,7 @@ async function login(ctx) {
   }
 
   intentos.delete(llave);
-  crearSesion(ctx.req, ctx.res, fila.id);
+  await crearSesion(ctx.req, ctx.res, fila.id);
   json(ctx.res, { id: fila.id, usuario: fila.usuario, nombre: fila.nombre, rol: fila.rol, puesto: fila.puesto });
 }
 

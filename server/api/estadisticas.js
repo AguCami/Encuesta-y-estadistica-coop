@@ -31,12 +31,12 @@ function serieCompleta(desde, hasta, filas, gran) {
 }
 
 /** Estadistica general del periodo, con el mismo filtro que usa el listado. */
-const general = requiere('operador', ({ res, query }) => {
+const general = requiere('operador', async ({ res, query }) => {
   const f = filtroConsultas(query);
   const W = f.sql, P = f.params;
   const dias = diasEntre(f.desde, f.hasta);
 
-  const resumen = get(`
+  const resumen = await get(`
     SELECT COUNT(*) AS total,
            SUM(CASE WHEN c.estado = 'resuelta'  THEN 1 ELSE 0 END) AS resueltas,
            SUM(CASE WHEN c.estado = 'derivada'  THEN 1 ELSE 0 END) AS derivadas,
@@ -51,19 +51,16 @@ const general = requiere('operador', ({ res, query }) => {
   const total = resumen.total || 0;
 
   // Periodo inmediatamente anterior de igual longitud, para la variacion.
-  const anterior = (() => {
+  const anterior = await (async () => {
     const hastaPrev = sumarDias(f.desde, -1);
     const desdePrev = sumarDias(hastaPrev, -(dias - 1));
     const q2 = { ...query, desde: desdePrev, hasta: hastaPrev };
     const f2 = filtroConsultas(q2);
-    return {
-      desde: desdePrev,
-      hasta: hastaPrev,
-      total: get(`SELECT COUNT(*) AS n FROM consultas c WHERE ${f2.sql}`, f2.params).n,
-    };
+    const previo = await get(`SELECT COUNT(*) AS n FROM consultas c WHERE ${f2.sql}`, f2.params);
+    return { desde: desdePrev, hasta: hastaPrev, total: previo.n };
   })();
 
-  const porSector = all(`
+  const porSector = await all(`
     SELECT s.id, s.nombre,
            COUNT(*) AS total,
            SUM(CASE WHEN c.estado = 'pendiente' THEN 1 ELSE 0 END) AS pendientes,
@@ -75,26 +72,26 @@ const general = requiere('operador', ({ res, query }) => {
       FROM consultas c JOIN sectores s ON s.id = c.sector_id
      WHERE ${W} GROUP BY s.id ORDER BY total DESC`, P);
 
-  const porMotivo = all(`
+  const porMotivo = await all(`
     SELECT m.id, m.nombre, s.nombre AS sector, COUNT(*) AS total
       FROM consultas c JOIN motivos m ON m.id = c.motivo_id
       LEFT JOIN sectores s ON s.id = m.sector_id
      WHERE ${W} GROUP BY m.id ORDER BY total DESC LIMIT 15`, P);
 
-  const porCanal = all(`
+  const porCanal = await all(`
     SELECT ca.id, ca.nombre, COUNT(*) AS total
       FROM consultas c JOIN canales ca ON ca.id = c.canal_id
      WHERE ${W} GROUP BY ca.id ORDER BY total DESC`, P);
 
-  const porEstado = all(`
+  const porEstado = await all(`
     SELECT c.estado AS nombre, COUNT(*) AS total
       FROM consultas c WHERE ${W} GROUP BY c.estado ORDER BY total DESC`, P);
 
-  const porPuesto = all(`
+  const porPuesto = await all(`
     SELECT c.puesto AS nombre, COUNT(*) AS total
       FROM consultas c WHERE ${W} GROUP BY c.puesto ORDER BY total DESC`, P);
 
-  const porOperador = all(`
+  const porOperador = await all(`
     SELECT u.id, u.nombre, u.puesto, COUNT(*) AS total,
            SUM(c.primer_contacto) AS primer_contacto,
            SUM(c.duracion_seg) AS duracion_total,
@@ -102,17 +99,17 @@ const general = requiere('operador', ({ res, query }) => {
       FROM consultas c JOIN usuarios u ON u.id = c.operador_id
      WHERE ${W} GROUP BY u.id ORDER BY total DESC`, P);
 
-  const porLocalidad = all(`
+  const porLocalidad = await all(`
     SELECT l.id, l.nombre, COUNT(*) AS total
       FROM consultas c JOIN localidades l ON l.id = c.localidad_id
      WHERE ${W} GROUP BY l.id ORDER BY total DESC LIMIT 12`, P);
 
   const gran = granularidad(dias);
-  const serie = serieCompleta(f.desde, f.hasta, all(`
+  const serie = serieCompleta(f.desde, f.hasta, await all(`
     SELECT c.fecha, COUNT(*) AS total
       FROM consultas c WHERE ${W} GROUP BY c.fecha ORDER BY c.fecha`, P), gran);
 
-  const heat = all(`
+  const heat = await all(`
     SELECT c.dow, c.hora, COUNT(*) AS total
       FROM consultas c WHERE ${W} GROUP BY c.dow, c.hora`, P);
 
@@ -121,7 +118,7 @@ const general = requiere('operador', ({ res, query }) => {
   let serieSector = [];
   if (topSectores.length) {
     const marcas = topSectores.map(() => '?').join(',');
-    const crudo = all(`
+    const crudo = await all(`
       SELECT c.sector_id, c.fecha, COUNT(*) AS total
         FROM consultas c
        WHERE ${W} AND c.sector_id IN (${marcas})
@@ -135,7 +132,7 @@ const general = requiere('operador', ({ res, query }) => {
   }
 
   const fe = filtroEncuestas(query);
-  const resumenEncuestas = get(`
+  const resumenEncuestas = await get(`
     SELECT COUNT(*) AS respondidas, AVG(e.satisfaccion) AS satisfaccion
       FROM encuestas e WHERE ${fe.sql}`, fe.params);
 
@@ -181,12 +178,12 @@ const general = requiere('operador', ({ res, query }) => {
 });
 
 /** Detalle de la encuesta de satisfaccion. */
-const encuestas = requiere('operador', ({ res, query }) => {
+const encuestas = requiere('operador', async ({ res, query }) => {
   const f = filtroEncuestas(query);
   const rango = f.params;
   const base = f.sql;
 
-  const resumen = get(`
+  const resumen = await get(`
     SELECT COUNT(*) AS respondidas,
            AVG(e.satisfaccion) AS satisfaccion, AVG(e.resolucion) AS resolucion,
            AVG(e.atencion) AS atencion, AVG(e.espera) AS espera,
@@ -197,32 +194,32 @@ const encuestas = requiere('operador', ({ res, query }) => {
            SUM(CASE WHEN e.satisfaccion >= 4 THEN 1 ELSE 0 END) AS conformes
       FROM encuestas e WHERE ${base}`, rango);
 
-  const enviadas = get(
+  const enviadas = (await get(
     `SELECT COUNT(*) AS n FROM encuestas e WHERE e.creada BETWEEN ? AND ?${f.extraSql}`,
-    [`${f.desde}T00:00:00`, `${f.hasta}T23:59:59`, ...f.extraParams]).n;
+    [`${f.desde}T00:00:00`, `${f.hasta}T23:59:59`, ...f.extraParams])).n;
 
-  const distribucion = all(`
+  const distribucion = await all(`
     SELECT e.satisfaccion AS valor, COUNT(*) AS total
       FROM encuestas e WHERE ${base} AND e.satisfaccion IS NOT NULL
      GROUP BY e.satisfaccion ORDER BY e.satisfaccion`, rango);
 
-  const porSector = all(`
+  const porSector = await all(`
     SELECT s.id, s.nombre, COUNT(*) AS respuestas,
            AVG(e.satisfaccion) AS satisfaccion, AVG(e.resolucion) AS resolucion,
            AVG(e.atencion) AS atencion, AVG(e.espera) AS espera
       FROM encuestas e JOIN sectores s ON s.id = e.sector_id
      WHERE ${base} GROUP BY s.id ORDER BY respuestas DESC`, rango);
 
-  const porCanal = all(`
+  const porCanal = await all(`
     SELECT ca.nombre, COUNT(*) AS respuestas, AVG(e.satisfaccion) AS satisfaccion
       FROM encuestas e JOIN canales ca ON ca.id = e.canal_id
      WHERE ${base} GROUP BY ca.id ORDER BY respuestas DESC`, rango);
 
-  const serie = all(`
+  const serie = await all(`
     SELECT e.fecha, COUNT(*) AS respuestas, AVG(e.satisfaccion) AS satisfaccion
       FROM encuestas e WHERE ${base} GROUP BY e.fecha ORDER BY e.fecha`, rango);
 
-  const comentarios = all(`
+  const comentarios = await all(`
     SELECT e.respondida, e.satisfaccion, e.comentario, s.nombre AS sector
       FROM encuestas e LEFT JOIN sectores s ON s.id = e.sector_id
      WHERE ${base} AND e.comentario <> ''
@@ -257,9 +254,9 @@ const encuestas = requiere('operador', ({ res, query }) => {
 });
 
 /** Resumen listo para imprimir/pegar en el informe mensual (CSV por sector). */
-const exportarResumen = requiere('operador', ({ res, query }) => {
+const exportarResumen = requiere('operador', async ({ res, query }) => {
   const f = filtroConsultas(query);
-  const filas = all(`
+  const filas = await all(`
     SELECT s.nombre AS sector, m.nombre AS motivo, COUNT(*) AS total,
            SUM(CASE WHEN c.estado = 'resuelta'  THEN 1 ELSE 0 END) AS resueltas,
            SUM(CASE WHEN c.estado = 'derivada'  THEN 1 ELSE 0 END) AS derivadas,

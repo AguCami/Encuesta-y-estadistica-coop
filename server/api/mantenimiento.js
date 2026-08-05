@@ -1,40 +1,35 @@
 'use strict';
 
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
-const { DatabaseSync } = require('node:sqlite');
-const { db, get } = require('../db');
-const { DB_FILE } = require('../config');
+const { all, get } = require('../db');
 const { json } = require('../util');
 const { requiere } = require('../auth');
 
 /** Para el monitoreo del hosting: responde sin sesión y toca la base. */
-function salud({ res }) {
-  const n = get('SELECT COUNT(*) AS n FROM consultas').n;
-  json(res, { ok: true, consultas: n, hora: new Date().toISOString() });
+async function salud({ res }) {
+  const n = await get('SELECT COUNT(*) AS n FROM consultas');
+  json(res, { ok: true, consultas: n.n, hora: new Date().toISOString() });
 }
 
-/**
- * Descarga una copia de la base. En un hosting en la nube es la forma de
- * tener el respaldo fuera del servidor: lo baja el administrador cuando
- * quiere y lo guarda donde corresponda.
- */
-const respaldo = requiere('admin', ({ res }) => {
-  const destino = path.join(os.tmpdir(), `coop-${Date.now()}.db`);
-  // VACUUM INTO deja una copia consistente aunque haya gente cargando.
-  db.exec(`VACUUM INTO '${destino.replace(/'/g, "''")}'`);
+// Las sesiones no se respaldan: son descartables y guardan cookies vivas.
+const TABLAS = ['sectores', 'motivos', 'canales', 'localidades', 'usuarios',
+  'consultas', 'seguimientos', 'encuestas'];
 
-  const nombre = `coop-${new Date().toISOString().slice(0, 10)}.db`;
-  const { size } = fs.statSync(destino);
+/**
+ * Descarga una copia completa de los datos en JSON. Con la base en la nube no
+ * hay archivo que copiar: el respaldo es esto, que el administrador baja
+ * cuando quiere y guarda donde corresponda.
+ */
+const respaldo = requiere('admin', async ({ res }) => {
+  const datos = { generado: new Date().toISOString(), tablas: {} };
+  for (const t of TABLAS) datos.tablas[t] = await all(`SELECT * FROM ${t}`);
+
+  const cuerpo = Buffer.from(JSON.stringify(datos, null, 1), 'utf8');
   res.writeHead(200, {
-    'content-type': 'application/octet-stream',
-    'content-disposition': `attachment; filename="${nombre}"`,
-    'content-length': size,
+    'content-type': 'application/json; charset=utf-8',
+    'content-disposition': `attachment; filename="coop-${new Date().toISOString().slice(0, 10)}.json"`,
+    'content-length': cuerpo.length,
   });
-  const flujo = fs.createReadStream(destino);
-  flujo.pipe(res);
-  flujo.on('close', () => fs.rm(destino, () => {}));
+  res.end(cuerpo);
 });
 
 module.exports = { salud, respaldo };
