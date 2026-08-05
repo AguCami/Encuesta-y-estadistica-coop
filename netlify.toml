@@ -8,9 +8,11 @@
 
 [functions]
   node_bundler = "esbuild"
-  # El paquete de la base viaja tal cual, sin empaquetar: adentro tiene
-  # binarios que esbuild no puede procesar.
+  # El paquete de la base viaja tal cual, sin empaquetar, y se carga recién al
+  # ejecutarse: adentro tiene binarios `.node` que el empaquetador no sabe
+  # procesar y harían fallar el build.
   external_node_modules = ["@libsql/client"]
+  included_files = ["node_modules/@libsql/client/**"]
 
 [[redirects]]
   from = "/api/*"

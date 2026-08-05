@@ -17,9 +17,14 @@ const { hashPassword } = require('./auth-hash');
 // Contra un archivo local hace falta el cliente completo; contra la base en la
 // nube alcanza el cliente "web", que habla por HTTP y no arrastra binarios
 // nativos (importante para que entre en una función sin servidor).
-const { createClient } = EN_ARCHIVO
-  ? require('@libsql/client')
-  : require('@libsql/client/web');
+//
+// El nombre del paquete va en una variable a propósito: así el empaquetador no
+// se mete adentro del cliente completo, que trae binarios `.node` que no sabe
+// procesar y harían fallar el build. Se resuelve recién al ejecutarse, cuando
+// el paquete ya está instalado al lado.
+const PAQUETE = EN_ARCHIVO ? '@libsql/client' : '@libsql/client/web';
+// eslint-disable-next-line import/no-dynamic-require
+const { createClient } = require(PAQUETE);
 
 if (EN_ARCHIVO) fs.mkdirSync(DATA_DIR, { recursive: true });
 
