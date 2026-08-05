@@ -19,6 +19,7 @@ const encuestas = require('./api/encuestas');
 const usuarios = require('./api/usuarios');
 const tablero = require('./api/tablero');
 const mantenimiento = require('./api/mantenimiento');
+const informacion = require('./api/informacion');
 
 // ---------------------------------------------------------------- rutas ---
 // El orden importa: las rutas literales van antes que las que capturan :id.
@@ -56,6 +57,14 @@ const RUTAS = [
   ['GET', '/api/encuestas', encuestas.listar],
   ['POST', '/api/encuestas', encuestas.cargarPorOperador],
   ['POST', '/api/encuestas/link', encuestas.crearLink],
+
+  ['GET', '/api/notas', informacion.listarNotas],
+  ['POST', '/api/notas', informacion.crearNota],
+  ['DELETE', '/api/notas/:id', informacion.borrarNota],
+
+  ['GET', '/api/cortes', informacion.listarCortes],
+  ['POST', '/api/cortes', informacion.crearCorte],
+  ['DELETE', '/api/cortes/:id', informacion.borrarCorte],
 
   ['GET', '/api/usuarios', usuarios.listar],
   ['POST', '/api/usuarios', usuarios.crear],

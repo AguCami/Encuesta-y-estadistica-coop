@@ -419,3 +419,39 @@ dialog .pie { padding: .7rem 1rem; border-top: 1px solid var(--border); display:
 @media (prefers-reduced-motion: reduce) {
   #cargando, #cargando.activa { transition: opacity .15s ease; transform: scaleX(1); }
 }
+
+/* ------------------------------------------------- informacion util */
+
+.servicio h3.bloque {
+  font-size: .76rem; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--muted); margin: .9rem 0 .35rem;
+}
+.servicio h3.bloque:first-of-type { margin-top: 0; }
+.precio {
+  display: flex; justify-content: space-between; gap: 1rem; align-items: baseline;
+  padding: .3rem 0; border-bottom: 1px dashed var(--grid); font-size: .9rem;
+}
+.precio b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.requisitos { margin: .4rem 0 0; padding-left: 1.1rem; font-size: .88rem; color: var(--ink-2); }
+.requisitos li { margin-bottom: .18rem; }
+.nota-servicio {
+  margin: .5rem 0 0; padding: .4rem .55rem; border-radius: 8px;
+  background: var(--plane); border-left: 3px solid var(--s4);
+  font-size: .84rem; color: var(--ink-2);
+}
+
+/* Los filtros por sector son muchos: no pueden empujar la pantalla a lo alto. */
+.segmentado.ajustable { max-height: 8.5rem; overflow-y: auto; }
+
+.interno {
+  font-variant-numeric: tabular-nums; font-size: 1rem;
+  color: var(--s1); letter-spacing: .02em;
+}
+
+.lugar { padding: .4rem 0; border-bottom: 1px solid var(--grid); }
+.lugar:last-child { border-bottom: 0; }
+.lugar b { display: block; }
+
+.nota { margin-bottom: .7rem; }
+.nota > header { flex-wrap: wrap; align-items: center; }
+.texto-nota { margin: .2rem 0 .5rem; white-space: pre-wrap; }

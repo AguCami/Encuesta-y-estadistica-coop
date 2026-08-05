@@ -175,7 +175,33 @@ CREATE TABLE IF NOT EXISTS encuestas (
   comentario    TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS ix_enc_fecha  ON encuestas(fecha);
-CREATE INDEX IF NOT EXISTS ix_enc_sector ON encuestas(sector_id)
+CREATE INDEX IF NOT EXISTS ix_enc_sector ON encuestas(sector_id);
+
+-- Notas que deja el personal para que las vea el resto del turno.
+CREATE TABLE IF NOT EXISTS notas (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts          TEXT NOT NULL,
+  usuario_id  INTEGER REFERENCES usuarios(id),
+  nombre      TEXT NOT NULL DEFAULT '',
+  apellido    TEXT NOT NULL DEFAULT '',
+  socio_nro   TEXT NOT NULL DEFAULT '',
+  telefono    TEXT NOT NULL DEFAULT '',
+  texto       TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS ix_notas_ts ON notas(ts);
+
+-- Cronograma de cortes por falta de pago.
+CREATE TABLE IF NOT EXISTS cortes (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts          TEXT NOT NULL,
+  usuario_id  INTEGER REFERENCES usuarios(id),
+  seccion     TEXT NOT NULL DEFAULT '',
+  aviso       TEXT,
+  plazo       TEXT,
+  corte       TEXT,
+  observaciones TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS ix_cortes_plazo ON cortes(plazo)
 `;
 
 // -------------------------------------------------------------------- seed ---
@@ -261,7 +287,7 @@ async function seed() {
  * una base que ya venía andando (una tabla, una columna, un catálogo que
  * cambia). Mientras coincida, no se toca nada.
  */
-const VERSION = '3';
+const VERSION = '4';
 
 /**
  * Prepara la base una sola vez por proceso.
