@@ -8,7 +8,11 @@ import { barras, apiladas, lineas, multiplos, calor, paleta, DIAS } from '/js/ch
 
 const $ = (id) => document.getElementById(id);
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-let filtros;
+let filtros, ultimoPanel;
+
+// Al cambiar claro/oscuro se repinta con los mismos datos, para que los colores
+// de las leyendas y de las barras apiladas acompañen al tema.
+window.addEventListener('tema-cambiado', () => { if (ultimoPanel) pintar(ultimoPanel); });
 
 inicio().catch((e) => console.error(e));
 
@@ -50,6 +54,7 @@ function montarPuestos() {
 }
 
 function pintar(d) {
+  ultimoPanel = d;
   const r = d.resumen;
   const variacion = r.variacion_pct === null ? ''
     : `<span class="${r.variacion_pct >= 0 ? 'sube' : 'baja'}">${r.variacion_pct >= 0 ? '▲' : '▼'} ${dec(Math.abs(r.variacion_pct))}%</span> vs. período anterior`;
@@ -103,12 +108,15 @@ function pintar(d) {
 
   // --- composicion por resultado: la leyenda solo nombra lo que aparece
   const p = paleta();
+  // No toda consulta es un problema a resolver: lo que no se marcó como
+  // solucionado es simplemente el resto, sin connotación de falla.
+  const NOMBRE_PARTE = { resuelta: 'Solucionada', pendiente: 'Otras', derivada: 'Derivada', reclamo: 'Reclamo generado' };
   const partesDe = (s) => [
     { estado: 'resuelta', valor: s.total - s.derivadas - s.pendientes - s.reclamos },
     { estado: 'pendiente', valor: s.pendientes },
     { estado: 'derivada', valor: s.derivadas },
     { estado: 'reclamo', valor: s.reclamos },
-  ].map((x) => ({ ...x, nombre: etiquetaEstado(x.estado), color: p.estado[x.estado] }));
+  ].map((x) => ({ ...x, nombre: NOMBRE_PARTE[x.estado], color: p.estado[x.estado] }));
 
   const usados = new Set();
   for (const s of d.por_sector) for (const x of partesDe(s)) if (x.valor) usados.add(x.estado);

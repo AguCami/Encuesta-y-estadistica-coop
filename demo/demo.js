@@ -633,11 +633,11 @@ function pintarPanel() {
     etiqueta: s.nombre,
     partes: [
       { nombre: 'Solucionada', valor: s.total - s.pendientes, color: p.estado.resuelta },
-      { nombre: 'No solucionada', valor: s.pendientes, color: p.estado.pendiente },
+      { nombre: 'Otras', valor: s.pendientes, color: p.estado.pendiente },
     ],
   })), { leyenda: [
     { nombre: 'Solucionada', color: p.estado.resuelta },
-    { nombre: 'No solucionada', color: p.estado.pendiente },
+    { nombre: 'Otras', color: p.estado.pendiente },
   ] });
 
   barras($('g-motivos'), d.por_motivo.map((m) => ({ etiqueta: m.nombre, valor: m.total, detalle: m.sector })),
@@ -732,6 +732,13 @@ $('btn-reiniciar').onclick = () => {
 // Escape deshace el ultimo registro mientras el aviso sigue en pantalla.
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && ultima) deshacer();
+});
+
+// Al cambiar el tema se repinta la pantalla activa: los colores de las barras
+// apiladas y sus leyendas se resuelven al armar los datos, no al dibujarlos.
+window.addEventListener('tema-cambiado', () => {
+  const activa = document.querySelector('.pantalla.activa');
+  if (activa && PINTAR[activa.id.replace('p-', '')]) PINTAR[activa.id.replace('p-', '')]();
 });
 
 // Los gráficos se redibujan cuando el lector cambia el tema de la página.

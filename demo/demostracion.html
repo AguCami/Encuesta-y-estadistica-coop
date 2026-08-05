@@ -26,6 +26,8 @@
 
   --ok: #0ca30c; --warn: #fab219; --serio: #ec835a; --critico: #d03b3b;
   --ok-texto: #006300;
+  /* el resto de las consultas: neutro, no es un problema */
+  --resto: #a3a29a;
 
   --radio: 10px;
   --fuente: system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -46,11 +48,13 @@
     --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
     --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
     --ok-texto: #0ca30c;
+    --resto: #6b6a63;
   }
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
+  --resto: #6b6a63;
   --surface-1: #1a1a19;
   --plane: #0d0d0d;
   --ink: #ffffff;
@@ -165,7 +169,7 @@ fieldset { border: 0; padding: 0; margin: 0; }
 }
 .chip::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: currentColor; }
 .chip.resuelta { color: var(--ok-texto); }
-.chip.pendiente { color: var(--critico); }
+.chip.pendiente { color: var(--ink-2); }
 .chip.derivada { color: var(--s1); }
 .chip.reclamo { color: var(--serio); }
 .chip.alta { color: var(--critico); }
@@ -426,7 +430,7 @@ dialog .pie { padding: .7rem 1rem; border-top: 1px solid var(--border); display:
       <div id="g-sector"></div>
     </section>
     <section class="tarjeta">
-      <header><h2>Resultado por sector</h2><p>cómo se cierra cada consulta</p></header>
+      <header><h2>Resultado por sector</h2><p>qué parte se resolvió en el momento</p></header>
       <div id="g-estado-sector"></div>
     </section>
   </div>
@@ -517,7 +521,8 @@ function paleta() {
     muted: v('--muted'),
     grid: v('--grid'),
     axis: v('--axis'),
-    estado: { resuelta: v('--ok'), derivada: v('--s1'), pendiente: v('--critico'), reclamo: v('--serio') },
+    // "pendiente" en el tablero rapido es simplemente el resto: tono neutro.
+    estado: { resuelta: v('--ok'), pendiente: v('--resto'), derivada: v('--s1'), reclamo: v('--serio') },
   };
 }
 
@@ -1652,11 +1657,11 @@ function pintarPanel() {
     etiqueta: s.nombre,
     partes: [
       { nombre: 'Solucionada', valor: s.total - s.pendientes, color: p.estado.resuelta },
-      { nombre: 'No solucionada', valor: s.pendientes, color: p.estado.pendiente },
+      { nombre: 'Otras', valor: s.pendientes, color: p.estado.pendiente },
     ],
   })), { leyenda: [
     { nombre: 'Solucionada', color: p.estado.resuelta },
-    { nombre: 'No solucionada', color: p.estado.pendiente },
+    { nombre: 'Otras', color: p.estado.pendiente },
   ] });
 
   barras($('g-motivos'), d.por_motivo.map((m) => ({ etiqueta: m.nombre, valor: m.total, detalle: m.sector })),
@@ -1751,6 +1756,13 @@ $('btn-reiniciar').onclick = () => {
 // Escape deshace el ultimo registro mientras el aviso sigue en pantalla.
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && ultima) deshacer();
+});
+
+// Al cambiar el tema se repinta la pantalla activa: los colores de las barras
+// apiladas y sus leyendas se resuelven al armar los datos, no al dibujarlos.
+window.addEventListener('tema-cambiado', () => {
+  const activa = document.querySelector('.pantalla.activa');
+  if (activa && PINTAR[activa.id.replace('p-', '')]) PINTAR[activa.id.replace('p-', '')]();
 });
 
 // Los gráficos se redibujan cuando el lector cambia el tema de la página.

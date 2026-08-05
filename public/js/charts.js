@@ -33,7 +33,8 @@ export function paleta() {
     muted: v('--muted'),
     grid: v('--grid'),
     axis: v('--axis'),
-    estado: { resuelta: v('--ok'), derivada: v('--s1'), pendiente: v('--critico'), reclamo: v('--serio') },
+    // "pendiente" en el tablero rapido es simplemente el resto: tono neutro.
+    estado: { resuelta: v('--ok'), pendiente: v('--resto'), derivada: v('--s1'), reclamo: v('--serio') },
   };
 }
 
