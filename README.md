@@ -39,13 +39,18 @@ variable `CLAVE_INICIAL`); cada uno la cambia desde *Administración → Mi clav
 
 | Usuario | Nombre | Rol | Puesto |
 |---|---|---|---|
-| `acami` | Cami, Agustini | Administrador | — |
+| `acami` | Cami, Agustín | Administrador | cualquiera |
 | `alenarduzzi` | Lenarduzzi, Andres Alejandro | Operador | Call center |
 | `crodriguez` | Rodriguez, Cristian Adrian | Operador | Call center |
 | `emoyano` | Moyano, Emilio Noel | Operador | Call center |
 | `proggero` | Roggero, Pablo Gustavo | Operador | Mesa de informes |
 
 El administrador da de alta al resto desde *Administración → Usuarios*.
+
+Quien no tiene un puesto fijo entra al tablero de call center y cambia al de
+mesa de informes con el selector de arriba, sin perder nada: el puesto elegido
+queda guardado en esa PC y cada consulta se registra con el puesto donde se
+atendió.
 
 Para ver la aplicación con datos de ejemplo (no usar en producción):
 

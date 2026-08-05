@@ -177,7 +177,7 @@ const CANALES = [['Telefonico', 10], ['Presencial', 20], ['WhatsApp', 30], ['Ema
 const CLAVE_INICIAL = process.env.CLAVE_INICIAL || 'coop2026';
 
 const USUARIOS = [
-  ['acami', 'Cami, Agustini', 'admin', 'otro'],
+  ['acami', 'Cami, Agustín', 'admin', 'otro'],   // administra y puede atender en cualquier puesto
   ['alenarduzzi', 'Lenarduzzi, Andres Alejandro', 'operador', 'call_center'],
   ['crodriguez', 'Rodriguez, Cristian Adrian', 'operador', 'call_center'],
   ['emoyano', 'Moyano, Emilio Noel', 'operador', 'call_center'],

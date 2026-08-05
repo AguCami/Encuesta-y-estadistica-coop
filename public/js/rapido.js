@@ -24,7 +24,7 @@ async function inicio() {
 
 async function recargar() {
   datos = await get('/api/tablero');
-  puestoActual = localStorage.getItem('puesto') || usuario.puesto || 'call_center';
+  puestoActual = elegirPuesto();
   pintarPuestos();
   pintarFrecuentes();
   pintarSectores();
@@ -35,6 +35,19 @@ const PUESTOS = [
   { id: 'call_center', nombre: 'Call center', canal: 'telefonico' },
   { id: 'mesa_informes', nombre: 'Mesa de informes', canal: 'presencial' },
 ];
+
+const esPuestoDeAtencion = (p) => PUESTOS.some((x) => x.id === p);
+
+/**
+ * El puesto elegido en esta PC manda; si no hay, el del usuario. Quien no
+ * atiende en un puesto fijo (administración) arranca en call center y cambia
+ * de tablero cuando quiere.
+ */
+function elegirPuesto() {
+  const guardado = localStorage.getItem('puesto');
+  if (esPuestoDeAtencion(guardado)) return guardado;
+  return esPuestoDeAtencion(usuario.puesto) ? usuario.puesto : 'call_center';
+}
 
 const sinAcentos = (t) => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
