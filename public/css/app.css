@@ -24,6 +24,11 @@
   --ok: #0ca30c; --warn: #fab219; --serio: #ec835a; --critico: #d03b3b;
   --ok-texto: #006300;
 
+  /* Lo que flota por encima de la pagina necesita despegarse del fondo. */
+  --elevado: #ffffff;
+  --borde-elevado: rgba(11, 11, 11, .20);
+  --sombra-elevada: 0 2px 6px rgba(11, 11, 11, .10), 0 14px 40px rgba(11, 11, 11, .20);
+
   --radio: 10px;
   --fuente: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
@@ -43,6 +48,9 @@
     --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
     --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
     --ok-texto: #0ca30c;
+    --elevado: #2b2b28;
+    --borde-elevado: rgba(255, 255, 255, .26);
+    --sombra-elevada: 0 2px 6px rgba(0, 0, 0, .5), 0 16px 44px rgba(0, 0, 0, .65);
   }
 }
 
@@ -59,6 +67,9 @@
   --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
   --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
   --ok-texto: #0ca30c;
+  --elevado: #2b2b28;
+  --borde-elevado: rgba(255, 255, 255, .26);
+  --sombra-elevada: 0 2px 6px rgba(0, 0, 0, .5), 0 16px 44px rgba(0, 0, 0, .65);
 }
 
 * { box-sizing: border-box; }
@@ -93,7 +104,8 @@ a { color: var(--s1); }
 .marca small { font-weight: 500; color: var(--muted); font-size: .78rem; white-space: nowrap; }
 /* El nombre nunca empuja la navegación: si no entra, se recorta con puntos. */
 .marca .nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 22rem; }
-.marca .logo { height: 1.9rem; width: auto; max-width: 9rem; object-fit: contain; display: block; }
+/* Sirve igual un escudo cuadrado que un logo apaisado: manda el alto. */
+.marca .logo { height: 2.1rem; width: auto; max-width: 9rem; object-fit: contain; display: block; }
 @media (max-width: 900px) { .marca small { display: none; } .marca .nombre { max-width: 11rem; } }
 .nav { display: flex; gap: .15rem; flex-wrap: wrap; margin-left: .5rem; }
 .nav a {
@@ -236,7 +248,12 @@ tbody tr:hover { background: var(--plane); }
   background: var(--s1);
 }
 /* Con logo cargado, el sello con la inicial sobra. */
-.logo-acceso { max-width: 11rem; max-height: 4.5rem; width: auto; margin-bottom: .9rem; }
+/* `align-self` es imprescindible: la tarjeta es flex en columna y sin esto
+   estira la imagen a lo ancho y deforma el escudo. */
+.logo-acceso {
+  height: 5rem; width: auto; max-width: 11rem; object-fit: contain;
+  align-self: flex-start; margin-bottom: .9rem;
+}
 .logo-acceso + .sello { display: none; }
 .marca-acceso h1 { font-size: 1.4rem; margin: 0; line-height: 1.25; }
 .marca-acceso p { margin: 0; color: var(--muted); font-size: .85rem; }
@@ -357,8 +374,8 @@ dialog .pie { padding: .7rem 1rem; border-top: 1px solid var(--border); display:
 .brindis {
   position: fixed; left: 50%; bottom: 1rem; transform: translate(-50%, 130%);
   z-index: 50; min-width: min(560px, 94vw);
-  background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radio);
-  box-shadow: var(--sombra); padding: .7rem .9rem;
+  background: var(--elevado); border: 1px solid var(--borde-elevado); border-radius: var(--radio);
+  box-shadow: var(--sombra-elevada); padding: .75rem .9rem;
   transition: transform .16s ease, opacity .16s ease; opacity: 0;
 }
 .brindis.visible { transform: translate(-50%, 0); opacity: 1; }
