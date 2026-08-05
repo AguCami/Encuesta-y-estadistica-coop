@@ -78,12 +78,13 @@ Todo se controla con variables de entorno (opcionales):
 
 | Variable | Por defecto | Para qué |
 |---|---|---|
-| `PORT` | `3000` | Puerto del servidor |
+| `PORT` | `3000` | Puerto del servidor (lo fija solo el hosting) |
 | `HOST` | `0.0.0.0` | Interfaz donde escucha |
 | `ORG_NOMBRE` | `Cooperativa` | Nombre que se muestra en el encabezado y en la encuesta |
 | `TZ_APP` | `America/Argentina/Buenos_Aires` | Zona horaria con la que se fechan las consultas |
-| `DATA_DIR` | `./data` | Carpeta de la base de datos |
+| `DATA_DIR` | `./data` | Carpeta de la base de datos — **en la nube, el disco persistente** |
 | `SESSION_HORAS` | `12` | Duración de la sesión de cada operador |
+| `CLAVE_INICIAL` | `coop2026` | Clave con la que entra el personal la primera vez |
 
 ```bash
 ORG_NOMBRE="Cooperativa Eléctrica de ..." PORT=8080 npm start
@@ -250,15 +251,18 @@ que, ante un problema, reemplaza a `data/coop.db` con el servidor detenido.
 
 ---
 
-## Llevarlo a producción
+## Llevarlo a la web
 
-Todo lo necesario está en [`deploy/`](deploy/README.md): el servicio de systemd,
-la configuración de HTTPS y los pasos, con las dos decisiones a tomar (servidor
-propio en la cooperativa o en internet, y qué se publica hacia afuera).
+Los pasos están en [`deploy/`](deploy/README.md). La aplicación vive en internet
+con `render.yaml` (Render) o con el `Dockerfile` (Fly, Railway y cualquier
+hosting de contenedores); lo único que no se puede pasar por alto es que
+**`DATA_DIR` apunte a un disco persistente**, porque la base es un archivo.
 
-Lo que la aplicación hace por su cuenta cuando sale a internet: marca la cookie
-de sesión como `Secure` si detecta HTTPS y frena los intentos de adivinar claves
-(ocho fallidos por usuario e IP y hay que esperar diez minutos).
+Estando en línea, la aplicación marca la cookie de sesión como `Secure` al
+detectar HTTPS y frena los intentos de adivinar claves (ocho fallidos por
+usuario e IP y hay que esperar diez minutos). El administrador descarga una
+copia de la base cuando quiere desde `/api/respaldo`, y `/api/salud` sirve para
+engancharle un monitor que avise si se cae.
 
 ## Dejarlo andando siempre (Linux)
 

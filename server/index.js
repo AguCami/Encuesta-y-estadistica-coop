@@ -14,6 +14,7 @@ const estadisticas = require('./api/estadisticas');
 const encuestas = require('./api/encuestas');
 const usuarios = require('./api/usuarios');
 const tablero = require('./api/tablero');
+const mantenimiento = require('./api/mantenimiento');
 
 // ---------------------------------------------------------------- rutas ---
 // El orden importa: las rutas literales van antes que las que capturan :id.
@@ -23,6 +24,8 @@ const RUTAS = [
   ['POST', '/api/logout', ({ req, res }) => { cerrarSesion(req, res); json(res, { ok: true }); }, { publico: true }],
   ['GET', '/api/yo', ({ res, usuario }) => json(res, usuario || null), { publico: true }],
   ['GET', '/api/config', ({ res }) => json(res, { org: ORG, tz: TZ }), { publico: true }],
+  ['GET', '/api/salud', mantenimiento.salud, { publico: true }],
+  ['GET', '/api/respaldo', mantenimiento.respaldo],
 
   ['GET', '/api/publico/encuesta', encuestas.publicoConfig, { publico: true }],
   ['POST', '/api/publico/encuesta', encuestas.publicoResponder, { publico: true }],

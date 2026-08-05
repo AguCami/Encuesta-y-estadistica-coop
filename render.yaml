@@ -1,0 +1,25 @@
+# Puesta en línea en Render: se conecta el repositorio y se aplica este archivo.
+# El disco es lo importante — ahí vive la base, y sobrevive a cada actualización.
+services:
+  - type: web
+    name: consultas-coop
+    runtime: node
+    plan: starter                  # el plan gratuito se apaga solo y no admite disco
+    region: oregon
+    buildCommand: ""               # no hay dependencias que instalar
+    startCommand: node --no-warnings server/index.js
+    healthCheckPath: /api/salud
+    autoDeploy: true
+    disk:
+      name: datos
+      mountPath: /var/datos
+      sizeGB: 1
+    envVars:
+      - key: DATA_DIR
+        value: /var/datos          # la base vive en el disco, no en el contenedor
+      - key: ORG_NOMBRE
+        value: Cooperativa
+      - key: TZ_APP
+        value: America/Argentina/Buenos_Aires
+      - key: CLAVE_INICIAL
+        sync: false                # se carga a mano en el panel, no queda en el repo
