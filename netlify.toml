@@ -1,5 +1,5 @@
 # Netlify sirve las páginas de `public/` desde su red y manda todo lo que
-# empieza con /api/ a una sola función (netlify/functions/api.mjs).
+# empieza con /api/ a una sola función (netlify/functions/api.js).
 
 [build]
   publish = "public"
@@ -8,6 +8,15 @@
 
 [functions]
   node_bundler = "esbuild"
+  # El paquete de la base viaja tal cual, sin empaquetar: adentro tiene
+  # binarios que esbuild no puede procesar.
+  external_node_modules = ["@libsql/client"]
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
 
 [[headers]]
   for = "/*"
