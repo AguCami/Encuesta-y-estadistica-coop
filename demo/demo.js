@@ -748,3 +748,158 @@ matchMedia('(prefers-color-scheme: dark)')
 
 generarDatos();
 ir('rapido');
+
+/* ============================================================
+   Información útil
+   Los precios, internos y lugares de pago son los reales.
+   Las notas y los cortes viven en memoria: en la aplicación
+   instalada se guardan en la base de la cooperativa.
+   ============================================================ */
+
+const SOLAPAS_INFO = [
+  { id: 'servicios', texto: 'Servicios' },
+  { id: 'internos', texto: 'Internos' },
+  { id: 'pagos', texto: 'Pagos' },
+  { id: 'cortes', texto: 'Cortes' },
+  { id: 'notas', texto: 'Notas' },
+];
+
+let solapaInfo = 'servicios';
+let sectorInternos = 'todos';
+const NOTAS = [];
+const CORTES = [];
+
+const sinTildes = (s) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+function pintarSolapasInfo() {
+  $('pestanas').innerHTML = SOLAPAS_INFO.map((s) => `<button type="button" data-solapa="${s.id}"
+    aria-pressed="${s.id === solapaInfo}">${s.texto}</button>`).join('');
+  $('pestanas').querySelectorAll('button').forEach((b) => {
+    b.onclick = () => {
+      solapaInfo = b.dataset.solapa;
+      pintarSolapasInfo();
+      for (const s of SOLAPAS_INFO) $(`i-${s.id}`).hidden = s.id !== solapaInfo;
+    };
+  });
+  for (const s of SOLAPAS_INFO) $(`i-${s.id}`).hidden = s.id !== solapaInfo;
+}
+
+const textoServicio = (s) => [
+  s.titulo, s.etiquetas,
+  ...s.bloques.flatMap((b) => [b.titulo, ...b.precios.flat(), ...b.requisitos]),
+  ...s.notas,
+].join(' ');
+
+function pintarServicios() {
+  const q = sinTildes($('q-servicios').value.trim());
+  const visibles = SERVICIOS.filter((s) => !q || sinTildes(textoServicio(s)).includes(q));
+  $('servicios').innerHTML = visibles.map((s) => `
+    <article class="tarjeta servicio">
+      <header><h2>${s.icono ? `${s.icono} ` : ''}${escapar(s.titulo)}</h2></header>
+      ${s.bloques.map((b) => `
+        ${b.titulo ? `<h3 class="bloque">${escapar(b.titulo)}</h3>` : ''}
+        ${b.precios.map(([e, v]) => `<div class="precio"><span>${escapar(e)}</span><b>${escapar(v)}</b></div>`).join('')}
+        ${b.requisitos.length ? `<ul class="requisitos">${b.requisitos.map((r) => `<li>${escapar(r)}</li>`).join('')}</ul>` : ''}`).join('')}
+      ${s.notas.map((n) => `<p class="nota-servicio">${escapar(n)}</p>`).join('')}
+    </article>`).join('');
+  $('sin-servicios').style.display = visibles.length ? 'none' : '';
+}
+
+function pintarSectoresInt() {
+  const sectores = ['todos', ...[...new Set(INTERNOS.map((i) => i.sector))].sort()];
+  $('sectores-int').innerHTML = sectores.map((s) => `<button type="button" class="chico"
+    data-sector="${escapar(s)}" aria-pressed="${s === sectorInternos}">${s === 'todos' ? 'Todos' : escapar(s)}</button>`).join('');
+  $('sectores-int').querySelectorAll('button').forEach((b) => {
+    b.onclick = () => { sectorInternos = b.dataset.sector; pintarSectoresInt(); pintarInternos(); };
+  });
+}
+
+function pintarInternos() {
+  const q = sinTildes($('q-internos').value.trim());
+  const filas = INTERNOS.filter((i) => {
+    if (sectorInternos !== 'todos' && i.sector !== sectorInternos) return false;
+    return !q || sinTildes(`${i.nombre} ${i.sector} ${i.num} ${i.tel}`).includes(q);
+  });
+  $('internos').innerHTML = filas.length ? filas.map((i) => `
+    <tr><td><b class="interno">${escapar(i.num)}</b></td><td>${escapar(i.sector)}</td>
+      <td>${escapar(i.nombre)}</td><td><a href="tel:03525${escapar(i.tel)}">${escapar(i.tel)}</a></td></tr>`).join('')
+    : '<tr><td colspan="4" class="solo-lectura">No se encontraron internos.</td></tr>';
+}
+
+function pintarPagos() {
+  $('pagos').innerHTML = PAGOS.map((z) => `
+    <article class="tarjeta">
+      <header><h2>${escapar(z.zona)}</h2></header>
+      ${z.lugares.map((l) => `<div class="lugar"><b>${escapar(l.nombre)}</b>
+        <span class="solo-lectura">${escapar(l.direccion)}</span></div>`).join('')}
+    </article>`).join('');
+}
+
+function pintarNotas() {
+  $('notas').innerHTML = NOTAS.length ? NOTAS.map((n, i) => `
+    <article class="tarjeta nota">
+      <header>
+        <h3>${escapar([n.nombre, n.apellido].filter(Boolean).join(' ')) || 'Sin nombre'}</h3>
+        ${n.socio_nro ? `<span class="chip">Socio ${escapar(n.socio_nro)}</span>` : ''}
+        ${n.telefono ? `<span class="solo-lectura">${escapar(n.telefono)}</span>` : ''}
+        <span style="flex:1"></span>
+        <button class="chico" data-borrar-nota="${i}">Borrar</button>
+      </header>
+      ${n.texto ? `<p class="texto-nota">${escapar(n.texto)}</p>` : ''}
+      <p class="solo-lectura">${escapar(USUARIO.nombre)} · ${n.cuando}</p>
+    </article>`).join('')
+    : '<p class="solo-lectura">Todavía no hay notas cargadas.</p>';
+  $('notas').querySelectorAll('[data-borrar-nota]').forEach((b) => {
+    b.onclick = () => { NOTAS.splice(Number(b.dataset.borrarNota), 1); pintarNotas(); };
+  });
+}
+
+function pintarCortes() {
+  $('cortes').innerHTML = CORTES.length ? CORTES.map((c, i) => `
+    <tr><td>${escapar(c.seccion)}</td><td>${c.aviso || '—'}</td><td>${c.plazo || '—'}</td>
+      <td>${c.corte || '—'}</td><td>${escapar(c.observaciones)}</td>
+      <td class="solo-lectura">${escapar(USUARIO.nombre)}</td>
+      <td><button class="chico" data-borrar-corte="${i}">Borrar</button></td></tr>`).join('')
+    : '<tr><td colspan="7" class="solo-lectura">Todavía no hay cortes cargados.</td></tr>';
+  $('cortes').querySelectorAll('[data-borrar-corte]').forEach((b) => {
+    b.onclick = () => { CORTES.splice(Number(b.dataset.borrarCorte), 1); pintarCortes(); };
+  });
+}
+
+function pintarInformacion() {
+  pintarSolapasInfo();
+  pintarServicios();
+  pintarSectoresInt();
+  pintarInternos();
+  pintarPagos();
+  pintarNotas();
+  pintarCortes();
+}
+
+$('q-servicios').addEventListener('input', pintarServicios);
+$('q-internos').addEventListener('input', pintarInternos);
+
+$('n-guardar').onclick = () => {
+  const n = {
+    nombre: $('n-nombre').value.trim(), apellido: $('n-apellido').value.trim(),
+    socio_nro: $('n-socio').value.trim(), telefono: $('n-telefono').value.trim(),
+    texto: $('n-texto').value.trim(), cuando: new Date().toLocaleString('es-AR'),
+  };
+  if (!n.texto && !n.nombre && !n.apellido) return;
+  NOTAS.unshift(n);
+  for (const id of ['n-nombre', 'n-apellido', 'n-socio', 'n-telefono', 'n-texto']) $(id).value = '';
+  pintarNotas();
+};
+
+$('c-guardar').onclick = () => {
+  if (!$('c-seccion').value) return;
+  CORTES.unshift({
+    seccion: $('c-seccion').value, aviso: $('c-aviso').value, plazo: $('c-plazo').value,
+    corte: $('c-corte').value, observaciones: $('c-obs').value.trim(),
+  });
+  for (const id of ['c-aviso', 'c-plazo', 'c-corte', 'c-obs']) $(id).value = '';
+  $('c-seccion').value = '';
+  pintarCortes();
+};
+
+PINTAR.informacion = pintarInformacion;
