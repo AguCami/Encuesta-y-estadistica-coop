@@ -3,39 +3,57 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ingreso — Consultas y encuestas</title>
+<title>Ingreso — Consultas</title>
 <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-<div class="ingreso">
-  <form class="tarjeta" id="form">
-    <h1 id="titulo">Consultas y encuestas</h1>
-    <p style="color:var(--muted);margin:.2rem 0 1rem;font-size:.9rem">
-      Mesa de informes y call center
-    </p>
-    <div style="margin-bottom:.7rem">
-      <label for="usuario">Usuario</label>
-      <input id="usuario" name="usuario" autocomplete="username" autofocus required>
+
+<div class="ingreso" id="pantalla">
+  <form class="tarjeta acceso" id="form" novalidate>
+    <div class="marca-acceso">
+      <div class="sello" id="sello">C</div>
+      <h1 id="titulo">Cooperativa</h1>
+      <p>Consultas de mesa de informes y call center</p>
     </div>
-    <div style="margin-bottom:.9rem">
+
+    <div class="campo-acceso">
+      <label for="usuario">Usuario</label>
+      <input id="usuario" name="usuario" autocomplete="username" autocapitalize="none" autofocus required>
+    </div>
+    <div class="campo-acceso">
       <label for="clave">Clave</label>
       <input id="clave" name="clave" type="password" autocomplete="current-password" required>
     </div>
-    <button class="primario" style="width:100%;justify-content:center" type="submit">Ingresar</button>
-    <p class="aviso" id="aviso"></p>
-    <p style="margin:.8rem 0 0;font-size:.82rem;color:var(--muted)">
-      ¿Sos socio y querés dejar tu opinión? <a href="/encuesta.html">Responder la encuesta</a>
-    </p>
+
+    <button class="primario" type="submit">Ingresar</button>
+    <p class="solo-lectores" id="aviso" role="status" aria-live="polite"></p>
+    <p class="ayuda">Si olvidaste tu clave, pedísela al administrador.</p>
   </form>
 </div>
 
+<div class="bienvenida oculto" id="bienvenida">
+  <div>
+    <div class="saludo">Te damos la bienvenida</div>
+    <div class="nombre" id="nombre"></div>
+    <div class="pie">Preparando tu pantalla…</div>
+  </div>
+</div>
+
+<canvas id="polvo" class="oculto"></canvas>
+
 <script type="module">
-import { post, get, avisar, aplicarTemaGuardado } from '/js/api.js';
+import { post, get, aplicarTemaGuardado } from '/js/api.js';
 aplicarTemaGuardado();
 
-const aviso = document.getElementById('aviso');
+const $ = (id) => document.getElementById(id);
+const form = $('form');
 
-get('/api/config').then((c) => { document.getElementById('titulo').textContent = c.org; }).catch(() => {});
+get('/api/config').then((c) => {
+  $('titulo').textContent = c.org;
+  $('sello').textContent = c.org.trim().charAt(0).toUpperCase() || 'C';
+  document.title = `Ingreso — ${c.org}`;
+}).catch(() => {});
+
 get('/api/yo').then((u) => { if (u) location.href = destino(); }).catch(() => {});
 
 function destino() {
@@ -43,18 +61,129 @@ function destino() {
   return volver && volver.startsWith('/') ? volver : '/rapido.html';
 }
 
-document.getElementById('form').addEventListener('submit', async (e) => {
+/** "Lenarduzzi, Andres Alejandro" → "Andres" */
+function nombreDePila(completo) {
+  const parte = completo.includes(',') ? completo.split(',')[1] : completo;
+  return parte.trim().split(/\s+/)[0] || completo;
+}
+
+// ------------------------------------------------------------------ error ---
+
+function marcarError(mensaje) {
+  form.classList.remove('mal');
+  void form.offsetWidth;            // reinicia la animación si vuelve a fallar
+  form.classList.add('mal');
+  $('aviso').textContent = mensaje; // solo para lectores de pantalla
+  $('clave').select();
+}
+
+form.addEventListener('input', () => {
+  form.classList.remove('mal');
+  $('aviso').textContent = '';
+});
+
+// ------------------------------------------------------------------ polvo ---
+
+const quietito = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/**
+ * Deshace la tarjeta en partículas y se las lleva el viento hacia la derecha.
+ * Las partículas se siembran sobre las cajas reales de cada elemento, así el
+ * polvo tiene la forma de lo que había en pantalla.
+ */
+function hacerPolvo(tarjeta) {
+  const lienzo = $('polvo');
+  const ctx = lienzo.getContext('2d');
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  lienzo.width = innerWidth * dpr;
+  lienzo.height = innerHeight * dpr;
+  ctx.scale(dpr, dpr);
+  lienzo.classList.remove('oculto');
+
+  const estilo = getComputedStyle(document.documentElement);
+  const color = (n) => estilo.getPropertyValue(n).trim();
+  const caja = tarjeta.getBoundingClientRect();
+
+  const particulas = [];
+  const sembrar = (r, tinta, densidad) => {
+    const cuantas = Math.min(900, Math.round(r.width * r.height * densidad));
+    for (let i = 0; i < cuantas; i++) {
+      const x = r.left + Math.random() * r.width;
+      const y = r.top + Math.random() * r.height;
+      particulas.push({
+        x, y, tinta,
+        r: 0.6 + Math.random() * 1.5,
+        // el viento entra por la izquierda: esa franja se deshace primero
+        demora: ((x - caja.left) / caja.width) * 18 + Math.random() * 8,
+        vx: 1.4 + Math.random() * 3.4,
+        vy: -0.5 - Math.random() * 1.1,
+        giro: (Math.random() - 0.5) * 0.25,
+        vida: 32 + Math.random() * 26,
+        edad: 0,
+      });
+    }
+  };
+
+  sembrar(caja, color('--surface-1'), 0.05);
+  for (const el of tarjeta.querySelectorAll('h1, p, label, input, button, .sello')) {
+    const r = el.getBoundingClientRect();
+    if (!r.width || !r.height) continue;
+    const c = getComputedStyle(el);
+    const tinta = el.classList.contains('sello') || el.tagName === 'BUTTON'
+      ? c.backgroundColor : c.color;
+    sembrar(r, tinta, 0.5);
+  }
+
+  tarjeta.style.visibility = 'hidden';
+
+  return new Promise((listo) => {
+    let cuadro = 0;
+    const dibujar = () => {
+      cuadro++;
+      ctx.clearRect(0, 0, innerWidth, innerHeight);
+      let vivas = 0;
+      for (const p of particulas) {
+        if (cuadro < p.demora) { vivas++; continue; }
+        p.edad++;
+        if (p.edad > p.vida) continue;
+        vivas++;
+        p.x += p.vx + Math.sin((p.y + cuadro) * 0.05) * 0.4;
+        p.y += p.vy + p.giro;
+        p.vx *= 1.012;
+        ctx.globalAlpha = Math.max(0, 1 - p.edad / p.vida);
+        ctx.fillStyle = p.tinta;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (vivas) requestAnimationFrame(dibujar);
+      else { lienzo.classList.add('oculto'); listo(); }
+    };
+    requestAnimationFrame(dibujar);
+  });
+}
+
+// ---------------------------------------------------------------- ingreso ---
+
+form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const boton = e.target.querySelector('button');
+  const boton = form.querySelector('button');
   boton.disabled = true;
   try {
-    await post('/api/login', {
-      usuario: document.getElementById('usuario').value,
-      clave: document.getElementById('clave').value,
+    const usuario = await post('/api/login', {
+      usuario: $('usuario').value,
+      clave: $('clave').value,
     });
+
+    $('nombre').textContent = nombreDePila(usuario.nombre);
+    // primero se lo lleva el viento, después aparece el saludo
+    if (!quietito) await hacerPolvo(form);
+    $('pantalla').classList.add('oculto');
+    $('bienvenida').classList.remove('oculto');
+    await new Promise((r) => setTimeout(r, quietito ? 700 : 1250));
     location.href = destino();
   } catch (err) {
-    avisar(aviso, err.message, 'error');
+    marcarError(err.message);
     boton.disabled = false;
   }
 });

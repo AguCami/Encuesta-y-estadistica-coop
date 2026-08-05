@@ -93,6 +93,12 @@ ORG_NOMBRE="Cooperativa Eléctrica de ..." PORT=8080 npm start
 
 ## Las pantallas
 
+### 0. Ingreso
+Cada uno entra con su usuario y su clave. Si algo está mal, la tarjeta se pone en
+rojo y listo — sin carteles que leer con el socio esperando. Si el ingreso es
+correcto, la tarjeta se deshace en polvo, se la lleva el viento y aparece el
+saludo con el nombre de quien entró antes de abrir su pantalla de trabajo.
+
 ### 1. Atención rápida — la pantalla del día a día
 Entra la llamada, el operador toca **un solo botón** y la consulta ya quedó
 registrada. Sin formulario, sin guardar, sin confirmar.

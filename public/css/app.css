@@ -217,8 +217,68 @@ tbody tr:hover { background: var(--plane); }
 
 /* --------------------------------------------------------------- ingreso */
 
-.ingreso { min-height: 100vh; display: grid; place-items: center; padding: 1rem; }
-.ingreso .tarjeta { width: min(380px, 100%); }
+.ingreso {
+  min-height: 100vh; display: grid; place-items: center; padding: 1.5rem;
+  background:
+    radial-gradient(120% 90% at 50% -10%, color-mix(in srgb, var(--s1) 10%, transparent), transparent 60%),
+    var(--plane);
+}
+.ingreso .tarjeta { width: min(390px, 100%); padding: 1.6rem 1.5rem; }
+
+.marca-acceso { display: flex; flex-direction: column; gap: .15rem; margin-bottom: 1.4rem; }
+.marca-acceso .sello {
+  width: 2.4rem; height: 2.4rem; border-radius: 12px; margin-bottom: .6rem;
+  display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 1.05rem;
+  background: var(--s1);
+}
+.marca-acceso h1 { font-size: 1.4rem; margin: 0; }
+.marca-acceso p { margin: 0; color: var(--muted); font-size: .85rem; }
+
+.acceso .campo-acceso { margin-bottom: .9rem; }
+.acceso input { padding: .58rem .7rem; }
+.acceso button[type="submit"] {
+  width: 100%; justify-content: center; margin-top: .4rem; padding: .6rem;
+}
+.acceso .ayuda { margin: 1rem 0 0; font-size: .78rem; color: var(--muted); text-align: center; }
+
+/* Error: la tarjeta se pone en rojo, sin cartel que leer en el mostrador. */
+.acceso.mal input { border-color: var(--critico); }
+.acceso.mal input:focus { outline-color: var(--critico); }
+.acceso.mal .sello { background: var(--critico); }
+@media (prefers-reduced-motion: no-preference) {
+  .acceso.mal { animation: sacudir .32s ease; }
+}
+@keyframes sacudir {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-7px); }
+  60% { transform: translateX(6px); }
+}
+.solo-lectores {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap;
+}
+
+/* El polvo en el que se deshace la tarjeta al entrar. */
+#polvo {
+  position: fixed; inset: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 40;
+}
+
+.bienvenida {
+  position: fixed; inset: 0; display: grid; place-items: center; text-align: center;
+  padding: 1.5rem; z-index: 30;
+}
+.bienvenida .saludo { font-size: 1.05rem; color: var(--ink-2); }
+.bienvenida .nombre { font-size: clamp(1.8rem, 6vw, 2.6rem); font-weight: 680; line-height: 1.1; }
+.bienvenida .pie { margin-top: .5rem; font-size: .85rem; color: var(--muted); }
+.bienvenida > div > * { opacity: 0; transform: translateY(10px); animation: llegar .5s ease forwards; }
+.bienvenida .saludo { animation-delay: .05s; }
+.bienvenida .nombre { animation-delay: .16s; }
+.bienvenida .pie { animation-delay: .3s; }
+@keyframes llegar { to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .bienvenida > div > * { animation: none; opacity: 1; transform: none; }
+}
 
 /* --------------------------------------------------------------- detalle */
 
