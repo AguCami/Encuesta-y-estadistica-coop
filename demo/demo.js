@@ -742,7 +742,7 @@ window.addEventListener('tema-cambiado', () => {
 
 // Los gráficos se redibujan cuando el lector cambia el tema de la página.
 new MutationObserver(() => window.dispatchEvent(new Event('tema-cambiado')))
-  .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+  .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 matchMedia('(prefers-color-scheme: dark)')
   .addEventListener('change', () => window.dispatchEvent(new Event('tema-cambiado')));
 
@@ -903,3 +903,139 @@ $('c-guardar').onclick = () => {
 };
 
 PINTAR.informacion = pintarInformacion;
+
+/* ============================================================
+   Pantalla de ingreso
+   En la demostración entra cualquiera: lo que se muestra es el
+   efecto, igual que en la aplicación instalada.
+   ============================================================ */
+
+const quietito = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const formIngreso = $('form-ingreso');
+
+const nombreDePila = (completo) => {
+  const parte = completo.includes(',') ? completo.split(',')[1] : completo;
+  return parte.trim().split(/\s+/)[0] || completo;
+};
+
+/** Deshace la tarjeta en partículas y se las lleva el viento. */
+function hacerPolvo(tarjeta) {
+  const lienzo = $('polvo');
+  const ctx = lienzo.getContext('2d');
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  lienzo.width = innerWidth * dpr;
+  lienzo.height = innerHeight * dpr;
+  ctx.scale(dpr, dpr);
+  lienzo.classList.remove('oculto');
+
+  const estilo = getComputedStyle(document.documentElement);
+  const caja = tarjeta.getBoundingClientRect();
+  const particulas = [];
+
+  const sembrar = (r, tinta, densidad) => {
+    const cuantas = Math.min(900, Math.round(r.width * r.height * densidad));
+    for (let i = 0; i < cuantas; i++) {
+      const x = r.left + Math.random() * r.width;
+      const y = r.top + Math.random() * r.height;
+      particulas.push({
+        x, y, tinta, r: 0.6 + Math.random() * 1.5,
+        demora: ((x - caja.left) / caja.width) * 18 + Math.random() * 8,
+        vx: 1.4 + Math.random() * 3.4, vy: -0.5 - Math.random() * 1.1,
+        giro: (Math.random() - 0.5) * 0.25, vida: 32 + Math.random() * 26, edad: 0,
+      });
+    }
+  };
+
+  sembrar(caja, estilo.getPropertyValue('--surface-1').trim(), 0.05);
+  for (const el of tarjeta.querySelectorAll('h1, p, label, input, button, img')) {
+    const r = el.getBoundingClientRect();
+    if (!r.width || !r.height) continue;
+    const c = getComputedStyle(el);
+    sembrar(r, el.tagName === 'BUTTON' ? c.backgroundColor : c.color, 0.5);
+  }
+
+  tarjeta.style.visibility = 'hidden';
+
+  return new Promise((listo) => {
+    let cuadro = 0;
+    const dibujar = () => {
+      cuadro++;
+      ctx.clearRect(0, 0, innerWidth, innerHeight);
+      let vivas = 0;
+      for (const p of particulas) {
+        if (cuadro < p.demora) { vivas++; continue; }
+        p.edad++;
+        if (p.edad > p.vida) continue;
+        vivas++;
+        p.x += p.vx + Math.sin((p.y + cuadro) * 0.05) * 0.4;
+        p.y += p.vy + p.giro;
+        p.vx *= 1.012;
+        ctx.globalAlpha = Math.max(0, 1 - p.edad / p.vida);
+        ctx.fillStyle = p.tinta;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (vivas) requestAnimationFrame(dibujar);
+      else { lienzo.classList.add('oculto'); listo(); }
+    };
+    requestAnimationFrame(dibujar);
+  });
+}
+
+formIngreso.addEventListener('input', () => formIngreso.classList.remove('mal'));
+
+formIngreso.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  // Con la clave de ejemplo entra; con cualquier otra muestra el error.
+  if ($('i-clave').value !== 'coop2026') {
+    formIngreso.classList.remove('mal');
+    void formIngreso.offsetWidth;
+    formIngreso.classList.add('mal');
+    $('i-clave').select();
+    return;
+  }
+  formIngreso.querySelector('button').disabled = true;
+
+  $('nombre-bienvenida').textContent = nombreDePila(USUARIO.nombre);
+  if (!quietito) await hacerPolvo(formIngreso);
+  $('p-ingreso').classList.add('oculto');
+  const saludo = $('bienvenida');
+  saludo.classList.remove('oculto');
+  await new Promise((r) => setTimeout(r, quietito ? 900 : 2600));
+  if (!quietito) {
+    saludo.classList.add('saliendo');
+    await new Promise((r) => setTimeout(r, 420));
+  }
+  saludo.classList.add('oculto');
+  document.body.classList.remove('sin-ingresar');
+  ir('rapido');
+});
+
+
+/* ============================================================
+   Huevo de pascua: escribí "pacman".
+   En la demostración los puntajes quedan en este navegador; en
+   la aplicación instalada son de toda la cooperativa.
+   ============================================================ */
+
+const CLAVE_PUNTAJES = 'demo-pacman';
+const leerPuntajes = () => {
+  try { return JSON.parse(localStorage.getItem(CLAVE_PUNTAJES) || '[]'); } catch { return []; }
+};
+
+let tecleado = '';
+addEventListener('keydown', (e) => {
+  if (e.key.length !== 1 || document.querySelector('.pacman')) return;
+  tecleado = (tecleado + e.key.toLowerCase()).slice(-6);
+  if (tecleado !== 'pacman') return;
+  tecleado = '';
+  arrancar({
+    leer: async () => leerPuntajes().sort((a, b) => b.puntos - a.puntos).slice(0, 10),
+    guardar: async (puntos, nivel) => {
+      const tabla = leerPuntajes();
+      tabla.push({ nombre: USUARIO.nombre, puntos, nivel });
+      localStorage.setItem(CLAVE_PUNTAJES, JSON.stringify(tabla));
+    },
+  });
+});

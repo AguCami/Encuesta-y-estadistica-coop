@@ -26,6 +26,10 @@ const charts = leer('public/js/charts.js')
 
 const demo = leer('demo/demo.js');
 
+// El juego escondido va incrustado: en la demostración no hay servidor del
+// que descargarlo cuando alguien escribe la palabra.
+const pacman = leer('public/js/pacman.js').replace('export default ', '');
+
 // Los datos de Información útil son los mismos que usa la aplicación.
 const datosInfo = leer('public/js/datos-info.js').replace(/^export /gm, '');
 
@@ -36,8 +40,9 @@ const salida = leer('demo/index.html')
   .replace('/*{{CSS}}*/', () => css)
   .replace('/*{{CHARTS}}*/', () => charts)
   .replace('/*{{DATOS_INFO}}*/', () => datosInfo)
+  .replace('/*{{PACMAN}}*/', () => pacman)
   .replace('/*{{DEMO}}*/', () => demo)
-  .replace('/*{{LOGO}}*/', () => logo);
+  .replaceAll('/*{{LOGO}}*/', () => logo);   // aparece en la barra y en el ingreso
 
 const destino = path.join(ROOT, 'demo/demostracion.html');
 fs.writeFileSync(destino, salida);

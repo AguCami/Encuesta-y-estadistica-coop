@@ -84,4 +84,26 @@ const borrarCorte = requiere('operador', async ({ res, params, usuario }) => {
   json(res, { ok: true });
 });
 
-module.exports = { listarNotas, crearNota, borrarNota, listarCortes, crearCorte, borrarCorte };
+// ------------------------------------------------------------ puntajes ---
+// Del juego escondido. Se guarda el mejor puntaje de cada uno, nada más.
+
+const listarPuntajes = requiere('operador', async ({ res }) => {
+  json(res, await all(`
+    SELECT nombre, MAX(puntos) AS puntos, MAX(nivel) AS nivel
+      FROM puntajes GROUP BY usuario_id, nombre
+     ORDER BY puntos DESC LIMIT 10`));
+});
+
+const guardarPuntaje = requiere('operador', async ({ res, body, usuario }) => {
+  const puntos = Math.max(0, Math.min(enteroONull(body.puntos) ?? 0, 9999999));
+  const nivel = Math.max(1, Math.min(enteroONull(body.nivel) ?? 1, 99));
+  await run('INSERT INTO puntajes (ts, usuario_id, nombre, puntos, nivel) VALUES (?,?,?,?,?)',
+    [partesFecha().ts, usuario.id, usuario.nombre, puntos, nivel]);
+  json(res, { ok: true }, 201);
+});
+
+module.exports = {
+  listarNotas, crearNota, borrarNota,
+  listarCortes, crearCorte, borrarCorte,
+  listarPuntajes, guardarPuntaje,
+};

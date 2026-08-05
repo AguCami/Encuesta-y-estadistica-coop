@@ -15,6 +15,10 @@
   width: .5rem; height: .5rem; border-radius: 50%; background: var(--ok); flex: none;
 }
 .cinta .derecha { margin-left: auto; display: flex; gap: .4rem; }
+body.sin-ingresar .cinta,
+body.sin-ingresar .barra,
+body.sin-ingresar .pantalla,
+body.sin-ingresar .pie-demo { display: none !important; }
 .nav a { cursor: pointer; }
 .pantalla { display: none; }
 .pantalla.activa { display: block; }
@@ -25,7 +29,41 @@
 }
 </style>
 
-<header class="cinta">
+<!-- ========================================================== ingreso -->
+<div class="ingreso" id="p-ingreso">
+  <form class="tarjeta acceso" id="form-ingreso" novalidate>
+    <div class="marca-acceso">
+      <img src="/*{{LOGO}}*/" alt="" class="logo-acceso">
+      <h1>Cooperativa De Servicios Públicos de Colonia Caroya y Jesús María Ltda.</h1>
+      <p>Consultas de mesa de informes y call center</p>
+    </div>
+    <div class="campo-acceso">
+      <label for="i-usuario">Usuario</label>
+      <input id="i-usuario" value="proggero" autocapitalize="none">
+    </div>
+    <div class="campo-acceso">
+      <label for="i-clave">Clave</label>
+      <input id="i-clave" type="password" value="coop2026">
+    </div>
+    <button class="primario" type="submit">Ingresar</button>
+    <p class="ayuda">En la demostración entra con cualquier usuario. Probá una clave
+      equivocada para ver el aviso en rojo.</p>
+  </form>
+</div>
+
+<div class="bienvenida oculto" id="bienvenida">
+  <div>
+    <img src="/*{{LOGO}}*/" alt="" class="logo-bienvenida">
+    <div class="saludo">Te damos la bienvenida</div>
+    <div class="nombre" id="nombre-bienvenida"></div>
+    <div class="pie">Preparando tu pantalla…</div>
+  </div>
+</div>
+
+<canvas id="polvo" class="oculto"></canvas>
+<script>document.body.classList.add('sin-ingresar');</script>
+
+<header class="cinta" id="cinta">
   <span class="punto"></span>
   <span><b>Demostración</b> — datos de ejemplo generados para mostrar la aplicación.
     Podés tocar todo: lo que cargues se refleja en las estadísticas y se borra al recargar la página.</span>
@@ -34,7 +72,7 @@
   </span>
 </header>
 
-<header class="barra">
+<header class="barra" id="barra">
   <div class="marca">
     <img src="/*{{LOGO}}*/" alt="" class="logo">
     <span class="nombre">Coop. Colonia Caroya</span><small>consultas y encuestas</small>
@@ -51,7 +89,7 @@
 </header>
 
 <!-- ============================================================ rápido -->
-<main class="pantalla activa rapido" id="p-rapido">
+<main class="pantalla rapido" id="p-rapido">
   <div class="fila" style="align-items:center;gap:.8rem">
     <h1 style="margin:0">Atención rápida</h1>
     <p class="solo-lectura" style="margin:0">Un toque en el motivo y la consulta queda registrada</p>
@@ -257,6 +295,8 @@
 /*{{CHARTS}}*/
 
 /*{{DATOS_INFO}}*/
+
+/*{{PACMAN}}*/
 
 /*{{DEMO}}*/
 </script>

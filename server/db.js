@@ -201,7 +201,18 @@ CREATE TABLE IF NOT EXISTS cortes (
   corte       TEXT,
   observaciones TEXT NOT NULL DEFAULT ''
 );
-CREATE INDEX IF NOT EXISTS ix_cortes_plazo ON cortes(plazo)
+CREATE INDEX IF NOT EXISTS ix_cortes_plazo ON cortes(plazo);
+
+-- Tabla de puntajes del juego escondido. Que no engañe a nadie: es un juego.
+CREATE TABLE IF NOT EXISTS puntajes (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts          TEXT NOT NULL,
+  usuario_id  INTEGER REFERENCES usuarios(id),
+  nombre      TEXT NOT NULL DEFAULT '',
+  puntos      INTEGER NOT NULL DEFAULT 0,
+  nivel       INTEGER NOT NULL DEFAULT 1
+);
+CREATE INDEX IF NOT EXISTS ix_puntajes ON puntajes(puntos DESC)
 `;
 
 // -------------------------------------------------------------------- seed ---
@@ -287,7 +298,7 @@ async function seed() {
  * una base que ya venía andando (una tabla, una columna, un catálogo que
  * cambia). Mientras coincida, no se toca nada.
  */
-const VERSION = '4';
+const VERSION = '5';
 
 /**
  * Prepara la base una sola vez por proceso.

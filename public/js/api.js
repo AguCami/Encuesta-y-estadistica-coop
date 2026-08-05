@@ -145,6 +145,20 @@ export async function montarBarra(usuario) {
   return config;
 }
 
+// Hay un juego escondido: escribí "pacman" en cualquier pantalla. El archivo
+// del juego recién se descarga cuando alguien completa la palabra.
+let tecleado = '';
+addEventListener('keydown', (e) => {
+  if (e.key.length !== 1) return;
+  tecleado = (tecleado + e.key.toLowerCase()).slice(-6);
+  if (tecleado !== 'pacman') return;
+  tecleado = '';
+  import('/js/pacman.js').then((m) => m.default({
+    leer: () => get('/api/puntajes'),
+    guardar: (puntos, nivel) => post('/api/puntajes', { puntos, nivel }),
+  })).catch(() => { /* si no está, no pasa nada */ });
+});
+
 export function aplicarTemaGuardado() {
   const t = localStorage.getItem('tema');
   if (t) document.documentElement.dataset.theme = t;

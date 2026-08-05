@@ -34,6 +34,7 @@
 
 <div class="bienvenida oculto" id="bienvenida">
   <div>
+    <img src="/img/logo.png" alt="" class="logo-bienvenida" onerror="this.remove()">
     <div class="saludo">Te damos la bienvenida</div>
     <div class="nombre" id="nombre"></div>
     <div class="pie">Preparando tu pantalla…</div>
@@ -180,8 +181,16 @@ form.addEventListener('submit', async (e) => {
     // primero se lo lleva el viento, después aparece el saludo
     if (!quietito) await hacerPolvo(form);
     $('pantalla').classList.add('oculto');
-    $('bienvenida').classList.remove('oculto');
-    await new Promise((r) => setTimeout(r, quietito ? 700 : 1250));
+    const saludo = $('bienvenida');
+    saludo.classList.remove('oculto');
+
+    // El saludo tiene que durar lo suficiente para leerlo: entra en medio
+    // segundo, se queda quieto un rato y recién ahí se va desvaneciendo.
+    await new Promise((r) => setTimeout(r, quietito ? 900 : 2600));
+    if (!quietito) {
+      saludo.classList.add('saliendo');
+      await new Promise((r) => setTimeout(r, 420));
+    }
     location.href = destino();
   } catch (err) {
     marcarError(err.message);
