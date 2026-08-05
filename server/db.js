@@ -200,7 +200,9 @@ const MOTIVOS = {
     'Reconexiones', 'Apros', 'Prórroga'],
 };
 
-const CANALES = [['Telefonico', 10], ['Presencial', 20], ['WhatsApp', 30], ['Email', 40], ['Web / Redes', 50]];
+// Un canal por puesto y nada más: el call center atiende por teléfono y la
+// mesa de informes en el mostrador.
+const CANALES = [['Telefonico', 10], ['Presencial', 20]];
 
 // Clave con la que entra cada uno la primera vez; se cambia desde "Mi clave".
 const CLAVE_INICIAL = process.env.CLAVE_INICIAL || 'coop2026';
@@ -231,6 +233,13 @@ async function seed() {
     for (const [nombre, orden] of CANALES) {
       await run('INSERT INTO canales (nombre, orden) VALUES (?, ?)', [nombre, orden]);
     }
+  } else {
+    // En una base que ya venía andando se dan de baja los canales que quedaron
+    // de antes. No se borran: si alguna consulta vieja apunta a uno, tiene que
+    // seguir mostrando su nombre en las estadísticas.
+    const marcas = CANALES.map(() => '?').join(',');
+    await run(`UPDATE canales SET activo = 0 WHERE nombre NOT IN (${marcas})`,
+      CANALES.map(([nombre]) => nombre));
   }
 
   // El personal de la cooperativa. Se crea el que falte, sin tocar los que ya

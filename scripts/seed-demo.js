@@ -50,7 +50,6 @@ async function generar() {
     'Mesa de informes': 12,
   };
   const pesoSector = sectores.map((s) => PESOS[s.nombre] ?? 3);
-  const pesoCanal = canales.map((c) => ({ Telefonico: 12, Presencial: 4, WhatsApp: 5, Email: 2, 'Web / Redes': 1 }[c.nombre] ?? 2));
   const pesoHora = { 8: 6, 9: 10, 10: 12, 11: 10, 12: 6, 13: 4, 14: 5, 15: 7, 16: 8, 17: 6, 18: 3 };
   const horas = Object.keys(pesoHora).map(Number);
 
@@ -70,9 +69,10 @@ async function generar() {
       const delSector = motivos.filter((m) => m.sector_id === sector.id);
       const motivo = delSector.length ? azar(delSector) : null;
       const enMesa = sector.puesto === 'mesa_informes';
-      const canal = enMesa
-        ? (canales.find((c) => c.nombre === 'Presencial') || canales[0])
-        : pesado(canales, pesoCanal);
+      // Cada puesto tiene su unico canal: telefono en el call center,
+      // mostrador en la mesa de informes.
+      const buscado = enMesa ? 'Presencial' : 'Telefonico';
+      const canal = canales.find((c) => c.nombre === buscado) || canales[0];
       // Cada puesto lo atiende su propia gente
       const delPuesto = operadores.filter((o) => o.puesto === (enMesa ? 'mesa_informes' : 'call_center'));
       const operador = azar(delPuesto.length ? delPuesto : operadores);

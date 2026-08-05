@@ -46,10 +46,16 @@ export async function montarBarra(usuario) {
     .map((p) => `<a href="${p.href}"${actual === p.href ? ' aria-current="page"' : ''}>${p.texto}</a>`)
     .join('');
 
+  // Si hay logo cargado en /img/logo.png se usa ese; si no, el nombre solo.
+  // Arriba va el nombre corto: el completo no entra y empuja la navegación.
+  const nombre = escapar(config.org_corto || config.org);
   const barra = document.createElement('header');
   barra.className = 'barra';
   barra.innerHTML = `
-    <div class="marca">${config.org}<small>consultas y encuestas</small></div>
+    <div class="marca" title="${escapar(config.org)}">
+      <img src="/img/logo.png" alt="" class="logo" onerror="this.remove()">
+      <span class="nombre">${nombre}</span><small>consultas y encuestas</small>
+    </div>
     <nav class="nav">${enlaces}</nav>
     <div class="derecha">
       <span class="usuario"><b>${usuario.nombre}</b> · ${etiquetaRol(usuario.rol)}</span>

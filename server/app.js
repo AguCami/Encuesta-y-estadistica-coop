@@ -7,7 +7,7 @@
  * `req`/`res` al estilo de node:http.
  */
 
-const { ORG, TZ } = require('./config');
+const { ORG, ORG_CORTO, TZ } = require('./config');
 const { json, error, leerJson } = require('./util');
 const { usuarioActual, login, cerrarSesion, requiere } = require('./auth');
 const { iniciar } = require('./db');
@@ -27,7 +27,7 @@ const RUTAS = [
   ['POST', '/api/login', login, { publico: true }],
   ['POST', '/api/logout', async ({ req, res }) => { await cerrarSesion(req, res); json(res, { ok: true }); }, { publico: true }],
   ['GET', '/api/yo', ({ res, usuario }) => json(res, usuario || null), { publico: true }],
-  ['GET', '/api/config', ({ res }) => json(res, { org: ORG, tz: TZ }), { publico: true }],
+  ['GET', '/api/config', ({ res }) => json(res, { org: ORG, org_corto: ORG_CORTO, tz: TZ }), { publico: true }],
   ['GET', '/api/salud', mantenimiento.salud, { publico: true }],
   ['GET', '/api/respaldo', mantenimiento.respaldo],
 

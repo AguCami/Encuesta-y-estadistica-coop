@@ -20,6 +20,8 @@ module.exports = {
   TZ: process.env.TZ_APP || 'America/Argentina/Buenos_Aires',
   // Nombre visible de la cooperativa (aparece en el encabezado y en la encuesta).
   ORG: process.env.ORG_NOMBRE || 'Cooperativa',
+  // Nombre corto para la barra de arriba, donde el nombre completo no entra.
+  ORG_CORTO: process.env.ORG_CORTO || '',
   SESSION_COOKIE: 'coop_sid',
   SESSION_HORAS: Number(process.env.SESSION_HORAS || 12),
 };
