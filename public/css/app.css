@@ -241,24 +241,31 @@ tbody tr:hover { background: var(--plane); }
 }
 .ingreso .tarjeta { width: min(390px, 100%); padding: 1.6rem 1.5rem; }
 
-.marca-acceso { display: flex; flex-direction: column; gap: .15rem; margin-bottom: 1.4rem; }
+.acceso { text-align: center; }
+.marca-acceso {
+  display: flex; flex-direction: column; align-items: center;
+  gap: .15rem; margin-bottom: 1.4rem;
+}
 .marca-acceso .sello {
   width: 2.4rem; height: 2.4rem; border-radius: 12px; margin-bottom: .6rem;
   display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 1.05rem;
   background: var(--s1);
 }
 /* Con logo cargado, el sello con la inicial sobra. */
-/* `align-self` es imprescindible: la tarjeta es flex en columna y sin esto
-   estira la imagen a lo ancho y deforma el escudo. */
+/* `object-fit` es imprescindible: sin él la tarjeta estira la imagen a lo
+   ancho y deforma el escudo. */
 .logo-acceso {
   height: 5rem; width: auto; max-width: 11rem; object-fit: contain;
-  align-self: flex-start; margin-bottom: .9rem;
+  margin-bottom: .9rem;
 }
 .logo-acceso + .sello { display: none; }
 .marca-acceso h1 { font-size: 1.4rem; margin: 0; line-height: 1.25; }
+.marca-acceso .sello { margin-left: auto; margin-right: auto; }
 .marca-acceso p { margin: 0; color: var(--muted); font-size: .85rem; }
 
 .acceso .campo-acceso { margin-bottom: .9rem; }
+.acceso label { text-align: center; }
+.acceso input { text-align: center; }
 .acceso input { padding: .58rem .7rem; }
 .acceso button[type="submit"] {
   width: 100%; justify-content: center; margin-top: .4rem; padding: .6rem;
@@ -514,3 +521,7 @@ body.derrumbe .pacman, body.derrumbe .pacman * { visibility: visible; }
   ::view-transition-old(*),
   ::view-transition-new(*) { animation: none !important; }
 }
+
+/* Las pelotas del ingreso: detrás de la tarjeta y sin estorbar los clics. */
+#pelotas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.ingreso .acceso { position: relative; z-index: 1; }

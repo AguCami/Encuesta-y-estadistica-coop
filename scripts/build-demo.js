@@ -29,6 +29,7 @@ const demo = leer('demo/demo.js');
 // El juego escondido va incrustado: en la demostración no hay servidor del
 // que descargarlo cuando alguien escribe la palabra.
 const pacman = leer('public/js/pacman.js').replace('export default ', '');
+const pelotas = leer('public/js/pelotas.js').replace(/^export /gm, '');
 
 // Los datos de Información útil son los mismos que usa la aplicación.
 const datosInfo = leer('public/js/datos-info.js').replace(/^export /gm, '');
@@ -41,6 +42,7 @@ const salida = leer('demo/index.html')
   .replace('/*{{CHARTS}}*/', () => charts)
   .replace('/*{{DATOS_INFO}}*/', () => datosInfo)
   .replace('/*{{PACMAN}}*/', () => pacman)
+  .replace('/*{{PELOTAS}}*/', () => pelotas)
   .replace('/*{{DEMO}}*/', () => demo)
   .replaceAll('/*{{LOGO}}*/', () => logo);   // aparece en la barra y en el ingreso
 

@@ -24,7 +24,7 @@ const ESTADOS = new Set(['resuelta', 'derivada', 'pendiente', 'reclamo']);
 const PRIORIDADES = new Set(['baja', 'normal', 'alta']);
 const PUESTOS = new Set(['call_center', 'mesa_informes', 'otro']);
 
-const listar = requiere('operador', async ({ res, query }) => {
+const listar = requiere('admin', async ({ res, query }) => {
   const f = filtroConsultas(query);
   const limite = Math.min(Math.max(enteroONull(query.limite) ?? 100, 1), 500);
   const offset = Math.max(enteroONull(query.offset) ?? 0, 0);
@@ -34,7 +34,7 @@ const listar = requiere('operador', async ({ res, query }) => {
   json(res, { total, limite, offset, filas });
 });
 
-const ver = requiere('operador', async ({ res, params }) => {
+const ver = requiere('admin', async ({ res, params }) => {
   const id = enteroONull(params.id);
   const fila = await get(`${SELECT_BASE} WHERE c.id = ?`, [id]);
   if (!fila) return error(res, 404, 'Consulta no encontrada');
@@ -64,7 +64,11 @@ const crear = requiere('operador', async ({ res, body, usuario }) => {
 
   const p = partesFecha();
   const estado = ESTADOS.has(body.estado) ? body.estado : 'resuelta';
-  const puesto = PUESTOS.has(body.puesto) ? body.puesto : (usuario.puesto || 'call_center');
+  // El puesto no lo elige el navegador: lo manda el del usuario. Solo quien
+  // no tiene uno fijo ('otro', como el administrador) puede elegir.
+  const puesto = usuario.puesto === 'call_center' || usuario.puesto === 'mesa_informes'
+    ? usuario.puesto
+    : (PUESTOS.has(body.puesto) ? body.puesto : 'call_center');
   const prioridad = PRIORIDADES.has(body.prioridad) ? body.prioridad : 'normal';
   const duracion = Math.max(0, Math.min(enteroONull(body.duracion_seg) ?? 0, 24 * 3600));
 
@@ -133,7 +137,7 @@ const editar = requiere('operador', async ({ res, params, body, usuario }) => {
   json(res, await get(`${SELECT_BASE} WHERE c.id = ?`, [id]));
 });
 
-const agregarSeguimiento = requiere('operador', async ({ res, params, body, usuario }) => {
+const agregarSeguimiento = requiere('admin', async ({ res, params, body, usuario }) => {
   const id = enteroONull(params.id);
   if (!await get('SELECT id FROM consultas WHERE id = ?', [id])) return error(res, 404, 'Consulta no encontrada');
   const nota = texto(body.nota, 1000);
@@ -172,7 +176,7 @@ const borrar = requiere('operador', async ({ res, params, usuario }) => {
   json(res, { ok: true });
 });
 
-const exportar = requiere('operador', async ({ res, query }) => {
+const exportar = requiere('admin', async ({ res, query }) => {
   const f = filtroConsultas(query);
   const filas = await all(`${SELECT_BASE} WHERE ${f.sql} ORDER BY c.ts`, f.params);
   const cabecera = ['ID', 'Fecha', 'Hora', 'Puesto', 'Operador', 'Canal', 'Sector', 'Motivo',

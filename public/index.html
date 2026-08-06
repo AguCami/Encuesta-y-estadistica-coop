@@ -46,6 +46,26 @@
   </div>
 </div>
 
+<dialog id="clave-dialogo">
+  <form class="cuerpo" id="forma-clave">
+    <h2>Mi clave</h2>
+    <p class="solo-lectura">La primera vez conviene cambiar la que te dieron.</p>
+    <div class="campo-acceso" style="margin-top:.8rem">
+      <label for="k-actual">Clave actual</label>
+      <input id="k-actual" type="password" autocomplete="current-password" required>
+    </div>
+    <div class="campo-acceso">
+      <label for="k-nueva">Clave nueva</label>
+      <input id="k-nueva" type="password" autocomplete="new-password" required>
+    </div>
+    <p class="aviso" id="clave-aviso"></p>
+    <div class="fila" style="justify-content:flex-end;margin-top:.6rem">
+      <button type="button" id="clave-cerrar">Cerrar</button>
+      <button class="primario">Cambiar</button>
+    </div>
+  </form>
+</dialog>
+
 <canvas id="polvo" class="oculto"></canvas>
 
 <script type="module" src="/js/app.js"></script>

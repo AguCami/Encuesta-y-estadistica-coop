@@ -54,7 +54,7 @@ function normalizar(tabla, body) {
   return d;
 }
 
-const crear = requiere('supervisor', async ({ res, params, body }) => {
+const crear = requiere('admin', async ({ res, params, body }) => {
   const tabla = params.tabla;
   if (!TABLAS[tabla]) return error(res, 404, 'Catalogo inexistente');
   const d = normalizar(tabla, body);
@@ -70,7 +70,7 @@ const crear = requiere('supervisor', async ({ res, params, body }) => {
   }
 });
 
-const editar = requiere('supervisor', async ({ res, params, body }) => {
+const editar = requiere('admin', async ({ res, params, body }) => {
   const tabla = params.tabla;
   if (!TABLAS[tabla]) return error(res, 404, 'Catalogo inexistente');
   const id = enteroONull(params.id);
@@ -91,7 +91,7 @@ const editar = requiere('supervisor', async ({ res, params, body }) => {
  * No se borra: se desactiva. Las consultas historicas siguen apuntando al
  * registro, asi las estadisticas viejas no pierden el nombre del sector.
  */
-const desactivar = requiere('supervisor', async ({ res, params }) => {
+const desactivar = requiere('admin', async ({ res, params }) => {
   const tabla = params.tabla;
   if (!TABLAS[tabla]) return error(res, 404, 'Catalogo inexistente');
   const id = enteroONull(params.id);

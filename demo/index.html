@@ -46,8 +46,9 @@ body.sin-ingresar .pie-demo { display: none !important; }
       <input id="i-clave" type="password" value="coop2026">
     </div>
     <button class="primario" type="submit">Ingresar</button>
-    <p class="ayuda">En la demostración entra con cualquier usuario. Probá una clave
-      equivocada para ver el aviso en rojo.</p>
+    <p class="ayuda">Probá entrar como <b>acami</b> (administrador, ve todo) o como
+      <b>proggero</b> / <b>emoyano</b> (operadores). La clave es la de arriba;
+      poné cualquier otra para ver el aviso en rojo.</p>
   </form>
 </div>
 
@@ -97,10 +98,7 @@ body.sin-ingresar .pie-demo { display: none !important; }
     <span class="contador-hoy" id="contador">—</span>
   </div>
 
-  <div class="tarjeta canal-barra" style="margin-top:.7rem">
-    <label style="margin:0 .6rem 0 0;align-self:center">Estás atendiendo en</label>
-    <div class="segmentado" id="puestos"></div>
-  </div>
+  <div class="tarjeta canal-barra" style="margin-top:.7rem" id="fila-puesto"></div>
 
   <section class="tarjeta" style="margin-top:1rem" id="caja-frecuentes">
     <header><h2>Los que más usás</h2><p>se arma solo con los motivos que más registrás</p></header>
@@ -293,6 +291,8 @@ body.sin-ingresar .pie-demo { display: none !important; }
 /*{{DATOS_INFO}}*/
 
 /*{{PACMAN}}*/
+
+/*{{PELOTAS}}*/
 
 /*{{DEMO}}*/
 </script>

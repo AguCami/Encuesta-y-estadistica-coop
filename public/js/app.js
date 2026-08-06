@@ -20,9 +20,11 @@ const $ = (id) => document.getElementById(id);
 const PANTALLAS = [
   { ruta: '/rapido', texto: 'Atención rápida', modulo: () => import('/js/vistas/rapido.js') },
   { ruta: '/informacion', texto: 'Información útil', modulo: () => import('/js/vistas/informacion.js') },
-  { ruta: '/consultas', texto: 'Consultas', modulo: () => import('/js/vistas/consultas.js') },
-  { ruta: '/estadisticas', texto: 'Estadisticas', modulo: () => import('/js/vistas/panel.js') },
-  { ruta: '/administracion', texto: 'Administracion', rol: 'supervisor', modulo: () => import('/js/vistas/admin.js') },
+  // El historial, las estadísticas y la administración son solo para
+  // administradores. Los operadores registran y consultan información útil.
+  { ruta: '/consultas', texto: 'Consultas', rol: 'admin', modulo: () => import('/js/vistas/consultas.js') },
+  { ruta: '/estadisticas', texto: 'Estadisticas', rol: 'admin', modulo: () => import('/js/vistas/panel.js') },
+  { ruta: '/administracion', texto: 'Administracion', rol: 'admin', modulo: () => import('/js/vistas/admin.js') },
 ];
 
 // Las direcciones viejas siguen funcionando: alguien puede tenerlas guardadas.
@@ -80,9 +82,17 @@ function mostrarIngreso() {
   $('usuario').focus();
 }
 
+// Un clic en el fondo de la pantalla de ingreso suelta una pelota. Otro clic,
+// otra pelota. El archivo recién se descarga con el primero.
+$('acceso').addEventListener('pointerdown', (e) => {
+  if (e.target.closest('#forma')) return;
+  import('/js/pelotas.js').then((m) => m.soltar(e.clientX, e.clientY)).catch(() => {});
+});
+
 /** Deja lista la aplicación y muestra la pantalla que corresponda. */
 async function entrar(reciénIngresado) {
   $('acceso').classList.add('oculto');
+  import('/js/pelotas.js').then((m) => m.limpiar()).catch(() => {});
   pintarBarra();
   document.body.classList.add('adentro');
   await ir(destino(), { reemplazar: true, sinTransicion: !reciénIngresado });
@@ -110,6 +120,7 @@ function pintarBarra() {
     <nav class="nav" id="nav"></nav>
     <div class="derecha">
       <span class="usuario"><b>${escapar(usuario.nombre)}</b> · ${etiquetaRol(usuario.rol)}</span>
+      <button id="btn-clave" class="chico">Mi clave</button>
       <button id="btn-tema" class="chico" title="Cambiar tema claro / oscuro">Tema</button>
       <button id="btn-salir" class="chico">Salir</button>
     </div>`;
@@ -124,6 +135,7 @@ function pintarBarra() {
     try { sessionStorage.clear(); } catch { /* nada que hacer */ }
     location.href = '/';
   };
+  $('btn-clave').onclick = () => $('clave-dialogo').showModal();
   $('btn-tema').onclick = () => {
     const oscuro = document.documentElement.dataset.theme === 'dark';
     document.documentElement.dataset.theme = oscuro ? 'light' : 'dark';
@@ -197,6 +209,25 @@ function catalogos() {
   return promesaCatalogos;
 }
 addEventListener('catalogos-cambiados', () => { promesaCatalogos = null; });
+
+// ------------------------------------------------------------- mi clave ---
+// Cada uno cambia la suya desde acá. Antes vivía en Administración, que ahora
+// solo ven los administradores.
+
+$('forma-clave').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const aviso = $('clave-aviso');
+  try {
+    await post('/api/mi-clave', { actual: $('k-actual').value, nueva: $('k-nueva').value });
+    aviso.className = 'aviso ok';
+    aviso.textContent = 'Listo, tu clave quedó cambiada.';
+    $('forma-clave').reset();
+  } catch (err) {
+    aviso.className = 'aviso error';
+    aviso.textContent = err.message;
+  }
+});
+$('clave-cerrar').onclick = () => $('clave-dialogo').close();
 
 // ---------------------------------------------------------------- ingreso ---
 

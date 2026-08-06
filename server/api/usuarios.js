@@ -8,7 +8,7 @@ const { requiere } = require('../auth');
 const ROLES = new Set(['operador', 'supervisor', 'admin']);
 const PUESTOS = new Set(['call_center', 'mesa_informes', 'otro']);
 
-const listar = requiere('supervisor', async ({ res }) => {
+const listar = requiere('admin', async ({ res }) => {
   json(res, await all('SELECT id, usuario, nombre, rol, puesto, activo, creado FROM usuarios ORDER BY activo DESC, nombre'));
 });
 

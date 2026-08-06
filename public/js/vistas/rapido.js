@@ -11,10 +11,7 @@ export const html = `
     <span class="contador-hoy" id="contador">—</span>
   </div>
 
-  <div class="tarjeta canal-barra" style="margin-top:.7rem">
-    <label style="margin:0 .6rem 0 0;align-self:center">Estás atendiendo en</label>
-    <div class="segmentado" id="puestos"></div>
-  </div>
+  <div class="tarjeta canal-barra" style="margin-top:.7rem" id="fila-puesto"></div>
 
   <section class="tarjeta" style="margin-top:1rem" id="caja-frecuentes">
     <header><h2>Los que más usás</h2><p>se arma solo con los motivos que más registrás</p></header>
@@ -75,14 +72,22 @@ const PUESTOS = [
 const esPuestoDeAtencion = (p) => PUESTOS.some((x) => x.id === p);
 
 /**
- * El puesto elegido en esta PC manda; si no hay, el del usuario. Quien no
- * atiende en un puesto fijo (administración) arranca en call center y cambia
- * de tablero cuando quiere.
+ * Cada uno atiende en su puesto y no puede cambiarlo: quien está en el call
+ * center registra como call center, y quien está en el mostrador como mesa de
+ * informes. Solo quien no tiene puesto fijo (la administración) elige, y esa
+ * elección queda guardada en esa computadora.
+ *
+ * Esto no es solo la pantalla: el servidor imputa la consulta al puesto del
+ * usuario, sin mirar lo que le manda el navegador.
  */
+const puestosPermitidos = () => (esPuestoDeAtencion(usuario.puesto)
+  ? PUESTOS.filter((p) => p.id === usuario.puesto)
+  : PUESTOS);
+
 function elegirPuesto() {
+  if (esPuestoDeAtencion(usuario.puesto)) return usuario.puesto;
   const guardado = localStorage.getItem('puesto');
-  if (esPuestoDeAtencion(guardado)) return guardado;
-  return esPuestoDeAtencion(usuario.puesto) ? usuario.puesto : 'call_center';
+  return esPuestoDeAtencion(guardado) ? guardado : 'call_center';
 }
 
 const sinAcentos = (t) => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -103,7 +108,15 @@ const sectoresDelPuesto = () =>
   datos.sectores.filter((s) => !s.puesto || s.puesto === 'ambos' || s.puesto === puestoActual);
 
 function pintarPuestos() {
-  $('puestos').innerHTML = PUESTOS.map((p) => `
+  const opciones = puestosPermitidos();
+  // Con un solo puesto no hay nada que elegir: se dice dónde está y listo.
+  $('fila-puesto').innerHTML = opciones.length === 1
+    ? `<span class="solo-lectura">Estás atendiendo en <b>${escapar(opciones[0].nombre)}</b></span>`
+    : '<label style="margin:0 .6rem 0 0;align-self:center">Estás atendiendo en</label>'
+      + '<div class="segmentado" id="puestos"></div>';
+  if (opciones.length === 1) return;
+
+  $('puestos').innerHTML = opciones.map((p) => `
     <button type="button" data-puesto="${p.id}"${p.id === puestoActual ? ' aria-pressed="true"' : ''}>
       ${escapar(p.nombre)}</button>`).join('');
   $('puestos').querySelectorAll('[data-puesto]').forEach((b) => {

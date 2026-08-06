@@ -31,7 +31,7 @@ function serieCompleta(desde, hasta, filas, gran) {
 }
 
 /** Estadistica general del periodo, con el mismo filtro que usa el listado. */
-const general = requiere('operador', async ({ res, query }) => {
+const general = requiere('admin', async ({ res, query }) => {
   const f = filtroConsultas(query);
   const W = f.sql, P = f.params;
   const dias = diasEntre(f.desde, f.hasta);
@@ -178,7 +178,7 @@ const general = requiere('operador', async ({ res, query }) => {
 });
 
 /** Detalle de la encuesta de satisfaccion. */
-const encuestas = requiere('operador', async ({ res, query }) => {
+const encuestas = requiere('admin', async ({ res, query }) => {
   const f = filtroEncuestas(query);
   const rango = f.params;
   const base = f.sql;
@@ -254,7 +254,7 @@ const encuestas = requiere('operador', async ({ res, query }) => {
 });
 
 /** Resumen listo para imprimir/pegar en el informe mensual (CSV por sector). */
-const exportarResumen = requiere('operador', async ({ res, query }) => {
+const exportarResumen = requiere('admin', async ({ res, query }) => {
   const f = filtroConsultas(query);
   const filas = await all(`
     SELECT s.nombre AS sector, m.nombre AS motivo, COUNT(*) AS total,

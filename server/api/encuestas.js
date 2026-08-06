@@ -122,7 +122,7 @@ const cargarPorOperador = requiere('operador', async ({ res, body, usuario }) =>
   json(res, { ok: true }, 201);
 });
 
-const listar = requiere('supervisor', async ({ res, query }) => {
+const listar = requiere('admin', async ({ res, query }) => {
   const f = filtroEncuestas(query);
   json(res, await all(`
     SELECT e.*, s.nombre AS sector, ca.nombre AS canal, u.nombre AS operador
@@ -134,7 +134,7 @@ const listar = requiere('supervisor', async ({ res, query }) => {
      ORDER BY e.respondida DESC LIMIT 500`, f.params));
 });
 
-const exportar = requiere('supervisor', async ({ res, query }) => {
+const exportar = requiere('admin', async ({ res, query }) => {
   const f = filtroEncuestas(query);
   const filas = await all(`
     SELECT e.fecha, e.origen, s.nombre AS sector, ca.nombre AS canal, u.nombre AS operador,

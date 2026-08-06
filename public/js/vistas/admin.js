@@ -81,14 +81,6 @@ export const html = `
     <div class="tabla-scroll" id="t-usuarios" style="margin-top:.7rem"></div>
   </section>
 
-  <section class="tarjeta" style="margin-top:1rem;max-width:520px">
-    <header><h2>Mi clave</h2></header>
-    <form class="fila" id="form-clave">
-      <div class="campo"><label for="k-actual">Clave actual</label><input id="k-actual" type="password" required></div>
-      <div class="campo"><label for="k-nueva">Clave nueva</label><input id="k-nueva" type="password" required></div>
-      <button class="primario">Cambiar</button>
-    </form>
-  </section>
 </main>
 `;
 
@@ -125,15 +117,6 @@ export async function iniciar(ctx) {
     usuario: $('u-usuario').value, nombre: $('u-nombre').value, clave: $('u-clave').value,
     rol: $('u-rol').value, puesto: $('u-puesto').value,
   }));
-
-  $('form-clave').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    try {
-      await post('/api/mi-clave', { actual: $('k-actual').value, nueva: $('k-nueva').value });
-      e.target.reset();
-      avisar($('aviso'), 'Clave actualizada.', 'ok');
-    } catch (err) { avisar($('aviso'), err.message, 'error'); }
-  });
 
   $('m-filtro').onchange = pintarMotivos;
 }

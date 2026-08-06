@@ -59,7 +59,16 @@ const LOCALIDADES = [
   { id: 4, nombre: 'Colonia San José' }, { id: 5, nombre: 'Zona rural' },
 ];
 
-const USUARIO = OPERADORES[0];   // el operador con el que se navega la demo
+// Con quién se navega la demostración: lo decide el usuario que se escribe en
+// el ingreso, para poder ver qué ve cada uno.
+const CUENTAS = {
+  acami: { id: 0, nombre: 'Cami, Agustín', rol: 'admin', puesto: 'otro' },
+  alenarduzzi: { ...OPERADORES[0], rol: 'operador' },
+  crodriguez: { ...OPERADORES[1], rol: 'operador' },
+  emoyano: { ...OPERADORES[2], rol: 'operador' },
+  proggero: { ...OPERADORES[3], rol: 'operador' },
+};
+let USUARIO = CUENTAS.acami;
 const DIAS_DEMO = 90;
 
 let CONSULTAS = [];
@@ -416,12 +425,23 @@ const sectoresDelPuesto = () =>
   SECTORES.filter((s) => s.puesto === 'ambos' || s.puesto === puestoActual);
 
 function pintarRapido() {
-  $('puestos').innerHTML = PUESTOS_ATENCION.map((p) => `
-    <button type="button" data-puesto="${p.id}"${p.id === puestoActual ? ' aria-pressed="true"' : ''}>
-      ${escapar(p.nombre)}</button>`).join('');
-  $('puestos').querySelectorAll('[data-puesto]').forEach((b) => {
-    b.onclick = () => { puestoActual = b.dataset.puesto; pintarRapido(); };
-  });
+  // Cada uno atiende en su puesto: solo quien no tiene uno fijo puede elegir.
+  const opciones = USUARIO.puesto === 'otro'
+    ? PUESTOS_ATENCION
+    : PUESTOS_ATENCION.filter((p) => p.id === USUARIO.puesto);
+  $('fila-puesto').innerHTML = opciones.length === 1
+    ? `<span class="solo-lectura">Estás atendiendo en <b>${escapar(opciones[0].nombre)}</b></span>`
+    : '<label style="margin:0 .6rem 0 0;align-self:center">Estás atendiendo en</label>'
+      + '<div class="segmentado" id="puestos"></div>';
+
+  if (opciones.length > 1) {
+    $('puestos').innerHTML = opciones.map((p) => `
+      <button type="button" data-puesto="${p.id}"${p.id === puestoActual ? ' aria-pressed="true"' : ''}>
+        ${escapar(p.nombre)}</button>`).join('');
+    $('puestos').querySelectorAll('[data-puesto]').forEach((b) => {
+      b.onclick = () => { puestoActual = b.dataset.puesto; pintarRapido(); };
+    });
+  }
 
   $('frecuentes').innerHTML = frecuentesDelOperador().map((m) => fichaHTML(m)).join('');
 
@@ -987,6 +1007,21 @@ function hacerPolvo(tarjeta) {
 
 formIngreso.addEventListener('input', () => formIngreso.classList.remove('mal'));
 
+// Un clic en el fondo del ingreso suelta una pelota. Otro clic, otra pelota.
+$('p-ingreso').addEventListener('pointerdown', (e) => {
+  if (!e.target.closest('#form-ingreso')) soltar(e.clientX, e.clientY);
+});
+
+/** Deja a la vista solo lo que le corresponde a quien entró. */
+function aplicarPermisos() {
+  const esAdmin = USUARIO.rol === 'admin';
+  document.querySelectorAll('#nav a').forEach((a) => {
+    const soloAdmin = ['consultas', 'panel'].includes(a.dataset.ir);
+    a.classList.toggle('oculto', soloAdmin && !esAdmin);
+  });
+  if (!esAdmin) puestoActual = USUARIO.puesto;
+}
+
 formIngreso.addEventListener('submit', async (e) => {
   e.preventDefault();
   // Con la clave de ejemplo entra; con cualquier otra muestra el error.
@@ -998,10 +1033,13 @@ formIngreso.addEventListener('submit', async (e) => {
     return;
   }
   formIngreso.querySelector('button').disabled = true;
+  USUARIO = CUENTAS[$('i-usuario').value.trim().toLowerCase()] || CUENTAS.acami;
+  aplicarPermisos();
 
   $('nombre-bienvenida').textContent = nombreDePila(USUARIO.nombre);
   await (quietito ? desvanecer(formIngreso) : hacerPolvo(formIngreso));
   $('p-ingreso').classList.add('oculto');
+  limpiar();
   const saludo = $('bienvenida');
   saludo.classList.remove('oculto');
   await new Promise((r) => setTimeout(r, 3400));

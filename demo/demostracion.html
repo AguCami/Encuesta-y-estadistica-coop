@@ -244,24 +244,31 @@ tbody tr:hover { background: var(--plane); }
 }
 .ingreso .tarjeta { width: min(390px, 100%); padding: 1.6rem 1.5rem; }
 
-.marca-acceso { display: flex; flex-direction: column; gap: .15rem; margin-bottom: 1.4rem; }
+.acceso { text-align: center; }
+.marca-acceso {
+  display: flex; flex-direction: column; align-items: center;
+  gap: .15rem; margin-bottom: 1.4rem;
+}
 .marca-acceso .sello {
   width: 2.4rem; height: 2.4rem; border-radius: 12px; margin-bottom: .6rem;
   display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 1.05rem;
   background: var(--s1);
 }
 /* Con logo cargado, el sello con la inicial sobra. */
-/* `align-self` es imprescindible: la tarjeta es flex en columna y sin esto
-   estira la imagen a lo ancho y deforma el escudo. */
+/* `object-fit` es imprescindible: sin él la tarjeta estira la imagen a lo
+   ancho y deforma el escudo. */
 .logo-acceso {
   height: 5rem; width: auto; max-width: 11rem; object-fit: contain;
-  align-self: flex-start; margin-bottom: .9rem;
+  margin-bottom: .9rem;
 }
 .logo-acceso + .sello { display: none; }
 .marca-acceso h1 { font-size: 1.4rem; margin: 0; line-height: 1.25; }
+.marca-acceso .sello { margin-left: auto; margin-right: auto; }
 .marca-acceso p { margin: 0; color: var(--muted); font-size: .85rem; }
 
 .acceso .campo-acceso { margin-bottom: .9rem; }
+.acceso label { text-align: center; }
+.acceso input { text-align: center; }
 .acceso input { padding: .58rem .7rem; }
 .acceso button[type="submit"] {
   width: 100%; justify-content: center; margin-top: .4rem; padding: .6rem;
@@ -518,6 +525,10 @@ body.derrumbe .pacman, body.derrumbe .pacman * { visibility: visible; }
   ::view-transition-new(*) { animation: none !important; }
 }
 
+/* Las pelotas del ingreso: detrás de la tarjeta y sin estorbar los clics. */
+#pelotas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.ingreso .acceso { position: relative; z-index: 1; }
+
 
 /* ------------------------------------------------- extras de la demo */
 .cinta {
@@ -562,8 +573,9 @@ body.sin-ingresar .pie-demo { display: none !important; }
       <input id="i-clave" type="password" value="coop2026">
     </div>
     <button class="primario" type="submit">Ingresar</button>
-    <p class="ayuda">En la demostración entra con cualquier usuario. Probá una clave
-      equivocada para ver el aviso en rojo.</p>
+    <p class="ayuda">Probá entrar como <b>acami</b> (administrador, ve todo) o como
+      <b>proggero</b> / <b>emoyano</b> (operadores). La clave es la de arriba;
+      poné cualquier otra para ver el aviso en rojo.</p>
   </form>
 </div>
 
@@ -613,10 +625,7 @@ body.sin-ingresar .pie-demo { display: none !important; }
     <span class="contador-hoy" id="contador">—</span>
   </div>
 
-  <div class="tarjeta canal-barra" style="margin-top:.7rem">
-    <label style="margin:0 .6rem 0 0;align-self:center">Estás atendiendo en</label>
-    <div class="segmentado" id="puestos"></div>
-  </div>
+  <div class="tarjeta canal-barra" style="margin-top:.7rem" id="fila-puesto"></div>
 
   <section class="tarjeta" style="margin-top:1rem" id="caja-frecuentes">
     <header><h2>Los que más usás</h2><p>se arma solo con los motivos que más registrás</p></header>
@@ -3271,6 +3280,125 @@ async function arrancar(puntajes) {
 }
 
 
+/*
+ * Segundo huevo de pascua, para el que espera en la pantalla de ingreso:
+ * cada clic fuera de la tarjeta suelta una pelota que rebota contra los
+ * bordes y contra las otras. No hacen nada, y ese es el punto.
+ *
+ * Se van solas al entrar. El archivo recién se descarga con el primer clic.
+ */
+
+const CAIDA = 1500;      // px/s²
+const PIQUE = 0.86;
+const TOPE = 400;           // por las dudas: más que esto ya no se ve nada
+
+const pelotas = [];
+let lienzo = null;
+let ctx = null;
+let corriendo = false;
+
+function preparar() {
+  if (lienzo) return;
+  lienzo = document.createElement('canvas');
+  lienzo.id = 'pelotas';
+  document.body.appendChild(lienzo);
+  ctx = lienzo.getContext('2d');
+  medir();
+  addEventListener('resize', medir);
+}
+
+function medir() {
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  lienzo.width = innerWidth * dpr;
+  lienzo.height = innerHeight * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+const COLORES = ['--s1', '--s2', '--s3', '--s4', '--s5', '--s6', '--s7', '--s8'];
+
+/** Suelta una pelota en ese punto, con un envión para cualquier lado. */
+function soltar(x, y) {
+  preparar();
+  if (pelotas.length >= TOPE) return;
+  const estilo = getComputedStyle(document.documentElement);
+  pelotas.push({
+    x, y,
+    vx: (Math.random() - 0.5) * 700,
+    vy: -220 - Math.random() * 320,
+    r: 9 + Math.random() * 16,
+    color: estilo.getPropertyValue(COLORES[pelotas.length % COLORES.length]).trim(),
+  });
+  if (!corriendo) { corriendo = true; previo = performance.now(); requestAnimationFrame(paso); }
+}
+
+/** Al entrar, las pelotas se van. */
+function limpiar() {
+  pelotas.length = 0;
+  corriendo = false;
+  if (lienzo) { lienzo.remove(); lienzo = null; ctx = null; removeEventListener('resize', medir); }
+}
+
+let previo = 0;
+
+function paso(ahora) {
+  if (!corriendo || !ctx) return;
+  const dt = Math.min(0.032, (ahora - previo) / 1000);
+  previo = ahora;
+
+  for (const p of pelotas) {
+    p.vy += CAIDA * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+
+    if (p.x - p.r < 0) { p.x = p.r; p.vx = -p.vx * PIQUE; }
+    if (p.x + p.r > innerWidth) { p.x = innerWidth - p.r; p.vx = -p.vx * PIQUE; }
+    if (p.y + p.r > innerHeight) {
+      p.y = innerHeight - p.r;
+      p.vy = -p.vy * PIQUE;
+      p.vx *= 0.99;
+      // Si se está quedando quieta se le da un empujón: la gracia es que no pare.
+      if (Math.abs(p.vy) < 120) p.vy = -320 - Math.random() * 260;
+    }
+    if (p.y - p.r < 0) { p.y = p.r; p.vy = -p.vy * PIQUE; }
+  }
+
+  // Choques entre pelotas: se separan y se reparten la velocidad.
+  for (let i = 0; i < pelotas.length; i++) {
+    for (let j = i + 1; j < pelotas.length; j++) {
+      const a = pelotas[i], b = pelotas[j];
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const d = Math.hypot(dx, dy);
+      const min = a.r + b.r;
+      if (!d || d >= min) continue;
+      const nx = dx / d, ny = dy / d;
+      const solape = (min - d) / 2;
+      a.x -= nx * solape; a.y -= ny * solape;
+      b.x += nx * solape; b.y += ny * solape;
+      const va = a.vx * nx + a.vy * ny;
+      const vb = b.vx * nx + b.vy * ny;
+      const cambio = (vb - va) * PIQUE;
+      a.vx += nx * cambio; a.vy += ny * cambio;
+      b.vx -= nx * cambio; b.vy -= ny * cambio;
+    }
+  }
+
+  ctx.clearRect(0, 0, innerWidth, innerHeight);
+  for (const p of pelotas) {
+    // Un brillito arriba a la izquierda: alcanza para que parezca una pelota.
+    const brillo = ctx.createRadialGradient(
+      p.x - p.r * 0.35, p.y - p.r * 0.35, p.r * 0.1, p.x, p.y, p.r);
+    brillo.addColorStop(0, '#fff');
+    brillo.addColorStop(0.35, p.color);
+    brillo.addColorStop(1, p.color);
+    ctx.fillStyle = brillo;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  requestAnimationFrame(paso);
+}
+
+
 /* ============================================================
    Demostración: la misma interfaz y los mismos gráficos que la
    aplicación real, pero con los datos generados en el navegador.
@@ -3332,7 +3460,16 @@ const LOCALIDADES = [
   { id: 4, nombre: 'Colonia San José' }, { id: 5, nombre: 'Zona rural' },
 ];
 
-const USUARIO = OPERADORES[0];   // el operador con el que se navega la demo
+// Con quién se navega la demostración: lo decide el usuario que se escribe en
+// el ingreso, para poder ver qué ve cada uno.
+const CUENTAS = {
+  acami: { id: 0, nombre: 'Cami, Agustín', rol: 'admin', puesto: 'otro' },
+  alenarduzzi: { ...OPERADORES[0], rol: 'operador' },
+  crodriguez: { ...OPERADORES[1], rol: 'operador' },
+  emoyano: { ...OPERADORES[2], rol: 'operador' },
+  proggero: { ...OPERADORES[3], rol: 'operador' },
+};
+let USUARIO = CUENTAS.acami;
 const DIAS_DEMO = 90;
 
 let CONSULTAS = [];
@@ -3689,12 +3826,23 @@ const sectoresDelPuesto = () =>
   SECTORES.filter((s) => s.puesto === 'ambos' || s.puesto === puestoActual);
 
 function pintarRapido() {
-  $('puestos').innerHTML = PUESTOS_ATENCION.map((p) => `
-    <button type="button" data-puesto="${p.id}"${p.id === puestoActual ? ' aria-pressed="true"' : ''}>
-      ${escapar(p.nombre)}</button>`).join('');
-  $('puestos').querySelectorAll('[data-puesto]').forEach((b) => {
-    b.onclick = () => { puestoActual = b.dataset.puesto; pintarRapido(); };
-  });
+  // Cada uno atiende en su puesto: solo quien no tiene uno fijo puede elegir.
+  const opciones = USUARIO.puesto === 'otro'
+    ? PUESTOS_ATENCION
+    : PUESTOS_ATENCION.filter((p) => p.id === USUARIO.puesto);
+  $('fila-puesto').innerHTML = opciones.length === 1
+    ? `<span class="solo-lectura">Estás atendiendo en <b>${escapar(opciones[0].nombre)}</b></span>`
+    : '<label style="margin:0 .6rem 0 0;align-self:center">Estás atendiendo en</label>'
+      + '<div class="segmentado" id="puestos"></div>';
+
+  if (opciones.length > 1) {
+    $('puestos').innerHTML = opciones.map((p) => `
+      <button type="button" data-puesto="${p.id}"${p.id === puestoActual ? ' aria-pressed="true"' : ''}>
+        ${escapar(p.nombre)}</button>`).join('');
+    $('puestos').querySelectorAll('[data-puesto]').forEach((b) => {
+      b.onclick = () => { puestoActual = b.dataset.puesto; pintarRapido(); };
+    });
+  }
 
   $('frecuentes').innerHTML = frecuentesDelOperador().map((m) => fichaHTML(m)).join('');
 
@@ -4260,6 +4408,21 @@ function hacerPolvo(tarjeta) {
 
 formIngreso.addEventListener('input', () => formIngreso.classList.remove('mal'));
 
+// Un clic en el fondo del ingreso suelta una pelota. Otro clic, otra pelota.
+$('p-ingreso').addEventListener('pointerdown', (e) => {
+  if (!e.target.closest('#form-ingreso')) soltar(e.clientX, e.clientY);
+});
+
+/** Deja a la vista solo lo que le corresponde a quien entró. */
+function aplicarPermisos() {
+  const esAdmin = USUARIO.rol === 'admin';
+  document.querySelectorAll('#nav a').forEach((a) => {
+    const soloAdmin = ['consultas', 'panel'].includes(a.dataset.ir);
+    a.classList.toggle('oculto', soloAdmin && !esAdmin);
+  });
+  if (!esAdmin) puestoActual = USUARIO.puesto;
+}
+
 formIngreso.addEventListener('submit', async (e) => {
   e.preventDefault();
   // Con la clave de ejemplo entra; con cualquier otra muestra el error.
@@ -4271,10 +4434,13 @@ formIngreso.addEventListener('submit', async (e) => {
     return;
   }
   formIngreso.querySelector('button').disabled = true;
+  USUARIO = CUENTAS[$('i-usuario').value.trim().toLowerCase()] || CUENTAS.acami;
+  aplicarPermisos();
 
   $('nombre-bienvenida').textContent = nombreDePila(USUARIO.nombre);
   await (quietito ? desvanecer(formIngreso) : hacerPolvo(formIngreso));
   $('p-ingreso').classList.add('oculto');
+  limpiar();
   const saludo = $('bienvenida');
   saludo.classList.remove('oculto');
   await new Promise((r) => setTimeout(r, 3400));
