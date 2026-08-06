@@ -192,9 +192,10 @@ export const PERIODOS = [
   { id: 'historico', texto: 'Histórico', desde: (h, primera) => primera || sumarDias(h, -730) },
 ];
 
+// El canal no está: cada puesto tiene uno solo, así que filtrar por canal
+// sería lo mismo que filtrar por puesto, que ya está al lado.
 const CAMPOS_FILTRO = {
   sector: { id: 'f-sector', clave: 'sector_id', titulo: 'Sector', lista: 'sectores' },
-  canal: { id: 'f-canal', clave: 'canal_id', titulo: 'Canal', lista: 'canales' },
   puesto: { id: 'f-puesto', clave: 'puesto', titulo: 'Puesto', lista: 'puestos' },
   estado: { id: 'f-estado', clave: 'estado', titulo: 'Estado', lista: 'estados' },
   operador: { id: 'f-operador', clave: 'operador_id', titulo: 'Operador', lista: 'operadores' },

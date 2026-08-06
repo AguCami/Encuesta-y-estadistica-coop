@@ -3929,14 +3929,14 @@ function pintarPanel() {
   $('t-sector').innerHTML = `
     <table>
       <thead><tr><th>Sector</th><th class="num">Consultas</th><th class="num">%</th>
-        <th class="num">Solucionadas</th><th class="num">Sin solucionar</th><th class="num">Duración</th></tr></thead>
+        <th class="num">Solucionadas</th><th class="num">Sin solucionar</th></tr></thead>
       <tbody>${d.por_sector.map((s) => `
         <tr><td>${escapar(s.nombre)}</td>
             <td class="num">${num(s.total)}</td>
             <td class="num">${pct(s.pct)}</td>
             <td class="num">${pct(s.pct_primer_contacto)}</td>
             <td class="num">${num(s.pendientes)}</td>
-            <td class="num">${s.duracion_prom_min === null ? '—' : `${dec(s.duracion_prom_min)}′`}</td></tr>`).join('')
+            </tr>`).join('')
     || '<tr><td colspan="6" class="vacio">Sin datos</td></tr>'}
       </tbody>
     </table>`;
@@ -3944,13 +3944,13 @@ function pintarPanel() {
   $('t-operador').innerHTML = `
     <table>
       <thead><tr><th>Operador</th><th>Puesto</th><th class="num">Consultas</th>
-        <th class="num">Solucionadas</th><th class="num">Duración</th></tr></thead>
+        <th class="num">Solucionadas</th></tr></thead>
       <tbody>${d.por_operador.map((o) => `
         <tr><td>${escapar(o.nombre)}</td>
             <td>${etiquetaPuesto(o.puesto)}</td>
             <td class="num">${num(o.total)}</td>
             <td class="num">${pct(o.pct_primer_contacto)}</td>
-            <td class="num">${o.duracion_prom_min === null ? '—' : `${dec(o.duracion_prom_min)}′`}</td></tr>`).join('')
+            </tr>`).join('')
     || '<tr><td colspan="5" class="vacio">Sin datos</td></tr>'}
       </tbody>
     </table>`;
