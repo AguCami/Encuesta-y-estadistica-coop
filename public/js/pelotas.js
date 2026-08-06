@@ -32,19 +32,20 @@ function medir() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
-const COLORES = ['--s1', '--s2', '--s3', '--s4', '--s5', '--s6', '--s7', '--s8'];
+// El amarillo del sol del escudo de la cooperativa. Nombre propio: en la
+// demostración este archivo convive con el del juego, que tiene el suyo.
+const SOL = '#f5d84a';
 
 /** Suelta una pelota en ese punto, con un envión para cualquier lado. */
 export function soltar(x, y) {
   preparar();
   if (pelotas.length >= TOPE) return;
-  const estilo = getComputedStyle(document.documentElement);
   pelotas.push({
     x, y,
     vx: (Math.random() - 0.5) * 700,
     vy: -220 - Math.random() * 320,
     r: 9 + Math.random() * 16,
-    color: estilo.getPropertyValue(COLORES[pelotas.length % COLORES.length]).trim(),
+    color: SOL,
   });
   if (!corriendo) { corriendo = true; previo = performance.now(); requestAnimationFrame(paso); }
 }
