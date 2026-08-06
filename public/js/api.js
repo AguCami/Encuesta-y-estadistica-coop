@@ -130,6 +130,7 @@ export async function montarBarra(usuario) {
       <button id="btn-salir" class="chico">Salir</button>
     </div>`;
   document.body.prepend(barra);
+  adelantarPaginas(usuario);
 
   barra.querySelector('#btn-salir').onclick = async () => {
     await post('/api/logout', {});
@@ -158,6 +159,30 @@ addEventListener('keydown', (e) => {
     guardar: (puntos, nivel) => post('/api/puntajes', { puntos, nivel }),
   })).catch(() => { /* si no está, no pasa nada */ });
 });
+
+/**
+ * Prepara las otras pantallas antes de que las toquen.
+ *
+ * Cada pestaña es una página aparte, así que al cambiar se recargaba todo y
+ * se veía el parpadeo. Con esto el navegador va armando la pantalla siguiente
+ * apenas el puntero se acerca al enlace —la pide, la dibuja y hasta hace sus
+ * consultas—, y para cuando se hace clic ya está lista: el cambio es
+ * instantáneo y sin parpadeo.
+ *
+ * Donde el navegador no lo entienda, no pasa nada: navega como siempre.
+ */
+function adelantarPaginas(usuario) {
+  if (document.getElementById('adelanto')) return;
+  const urls = PAGINAS.filter((p) => !p.rol || puede(usuario, p.rol))
+    .map((p) => p.href).filter((h) => h !== location.pathname);
+  const reglas = document.createElement('script');
+  reglas.id = 'adelanto';
+  reglas.type = 'speculationrules';
+  reglas.textContent = JSON.stringify({
+    prerender: [{ urls, eagerness: 'moderate' }],
+  });
+  document.head.appendChild(reglas);
+}
 
 export function aplicarTemaGuardado() {
   const t = localStorage.getItem('tema');

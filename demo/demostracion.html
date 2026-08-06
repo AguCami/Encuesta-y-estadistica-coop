@@ -504,6 +504,24 @@ body.derrumbe .pacman, body.derrumbe .pacman * { visibility: visible; }
 .pacman-tabla li span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pacman-tabla li b { font-variant-numeric: tabular-nums; }
 
+/* ------------------------------------------------- cambio de pantalla */
+
+/*
+ * Sin esto, cada cambio de pestaña muestra el parpadeo blanco de una carga
+ * nueva. Con esto el navegador funde una pantalla con la otra y se siente
+ * como una sola aplicación, no como un sitio web.
+ */
+@view-transition { navigation: auto; }
+
+/* La barra de arriba no participa del fundido: queda quieta, como debe ser. */
+.barra { view-transition-name: barra; }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
+}
+
 
 /* ------------------------------------------------- extras de la demo */
 .cinta {
