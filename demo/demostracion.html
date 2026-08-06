@@ -301,6 +301,9 @@ tbody tr:hover { background: var(--plane); }
 .bienvenida {
   position: fixed; inset: 0; display: grid; place-items: center; text-align: center;
   padding: 1.5rem; z-index: 30;
+  /* Opaco a propósito: el saludo se ve solo, mientras la aplicación se arma
+     por detrás. Cuando se desvanece, el tablero ya está listo. */
+  background: var(--plane);
 }
 .bienvenida .logo-bienvenida { height: 5.5rem; width: auto; margin: 0 auto .9rem; display: block; }
 .bienvenida .saludo { font-size: 1.05rem; color: var(--ink-2); }
