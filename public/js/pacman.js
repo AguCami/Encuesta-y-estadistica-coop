@@ -230,14 +230,23 @@ function crearJuego(lienzo, alPuntuar, alPerder) {
   const VEL_PAC = 0.115;
   const VEL_FANTASMA = 0.098;
 
+  /** El centro del casillero al que se está yendo, en la dirección de marcha. */
+  const proximoCentro = (v, d) => (d > 0 ? Math.floor(v + 1e-9) + 1 : Math.ceil(v - 1e-9) - 1);
+
   /**
    * Movimiento continuo: el personaje avanza una fracción de casillero por
    * cuadro y solo puede doblar cuando está justo sobre el centro de uno. Eso
    * es lo que hace que se deslice en vez de saltar de casillero en casillero.
+   *
+   * El paso nunca se pasa de largo un centro: si lo alcanzaría, se frena justo
+   * ahí. Así el personaje cae exactamente sobre el centro y puede doblar al
+   * cuadro siguiente. (Antes se comparaba la distancia al centro contra el
+   * tamaño del paso, y por los decimales daba a veces justo por debajo: el
+   * personaje volvía al centro y avanzaba, una y otra vez, sin moverse.)
    */
   function avanzar(e, vel, puedeCruzarPuerta) {
     const cx = Math.round(e.x), cy = Math.round(e.y);
-    const enElCentro = Math.abs(e.x - cx) < vel && Math.abs(e.y - cy) < vel;
+    const enElCentro = Math.abs(e.x - cx) < 1e-9 && Math.abs(e.y - cy) < 1e-9;
 
     if (enElCentro) {
       e.x = cx; e.y = cy;
@@ -247,8 +256,12 @@ function crearJuego(lienzo, alPuntuar, alPerder) {
       if (pared(cx + e.dx, cy + e.dy, puedeCruzarPuerta)) return true;  // contra la pared
     }
 
-    e.x += e.dx * vel;
-    e.y += e.dy * vel;
+    const falta = e.dx
+      ? Math.abs(proximoCentro(e.x, e.dx) - e.x)
+      : Math.abs(proximoCentro(e.y, e.dy) - e.y);
+    const avance = Math.min(vel, falta);
+    e.x += e.dx * avance;
+    e.y += e.dy * avance;
     if (e.x < -0.5) e.x += COLS;            // túnel de un lado al otro
     if (e.x > COLS - 0.5) e.x -= COLS;
     return enElCentro;
