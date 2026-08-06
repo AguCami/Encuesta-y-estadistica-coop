@@ -599,10 +599,7 @@ function pintarPanel() {
       <div class="pie">${num(r.resueltas)} resueltas en el momento</div></div>
     <div class="kpi"><div class="etiqueta">Sin solucionar</div>
       <div class="valor">${num(r.pendientes)}</div>
-      <div class="pie">${pct(r.pct_pendientes)} del total</div></div>
-    <div class="kpi"><div class="etiqueta">Duración promedio</div>
-      <div class="valor">${r.duracion_prom_min === null ? '—' : `${dec(r.duracion_prom_min)}′`}</div>
-      <div class="pie">sobre las consultas con tiempo cargado</div></div>`;
+      <div class="pie">${pct(r.pct_pendientes)} del total</div></div>`;
 
   $('sub-evolucion').textContent = `${fechaLarga(d.periodo.desde)} — ${fechaLarga(d.periodo.hasta)}`;
 
@@ -641,7 +638,6 @@ function pintarPanel() {
 
   barras($('g-motivos'), d.por_motivo.map((m) => ({ etiqueta: m.nombre, valor: m.total, detalle: m.sector })),
     { maxEtiqueta: 30 });
-  barras($('g-canal'), d.por_canal.map((c) => ({ etiqueta: c.nombre, valor: c.total })));
   barras($('g-puesto'), d.por_puesto.map((c) => ({ etiqueta: etiquetaPuesto(c.nombre), valor: c.total })));
 
   calor($('g-calor'), d.heatmap);

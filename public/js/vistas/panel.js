@@ -42,13 +42,9 @@ export const html = `
       <header><h2>Motivos más consultados</h2><p>top 15 del período</p></header>
       <div id="g-motivos"></div>
     </section>
-    <section class="tarjeta">
-      <header><h2>Canal de contacto</h2></header>
-      <div id="g-canal"></div>
-      <div id="caja-puesto">
-        <header style="margin-top:1.2rem"><h2>Puesto de atención</h2></header>
-        <div id="g-puesto"></div>
-      </div>
+    <section class="tarjeta" id="caja-puesto">
+      <header><h2>Puesto de atención</h2><p>call center y mesa de informes</p></header>
+      <div id="g-puesto"></div>
     </section>
   </div>
 
@@ -154,13 +150,7 @@ function pintar(d) {
       <div class="pie">${num(r.resueltas)} resueltas en el momento</div></div>
     <div class="kpi"><div class="etiqueta">Sin solucionar</div>
       <div class="valor">${num(r.pendientes)}</div>
-      <div class="pie">${pct(r.pct_pendientes)} del total</div></div>
-    <div class="kpi"><div class="etiqueta">Duración promedio</div>
-      <div class="valor">${r.duracion_prom_min === null ? '—' : `${dec(r.duracion_prom_min)}′`}</div>
-      <div class="pie">sobre las consultas con tiempo cargado</div></div>
-    <div class="kpi"><div class="etiqueta">Conformidad</div>
-      <div class="valor">${r.satisfaccion === null ? '—' : `${dec(r.satisfaccion, 2)}/5`}</div>
-      <div class="pie">${num(r.encuestas_respondidas)} encuestas respondidas</div></div>`;
+      <div class="pie">${pct(r.pct_pendientes)} del total</div></div>`;
 
   // Según el largo del período, la serie viene por día, por semana o por mes.
   const gran = d.periodo.granularidad;
@@ -212,7 +202,6 @@ function pintar(d) {
     etiqueta: m.nombre, valor: m.total, detalle: m.sector || '',
   })), { maxEtiqueta: 30 });
 
-  barras($('g-canal'), d.por_canal.map((c) => ({ etiqueta: c.nombre, valor: c.total })));
   barras($('g-puesto'), d.por_puesto.map((c) => ({ etiqueta: etiquetaPuesto(c.nombre), valor: c.total })));
 
   // --- demanda por dia y hora
