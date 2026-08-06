@@ -1,9 +1,47 @@
+/* Vista: Atención rápida */
+
+export const TITULO = 'Atención rápida';
+
+export const html = `
+<main class="rapido">
+  <div class="fila" style="align-items:center;gap:.8rem">
+    <h1 style="margin:0">Atención rápida</h1>
+    <p class="solo-lectura" style="margin:0">Un toque en el motivo y la consulta queda registrada</p>
+    <span style="flex:1"></span>
+    <span class="contador-hoy" id="contador">—</span>
+  </div>
+
+  <div class="tarjeta canal-barra" style="margin-top:.7rem">
+    <label style="margin:0 .6rem 0 0;align-self:center">Estás atendiendo en</label>
+    <div class="segmentado" id="puestos"></div>
+  </div>
+
+  <section class="tarjeta" style="margin-top:1rem" id="caja-frecuentes">
+    <header><h2>Los que más usás</h2><p>se arma solo con los motivos que más registrás</p></header>
+    <div class="botonera destacada" id="frecuentes"></div>
+  </section>
+
+  <div id="sectores"></div>
+
+  <p class="vacio oculto" id="sin-datos">
+    Todavía no hay sectores ni motivos cargados. Pedile a un supervisor que los cargue
+    en Administración.
+  </p>
+</main>
+
+<div class="brindis" id="brindis" role="status" aria-live="polite"></div>
+
+<dialog id="detalle">
+  <div class="cuerpo" id="detalle-cuerpo"></div>
+</dialog>
+`;
+
 /* Atencion rapida: un toque en el motivo = una consulta registrada.
    Todo lo demas (socio, observaciones, derivacion) es opcional y se agrega
    despues sobre la consulta recien creada, sin frenar la atencion. */
 
 import {
-  get, post, put, del, exigirSesion, montarBarra, escapar, num, etiquetaEstado,
+  get, post, put, del, escapar, num, etiquetaEstado,
 } from '/js/api.js';
 
 const $ = (id) => document.getElementById(id);
@@ -13,11 +51,9 @@ let datos, usuario, puestoActual;
 let ultima = null;      // consulta recien registrada (para deshacer o completar)
 let temporizador = null;
 
-inicio().catch((e) => console.error(e));
 
-async function inicio() {
-  usuario = await exigirSesion();
-  montarBarra(usuario);
+export async function iniciar(ctx) {
+  ({ usuario } = ctx);
   await recargar();
   document.addEventListener('keydown', atajos);
 }
@@ -253,3 +289,11 @@ async function deshacer() {
   }
 }
 
+
+
+/** Al cambiar de pantalla hay que soltar lo que quedó escuchando. */
+export function limpiar() {
+  document.removeEventListener('keydown', atajos);
+  clearInterval(temporizador);
+  ultima = null;
+}

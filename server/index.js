@@ -28,6 +28,8 @@ async function servirEstatico(req, res, ruta) {
   if (!destino.startsWith(PUBLIC_DIR)) return error(res, 403, 'Prohibido');
   try {
     const st = await fsp.stat(destino);
+    // Las direcciones de las pantallas (/rapido, /consultas...) no son archivos:
+    // se responde con la aplicación y ella decide qué mostrar.
     if (st.isDirectory()) return error(res, 404, 'No encontrado');
     const tipo = TIPOS[path.extname(destino).toLowerCase()] || 'application/octet-stream';
     res.writeHead(200, {
@@ -38,7 +40,10 @@ async function servirEstatico(req, res, ruta) {
     });
     fs.createReadStream(destino).pipe(res);
   } catch {
-    error(res, 404, 'No encontrado');
+    // No hay archivo con ese nombre. Si el pedido es de una pantalla, se
+    // devuelve la aplicación; si buscaba un archivo suelto, es un 404 real.
+    if (path.extname(destino)) return error(res, 404, 'No encontrado');
+    return servirEstatico(req, res, '/index.html');
   }
 }
 

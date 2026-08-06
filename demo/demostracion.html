@@ -507,13 +507,9 @@ body.derrumbe .pacman, body.derrumbe .pacman * { visibility: visible; }
 /* ------------------------------------------------- cambio de pantalla */
 
 /*
- * Sin esto, cada cambio de pestaña muestra el parpadeo blanco de una carga
- * nueva. Con esto el navegador funde una pantalla con la otra y se siente
- * como una sola aplicación, no como un sitio web.
+ * La aplicación no navega: cambia el contenido del medio. Este es el fundido
+ * entre una pantalla y la otra.
  */
-@view-transition { navigation: auto; }
-
-/* La barra de arriba no participa del fundido: queda quieta, como debe ser. */
 .barra { view-transition-name: barra; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -912,7 +908,16 @@ function responsivo(cont, dibujar) {
   cont._ro = new ResizeObserver(() => { if (Math.abs(cont.clientWidth - ancho) > 8) render(); });
   cont._ro.observe(cont);
   if (cont._tema) window.removeEventListener('tema-cambiado', cont._tema);
-  cont._tema = () => render();
+  // Si el contenedor salió de la página (se cambió de pantalla), el gráfico se
+  // da de baja solo en vez de quedar escuchando para siempre.
+  cont._tema = () => {
+    if (!cont.isConnected) {
+      window.removeEventListener('tema-cambiado', cont._tema);
+      if (cont._ro) cont._ro.disconnect();
+      return;
+    }
+    render();
+  };
   window.addEventListener('tema-cambiado', cont._tema);
 }
 

@@ -1,7 +1,89 @@
+/* Vista: Estadísticas de consultas */
+
+export const TITULO = 'Estadísticas de consultas';
+
+export const html = `
+<main>
+  <div class="fila" style="align-items:baseline">
+    <h1>Estadísticas de consultas</h1>
+    <span style="flex:1"></span>
+    <a id="exp-detalle" class="boton chico" href="#">CSV detallado</a>
+    <a id="exp-resumen" class="boton chico" href="#">CSV por sector</a>
+    <button class="chico" onclick="print()">Imprimir</button>
+  </div>
+
+  <div class="tarjeta canal-barra" style="margin-top:.6rem">
+    <label style="margin:0 .6rem 0 0;align-self:center">Estadísticas de</label>
+    <div class="segmentado" id="puesto-panel"></div>
+  </div>
+
+  <div id="filtros" style="margin-top:.6rem"></div>
+
+  <div class="kpis" id="kpis" style="margin:1rem 0"></div>
+
+  <section class="tarjeta">
+    <header><h2 id="titulo-evolucion">Evolución diaria</h2><p id="sub-evolucion"></p></header>
+    <div id="g-evolucion"></div>
+  </section>
+
+  <div class="grilla g2" style="margin-top:1rem">
+    <section class="tarjeta">
+      <header><h2>Consultas por sector</h2><p>quién recibe la demanda</p></header>
+      <div id="g-sector"></div>
+    </section>
+    <section class="tarjeta">
+      <header><h2>Resultado por sector</h2><p>qué parte se resolvió en el momento</p></header>
+      <div id="g-estado-sector"></div>
+    </section>
+  </div>
+
+  <div class="grilla g2" style="margin-top:1rem">
+    <section class="tarjeta">
+      <header><h2>Motivos más consultados</h2><p>top 15 del período</p></header>
+      <div id="g-motivos"></div>
+    </section>
+    <section class="tarjeta">
+      <header><h2>Canal de contacto</h2></header>
+      <div id="g-canal"></div>
+      <div id="caja-puesto">
+        <header style="margin-top:1.2rem"><h2>Puesto de atención</h2></header>
+        <div id="g-puesto"></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="tarjeta" style="margin-top:1rem">
+    <header><h2>Demanda por día y hora</h2><p id="sub-calor">para dimensionar el personal en cada franja</p></header>
+    <div id="g-calor"></div>
+  </section>
+
+  <section class="tarjeta" style="margin-top:1rem">
+    <header><h2>Evolución por sector</h2><p>los 6 sectores con más consultas, un gráfico por sector</p></header>
+    <div id="g-sector-tiempo"></div>
+  </section>
+
+  <div class="grilla g2" style="margin-top:1rem">
+    <section class="tarjeta">
+      <header><h2>Detalle por sector</h2></header>
+      <div class="tabla-scroll" id="t-sector"></div>
+    </section>
+    <section class="tarjeta">
+      <header><h2>Actividad por operador</h2></header>
+      <div class="tabla-scroll" id="t-operador"></div>
+    </section>
+  </div>
+
+  <section class="tarjeta oculto" style="margin-top:1rem" id="caja-localidad">
+    <header><h2>Consultas por localidad</h2></header>
+    <div id="g-localidad"></div>
+  </section>
+</main>
+`;
+
 /* Panel de estadisticas: todo el periodo filtrado, en una sola pantalla. */
 
 import {
-  get, getGuardado, exigirSesion, montarBarra, montarFiltros, leerFiltros, escribirFiltros, qs,
+  get, montarFiltros, leerFiltros, escribirFiltros, qs,
   escapar, num, dec, pct, fechaLarga, etiquetaEstado, etiquetaPuesto,
 } from '/js/api.js';
 import { barras, apiladas, lineas, multiplos, calor, paleta, DIAS } from '/js/charts.js';
@@ -12,18 +94,19 @@ let filtros, ultimoPanel;
 
 // Al cambiar claro/oscuro se repinta con los mismos datos, para que los colores
 // de las leyendas y de las barras apiladas acompañen al tema.
-window.addEventListener('tema-cambiado', () => { if (ultimoPanel) pintar(ultimoPanel); });
+window.addEventListener('tema-cambiado', () => {
+  // Si la pantalla ya no está montada no hay nada que repintar.
+  if (ultimoPanel && document.getElementById('kpis')) pintar(ultimoPanel);
+});
 
-inicio().catch((e) => console.error(e));
 
 const PUESTOS_PANEL = [
   ['call_center', 'Call center'], ['mesa_informes', 'Mesa de informes'], ['', 'Los dos juntos'],
 ];
 
-async function inicio() {
+export async function iniciar(ctx) {
   // Las dos en paralelo: en la nube cada una es una ida y vuelta.
-  const [usuario, catalogos] = await Promise.all([exigirSesion(), getGuardado('/api/catalogos')]);
-  montarBarra(usuario);
+  const { usuario, catalogos } = ctx;
   filtros = leerFiltros();
   // Cada puesto se mira por separado; "los dos juntos" es una opción explícita.
   if (filtros.puesto === undefined) filtros.puesto = usuario.puesto === 'mesa_informes' ? 'mesa_informes' : 'call_center';
@@ -183,3 +266,6 @@ function pintar(d) {
     barras($('g-localidad'), d.por_localidad.map((l) => ({ etiqueta: l.nombre, valor: l.total })));
   }
 }
+
+
+export function limpiar() { ultimoPanel = null; }

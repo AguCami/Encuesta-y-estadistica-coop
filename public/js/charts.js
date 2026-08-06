@@ -98,7 +98,16 @@ function responsivo(cont, dibujar) {
   cont._ro = new ResizeObserver(() => { if (Math.abs(cont.clientWidth - ancho) > 8) render(); });
   cont._ro.observe(cont);
   if (cont._tema) window.removeEventListener('tema-cambiado', cont._tema);
-  cont._tema = () => render();
+  // Si el contenedor salió de la página (se cambió de pantalla), el gráfico se
+  // da de baja solo en vez de quedar escuchando para siempre.
+  cont._tema = () => {
+    if (!cont.isConnected) {
+      window.removeEventListener('tema-cambiado', cont._tema);
+      if (cont._ro) cont._ro.disconnect();
+      return;
+    }
+    render();
+  };
   window.addEventListener('tema-cambiado', cont._tema);
 }
 

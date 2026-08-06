@@ -20,6 +20,14 @@
   status = 200
   force = true
 
+# Las pantallas (/rapido, /consultas...) no son archivos: se responde con la
+# aplicación, que se encarga de mostrar la que corresponda. Netlify aplica esto
+# solo cuando no existe un archivo con ese nombre.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
 [[headers]]
   for = "/*"
   [headers.values]

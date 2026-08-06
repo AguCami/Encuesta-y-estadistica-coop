@@ -83,68 +83,8 @@ export function olvidar(ruta) {
   try { sessionStorage.removeItem(`cache:${ruta}`); } catch { /* nada que hacer */ }
 }
 
-/** Exige sesion iniciada; si no hay, manda al login. Devuelve el usuario. */
-export async function exigirSesion() {
-  const usuario = await getGuardado('/api/yo');
-  if (!usuario) {
-    location.href = `/index.html?volver=${encodeURIComponent(location.pathname + location.search)}`;
-    throw new Error('sin sesion');
-  }
-  return usuario;
-}
-
-const PAGINAS = [
-  { href: '/rapido.html', texto: 'Atención rápida' },
-  { href: '/informacion.html', texto: 'Información útil' },
-  { href: '/consultas.html', texto: 'Consultas' },
-  { href: '/panel.html', texto: 'Estadisticas' },
-  { href: '/admin.html', texto: 'Administracion', rol: 'supervisor' },
-];
-
 const NIVEL = { operador: 1, supervisor: 2, admin: 3 };
 export const puede = (usuario, rol) => NIVEL[usuario.rol] >= NIVEL[rol];
-
-/** Dibuja la barra superior con la navegacion y el usuario conectado. */
-export async function montarBarra(usuario) {
-  const config = await getGuardado('/api/config');
-  const actual = location.pathname;
-  const enlaces = PAGINAS
-    .filter((p) => !p.rol || puede(usuario, p.rol))
-    .map((p) => `<a href="${p.href}"${actual === p.href ? ' aria-current="page"' : ''}>${p.texto}</a>`)
-    .join('');
-
-  // Si hay logo cargado en /img/logo.png se usa ese; si no, el nombre solo.
-  // Arriba va el nombre corto: el completo no entra y empuja la navegación.
-  const nombre = escapar(config.org_corto || config.org);
-  const barra = document.createElement('header');
-  barra.className = 'barra';
-  barra.innerHTML = `
-    <div class="marca" title="${escapar(config.org)}">
-      <img src="/img/logo.png" alt="" class="logo" onerror="this.remove()">
-      <span class="nombre">${nombre}</span><small>consultas y encuestas</small>
-    </div>
-    <nav class="nav">${enlaces}</nav>
-    <div class="derecha">
-      <span class="usuario"><b>${usuario.nombre}</b> · ${etiquetaRol(usuario.rol)}</span>
-      <button id="btn-tema" class="chico" title="Cambiar tema claro / oscuro">Tema</button>
-      <button id="btn-salir" class="chico">Salir</button>
-    </div>`;
-  document.body.prepend(barra);
-  adelantarPaginas(usuario);
-
-  barra.querySelector('#btn-salir').onclick = async () => {
-    await post('/api/logout', {});
-    try { sessionStorage.clear(); } catch { /* nada que hacer */ }
-    location.href = '/index.html';
-  };
-  barra.querySelector('#btn-tema').onclick = () => {
-    const oscuro = document.documentElement.dataset.theme === 'dark';
-    document.documentElement.dataset.theme = oscuro ? 'light' : 'dark';
-    localStorage.setItem('tema', oscuro ? 'light' : 'dark');
-    window.dispatchEvent(new Event('tema-cambiado'));
-  };
-  return config;
-}
 
 // Hay un juego escondido: escribí "pacman" en cualquier pantalla. El archivo
 // del juego recién se descarga cuando alguien completa la palabra.
@@ -159,30 +99,6 @@ addEventListener('keydown', (e) => {
     guardar: (puntos, nivel) => post('/api/puntajes', { puntos, nivel }),
   })).catch(() => { /* si no está, no pasa nada */ });
 });
-
-/**
- * Prepara las otras pantallas antes de que las toquen.
- *
- * Cada pestaña es una página aparte, así que al cambiar se recargaba todo y
- * se veía el parpadeo. Con esto el navegador va armando la pantalla siguiente
- * apenas el puntero se acerca al enlace —la pide, la dibuja y hasta hace sus
- * consultas—, y para cuando se hace clic ya está lista: el cambio es
- * instantáneo y sin parpadeo.
- *
- * Donde el navegador no lo entienda, no pasa nada: navega como siempre.
- */
-function adelantarPaginas(usuario) {
-  if (document.getElementById('adelanto')) return;
-  const urls = PAGINAS.filter((p) => !p.rol || puede(usuario, p.rol))
-    .map((p) => p.href).filter((h) => h !== location.pathname);
-  const reglas = document.createElement('script');
-  reglas.id = 'adelanto';
-  reglas.type = 'speculationrules';
-  reglas.textContent = JSON.stringify({
-    prerender: [{ urls, eagerness: 'moderate' }],
-  });
-  document.head.appendChild(reglas);
-}
 
 export function aplicarTemaGuardado() {
   const t = localStorage.getItem('tema');

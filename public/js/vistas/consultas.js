@@ -1,20 +1,53 @@
+/* Vista: Consultas registradas */
+
+export const TITULO = 'Consultas registradas';
+
+export const html = `
+<main>
+  <h1>Consultas registradas</h1>
+  <div id="filtros"></div>
+
+  <section class="tarjeta" style="margin-top:1rem">
+    <header>
+      <h2 id="titulo-tabla">Listado</h2>
+      <p id="resumen"></p>
+      <span style="flex:1"></span>
+      <div class="fila" style="gap:.4rem">
+        <input id="buscar" placeholder="Buscar socio, N° o texto…" style="width:230px">
+        <button id="btn-buscar" class="chico">Buscar</button>
+        <a id="btn-export" class="boton chico" href="#">Exportar CSV</a>
+      </div>
+    </header>
+    <div class="tabla-scroll" id="tabla"></div>
+    <div class="fila" style="justify-content:center;margin-top:.8rem">
+      <button id="mas" class="oculto">Cargar más</button>
+    </div>
+  </section>
+</main>
+
+<dialog id="detalle">
+  <div class="cuerpo" id="detalle-cuerpo"></div>
+  <div class="pie">
+    <button id="cerrar-detalle">Cerrar</button>
+  </div>
+</dialog>
+`;
+
 /* Listado, busqueda, detalle y seguimiento de las consultas. */
 
 import {
-  get, getGuardado, post, put, del, exigirSesion, montarBarra, montarFiltros, leerFiltros, escribirFiltros,
+  get, post, put, del, montarFiltros, leerFiltros, escribirFiltros,
   qs, escapar, num, fechaLarga, fechaCorta, minutos, etiquetaEstado, etiquetaPuesto, puede, avisar,
 } from '/js/api.js';
 
 const $ = (id) => document.getElementById(id);
 let catalogos, usuario, filtros, offset = 0, total = 0;
 
-inicio().catch((e) => console.error(e));
 
-async function inicio() {
+export async function iniciar(ctx) {
   // Las tres en paralelo: en la nube cada una es una ida y vuelta, y hacerlas
   // en fila se notaba al cambiar de pantalla.
-  [usuario, catalogos] = await Promise.all([exigirSesion(), getGuardado('/api/catalogos')]);
-  montarBarra(usuario);
+  ({ usuario, catalogos } = ctx);
   filtros = leerFiltros();
   $('buscar').value = filtros.q || '';
 

@@ -1,3 +1,112 @@
+/* Vista: Información útil */
+
+export const TITULO = 'Información útil';
+
+export const html = `
+<main>
+  <h1>Información útil</h1>
+
+  <div class="tarjeta" style="margin-bottom:1rem">
+    <div class="segmentado" id="pestanas"></div>
+  </div>
+
+  <div id="aviso"></div>
+
+  <!-- ------------------------------------------------------- servicios -->
+  <section id="p-servicios">
+    <div class="tarjeta" style="margin-bottom:1rem">
+      <label for="q-servicios">Buscar</label>
+      <input type="search" id="q-servicios" placeholder="Servicio, requisito o precio…">
+    </div>
+    <div class="grilla g2" id="servicios"></div>
+    <p class="solo-lectura" id="sin-servicios" style="display:none">No se encontraron resultados.</p>
+  </section>
+
+  <!-- -------------------------------------------------------- internos -->
+  <section id="p-internos" hidden>
+    <div class="tarjeta" style="margin-bottom:1rem">
+      <label for="q-internos">Buscar</label>
+      <input type="search" id="q-internos" placeholder="Nombre, sector o número de interno…">
+      <div class="segmentado ajustable" id="sectores" style="margin-top:.7rem"></div>
+    </div>
+    <div class="tarjeta tabla-scroll">
+      <table>
+        <thead>
+          <tr><th>Interno</th><th>Sector</th><th>Quién atiende</th></tr>
+        </thead>
+        <tbody id="internos"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ----------------------------------------------------------- pagos -->
+  <section id="p-pagos" hidden>
+    <div class="tarjeta" style="margin-bottom:1rem">
+      <header><h2>Pago por internet</h2></header>
+      <p style="margin:0">Desde la web de la cooperativa:
+        <a href="https://www.coop5.com.ar" target="_blank" rel="noopener">www.coop5.com.ar</a></p>
+    </div>
+    <div class="grilla g3" id="pagos"></div>
+  </section>
+
+  <!-- ----------------------------------------------------------- notas -->
+  <section id="p-notas" hidden>
+    <div class="tarjeta" style="margin-bottom:1rem">
+      <header><h2>Nueva nota</h2><p>queda a la vista del resto del personal</p></header>
+      <div class="fila">
+        <div class="campo"><label for="n-nombre">Nombre</label><input id="n-nombre"></div>
+        <div class="campo"><label for="n-apellido">Apellido</label><input id="n-apellido"></div>
+        <div class="campo corto"><label for="n-socio">N° de socio</label><input id="n-socio"></div>
+        <div class="campo corto"><label for="n-telefono">Teléfono</label><input id="n-telefono"></div>
+      </div>
+      <div style="margin-top:.6rem">
+        <label for="n-texto">Nota</label>
+        <textarea id="n-texto" placeholder="Qué pasó, qué quedó pendiente…"></textarea>
+      </div>
+      <div class="fila" style="margin-top:.6rem">
+        <button class="primario" id="n-guardar">Guardar nota</button>
+      </div>
+    </div>
+    <div id="notas"></div>
+  </section>
+
+  <!-- ---------------------------------------------------------- cortes -->
+  <section id="p-cortes" hidden>
+    <div class="tarjeta" style="margin-bottom:1rem">
+      <header><h2>Registrar corte</h2><p>fechas de aviso, plazo y corte real</p></header>
+      <div class="fila">
+        <div class="campo corto"><label for="c-aviso">Fecha de aviso</label><input type="date" id="c-aviso"></div>
+        <div class="campo corto"><label for="c-plazo">Plazo (vencimiento)</label><input type="date" id="c-plazo"></div>
+        <div class="campo corto"><label for="c-corte">Fecha real de corte</label><input type="date" id="c-corte"></div>
+        <div class="campo"><label for="c-seccion">Sección</label>
+          <select id="c-seccion">
+            <option value="">Elegir…</option>
+            <option>Luz comercial</option>
+            <option>TICs</option>
+            <option>Luz y agua familia</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:.6rem">
+        <label for="c-obs">Observaciones</label>
+        <textarea id="c-obs" placeholder="Opcional"></textarea>
+      </div>
+      <div class="fila" style="margin-top:.6rem">
+        <button class="primario" id="c-guardar">Guardar corte</button>
+      </div>
+    </div>
+    <div class="tarjeta tabla-scroll">
+      <table>
+        <thead>
+          <tr><th>Sección</th><th>Aviso</th><th>Plazo</th><th>Corte</th><th>Observaciones</th><th>Cargó</th><th></th></tr>
+        </thead>
+        <tbody id="cortes"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+`;
+
 /*
  * Información útil: lo que el personal necesita tener a mano mientras atiende.
  *
@@ -8,7 +117,7 @@
  */
 
 import {
-  get, post, del, exigirSesion, montarBarra, escapar, avisar, fechaLarga, puede,
+  get, post, del, escapar, avisar, fechaLarga, puede,
 } from '/js/api.js';
 import { SERVICIOS, INTERNOS, PAGOS } from '/js/datos-info.js';
 
@@ -26,11 +135,9 @@ let usuario;
 let solapa = 'servicios';
 let sectorInternos = 'todos';
 
-inicio().catch((e) => console.error(e));
 
-async function inicio() {
-  usuario = await exigirSesion();
-  montarBarra(usuario);
+export async function iniciar(ctx) {
+  ({ usuario } = ctx);
 
   pintarSolapas();
   pintarServicios();

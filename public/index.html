@@ -3,15 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ingreso — Consultas</title>
+<title>Consultas y encuestas</title>
 <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
 
-<div class="ingreso" id="pantalla">
-  <form class="tarjeta acceso" id="form" novalidate>
+<!-- La barra y el contenido se arman al entrar; antes no hay nada que mostrar -->
+<header class="barra oculto" id="barra"></header>
+<div id="vista"></div>
+
+<!-- ------------------------------------------------------------ ingreso -->
+<div class="ingreso oculto" id="acceso">
+  <form class="tarjeta acceso" id="forma" novalidate>
     <div class="marca-acceso">
-      <img src="/img/logo.png" alt="" class="logo-acceso" id="logo" onerror="this.remove()">
+      <img src="/img/logo.png" alt="" class="logo-acceso" onerror="this.remove()">
       <div class="sello" id="sello">C</div>
       <h1 id="titulo">Cooperativa</h1>
       <p>Consultas de mesa de informes y call center</p>
@@ -19,7 +24,7 @@
 
     <div class="campo-acceso">
       <label for="usuario">Usuario</label>
-      <input id="usuario" name="usuario" autocomplete="username" autocapitalize="none" autofocus required>
+      <input id="usuario" name="usuario" autocomplete="username" autocapitalize="none" required>
     </div>
     <div class="campo-acceso">
       <label for="clave">Clave</label>
@@ -27,7 +32,7 @@
     </div>
 
     <button class="primario" type="submit">Ingresar</button>
-    <p class="solo-lectores" id="aviso" role="status" aria-live="polite"></p>
+    <p class="solo-lectores" id="aviso-acceso" role="status" aria-live="polite"></p>
     <p class="ayuda">Si olvidaste tu clave, pedísela al administrador.</p>
   </form>
 </div>
@@ -36,173 +41,13 @@
   <div>
     <img src="/img/logo.png" alt="" class="logo-bienvenida" onerror="this.remove()">
     <div class="saludo">Te damos la bienvenida</div>
-    <div class="nombre" id="nombre"></div>
+    <div class="nombre" id="nombre-bienvenida"></div>
     <div class="pie">Preparando tu pantalla…</div>
   </div>
 </div>
 
 <canvas id="polvo" class="oculto"></canvas>
 
-<script type="module">
-import { post, get, aplicarTemaGuardado } from '/js/api.js';
-aplicarTemaGuardado();
-
-const $ = (id) => document.getElementById(id);
-const form = $('form');
-
-get('/api/config').then((c) => {
-  $('titulo').textContent = c.org;
-  $('sello').textContent = c.org.trim().charAt(0).toUpperCase() || 'C';
-  document.title = `Ingreso — ${c.org}`;
-}).catch(() => {});
-
-get('/api/yo').then((u) => { if (u) location.href = destino(); }).catch(() => {});
-
-function destino() {
-  const volver = new URLSearchParams(location.search).get('volver');
-  return volver && volver.startsWith('/') ? volver : '/rapido.html';
-}
-
-/** "Lenarduzzi, Andres Alejandro" → "Andres" */
-function nombreDePila(completo) {
-  const parte = completo.includes(',') ? completo.split(',')[1] : completo;
-  return parte.trim().split(/\s+/)[0] || completo;
-}
-
-// ------------------------------------------------------------------ error ---
-
-function marcarError(mensaje) {
-  form.classList.remove('mal');
-  void form.offsetWidth;            // reinicia la animación si vuelve a fallar
-  form.classList.add('mal');
-  $('aviso').textContent = mensaje; // solo para lectores de pantalla
-  $('clave').select();
-}
-
-form.addEventListener('input', () => {
-  form.classList.remove('mal');
-  $('aviso').textContent = '';
-});
-
-// ------------------------------------------------------------------ polvo ---
-
-// Quien tenga activado "reducir movimiento" en su sistema no ve el polvo
-// volando: en su lugar la tarjeta se desvanece. El saludo dura lo mismo.
-const quietito = matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-function desvanecer(tarjeta) {
-  tarjeta.style.transition = 'opacity .5s ease';
-  tarjeta.style.opacity = '0';
-  return new Promise((listo) => setTimeout(listo, 520));
-}
-
-/**
- * Deshace la tarjeta en partículas y se las lleva el viento hacia la derecha.
- * Las partículas se siembran sobre las cajas reales de cada elemento, así el
- * polvo tiene la forma de lo que había en pantalla.
- */
-function hacerPolvo(tarjeta) {
-  const lienzo = $('polvo');
-  const ctx = lienzo.getContext('2d');
-  const dpr = Math.min(devicePixelRatio || 1, 2);
-  lienzo.width = innerWidth * dpr;
-  lienzo.height = innerHeight * dpr;
-  ctx.scale(dpr, dpr);
-  lienzo.classList.remove('oculto');
-
-  const estilo = getComputedStyle(document.documentElement);
-  const color = (n) => estilo.getPropertyValue(n).trim();
-  const caja = tarjeta.getBoundingClientRect();
-
-  const particulas = [];
-  const sembrar = (r, tinta, densidad) => {
-    const cuantas = Math.min(900, Math.round(r.width * r.height * densidad));
-    for (let i = 0; i < cuantas; i++) {
-      const x = r.left + Math.random() * r.width;
-      const y = r.top + Math.random() * r.height;
-      particulas.push({
-        x, y, tinta,
-        r: 0.6 + Math.random() * 1.5,
-        // el viento entra por la izquierda: esa franja se deshace primero
-        demora: ((x - caja.left) / caja.width) * 18 + Math.random() * 8,
-        vx: 1.4 + Math.random() * 3.4,
-        vy: -0.5 - Math.random() * 1.1,
-        giro: (Math.random() - 0.5) * 0.25,
-        vida: 32 + Math.random() * 26,
-        edad: 0,
-      });
-    }
-  };
-
-  sembrar(caja, color('--surface-1'), 0.05);
-  for (const el of tarjeta.querySelectorAll('h1, p, label, input, button, .sello')) {
-    const r = el.getBoundingClientRect();
-    if (!r.width || !r.height) continue;
-    const c = getComputedStyle(el);
-    const tinta = el.classList.contains('sello') || el.tagName === 'BUTTON'
-      ? c.backgroundColor : c.color;
-    sembrar(r, tinta, 0.5);
-  }
-
-  tarjeta.style.visibility = 'hidden';
-
-  return new Promise((listo) => {
-    let cuadro = 0;
-    const dibujar = () => {
-      cuadro++;
-      ctx.clearRect(0, 0, innerWidth, innerHeight);
-      let vivas = 0;
-      for (const p of particulas) {
-        if (cuadro < p.demora) { vivas++; continue; }
-        p.edad++;
-        if (p.edad > p.vida) continue;
-        vivas++;
-        p.x += p.vx + Math.sin((p.y + cuadro) * 0.05) * 0.4;
-        p.y += p.vy + p.giro;
-        p.vx *= 1.012;
-        ctx.globalAlpha = Math.max(0, 1 - p.edad / p.vida);
-        ctx.fillStyle = p.tinta;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      if (vivas) requestAnimationFrame(dibujar);
-      else { lienzo.classList.add('oculto'); listo(); }
-    };
-    requestAnimationFrame(dibujar);
-  });
-}
-
-// ---------------------------------------------------------------- ingreso ---
-
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const boton = form.querySelector('button');
-  boton.disabled = true;
-  try {
-    const usuario = await post('/api/login', {
-      usuario: $('usuario').value,
-      clave: $('clave').value,
-    });
-
-    $('nombre').textContent = nombreDePila(usuario.nombre);
-    // primero se lo lleva el viento, después aparece el saludo
-    await (quietito ? desvanecer(form) : hacerPolvo(form));
-    $('pantalla').classList.add('oculto');
-    const saludo = $('bienvenida');
-    saludo.classList.remove('oculto');
-
-    // El saludo tiene que durar lo suficiente para leerlo: entra en medio
-    // segundo, se queda quieto un rato y recién ahí se va desvaneciendo.
-    await new Promise((r) => setTimeout(r, 3400));
-    saludo.classList.add('saliendo');
-    await new Promise((r) => setTimeout(r, 420));
-    location.href = destino();
-  } catch (err) {
-    marcarError(err.message);
-    boton.disabled = false;
-  }
-});
-</script>
+<script type="module" src="/js/app.js"></script>
 </body>
 </html>
