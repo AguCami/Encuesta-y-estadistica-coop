@@ -165,12 +165,17 @@ export function leerFiltros() {
   return f;
 }
 
-export function escribirFiltros(f, recargar = true) {
+export function escribirFiltros(f, rearmar = true) {
   const p = new URLSearchParams();
   for (const [k, v] of Object.entries(f)) if (v) p.set(k, v);
-  const url = `${location.pathname}?${p}`;
-  if (recargar) location.href = url;
-  else history.replaceState(null, '', url);
+  const url = `${location.pathname}${p.toString() ? `?${p}` : ''}`;
+  // Sin rearmar es solo dejar la dirección al día con lo que ya se ve.
+  if (!rearmar) { history.replaceState(null, '', url); return; }
+  // Cambiar un filtro es quedarse en la misma pantalla mirando otros datos:
+  // se anota en el historial (para que la flecha atrás vuelva al filtro
+  // anterior) y se avisa al enrutador, que la vuelve a armar sin recargar.
+  history.pushState({}, '', url);
+  dispatchEvent(new Event('filtros-cambiados'));
 }
 
 export const qs = (f) => new URLSearchParams(Object.entries(f).filter(([, v]) => v)).toString();

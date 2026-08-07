@@ -163,6 +163,12 @@ addEventListener('click', (e) => {
 
 addEventListener('popstate', () => { if (usuario) ir(location.pathname, { reemplazar: true }); });
 
+// Cambiar un filtro no cambia de pantalla: se rearma la misma, sin fundido,
+// para que se sienta como que solo cambiaron los números.
+addEventListener('filtros-cambiados', () => {
+  if (usuario) ir(location.pathname, { reemplazar: true, sinTransicion: true });
+});
+
 async function ir(ruta, opciones = {}) {
   const pantalla = PANTALLAS.find((p) => p.ruta === ruta) || PANTALLAS[0];
   // Si ya se está armando otra pantalla, se anota esta y se atiende al
@@ -173,8 +179,13 @@ async function ir(ruta, opciones = {}) {
 
   try {
     const modulo = await pantalla.modulo();
-    if (reemplazar) history.replaceState({}, '', pantalla.ruta);
-    else history.pushState({}, '', pantalla.ruta);
+    // Los filtros viajan en la dirección. Si es la misma pantalla se
+    // conservan (así una dirección guardada abre el mismo recorte, y la
+    // flecha atrás vuelve al filtro anterior); si se cambia de pantalla se
+    // descartan, porque los filtros de una no valen para la otra.
+    const filtros = pantalla.ruta === location.pathname ? location.search : '';
+    if (reemplazar) history.replaceState({}, '', pantalla.ruta + filtros);
+    else history.pushState({}, '', pantalla.ruta + filtros);
 
     const cambiar = () => {
       if (vistaActual && vistaActual.limpiar) vistaActual.limpiar();
