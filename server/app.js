@@ -31,6 +31,7 @@ const RUTAS = [
   ['GET', '/api/config', ({ res }) => json(res, { org: ORG, org_corto: ORG_CORTO, tz: TZ }), { publico: true }],
   ['GET', '/api/salud', mantenimiento.salud, { publico: true }],
   ['GET', '/api/respaldo', mantenimiento.respaldo],
+  ['POST', '/api/reiniciar', mantenimiento.reiniciar],
 
   ['GET', '/api/publico/encuesta', encuestas.publicoConfig, { publico: true }],
   ['POST', '/api/publico/encuesta', encuestas.publicoResponder, { publico: true }],

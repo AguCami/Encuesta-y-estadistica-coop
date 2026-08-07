@@ -528,3 +528,7 @@ body.derrumbe .pacman, body.derrumbe .pacman * { visibility: visible; }
 /* Las pelotas del ingreso: detrás de la tarjeta y sin estorbar los clics. */
 #pelotas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 .ingreso .acceso { position: relative; z-index: 1; }
+
+/* Lo que borra cosas se distingue del resto. */
+.tarjeta.peligro { border-color: var(--critico); }
+.tarjeta.peligro > header h2 { color: var(--critico); }

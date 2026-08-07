@@ -1,7 +1,7 @@
 'use strict';
 
-const { all, get } = require('../db');
-const { json } = require('../util');
+const { all, get, run } = require('../db');
+const { json, error } = require('../util');
 const { requiere } = require('../auth');
 
 /** Para el monitoreo del hosting: responde sin sesión y toca la base. */
@@ -32,4 +32,22 @@ const respaldo = requiere('admin', async ({ res }) => {
   res.end(cuerpo);
 });
 
-module.exports = { salud, respaldo };
+/**
+ * Borra las consultas cargadas para arrancar de cero. Pide un código además
+ * de la sesión de administrador: es irreversible y no puede pasar de casualidad.
+ *
+ * No toca a los usuarios, los sectores, los motivos, las notas ni los cortes:
+ * solo lo que alimenta la estadística.
+ */
+const CODIGO = process.env.CODIGO_REINICIO || '11235813';
+
+const reiniciar = requiere('admin', async ({ res, body }) => {
+  if (String(body.codigo || '') !== CODIGO) return error(res, 403, 'El código no es correcto');
+  const antes = await get('SELECT COUNT(*) AS n FROM consultas');
+  await run('DELETE FROM seguimientos');
+  await run('DELETE FROM encuestas');
+  await run('DELETE FROM consultas');
+  json(res, { ok: true, borradas: antes.n });
+});
+
+module.exports = { salud, respaldo, reiniciar };

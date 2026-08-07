@@ -58,6 +58,22 @@ export const html = `
     </section>
   </div>
 
+  <section class="tarjeta peligro" style="margin-top:1rem" id="caja-reinicio">
+    <header><h2>Reiniciar estadísticas</h2>
+      <p>borra todas las consultas cargadas para arrancar de cero</p></header>
+    <p class="solo-lectura" style="margin:0 0 .7rem">
+      Se borran las consultas, sus seguimientos y sus encuestas. <b>No hay vuelta atrás.</b>
+      No se tocan los usuarios, los sectores, los motivos, las notas ni los cortes.
+      Si querés guardarte lo que hay, bajá primero
+      <a href="/api/respaldo">una copia de todos los datos</a>.
+    </p>
+    <form class="fila" id="form-reinicio">
+      <div class="campo corto"><label for="r-codigo">Código</label>
+        <input id="r-codigo" autocomplete="off" required></div>
+      <button class="primario">Reiniciar</button>
+    </form>
+  </section>
+
   <section class="tarjeta" style="margin-top:1rem" id="caja-usuarios">
     <header><h2>Usuarios</h2><p>operadores del call center y de la mesa de informes</p></header>
     <form class="fila" id="form-usuario">
@@ -117,6 +133,16 @@ export async function iniciar(ctx) {
     usuario: $('u-usuario').value, nombre: $('u-nombre').value, clave: $('u-clave').value,
     rol: $('u-rol').value, puesto: $('u-puesto').value,
   }));
+
+  $('form-reinicio').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!confirm('Se van a borrar todas las consultas cargadas. Esto no se puede deshacer.\n\n¿Seguís?')) return;
+    try {
+      const r = await post('/api/reiniciar', { codigo: $('r-codigo').value });
+      $('r-codigo').value = '';
+      avisar($('aviso'), `Listo: se borraron ${r.borradas} consultas. Las estadísticas arrancan de cero.`, 'ok');
+    } catch (err) { avisar($('aviso'), err.message, 'error'); }
+  });
 
   $('m-filtro').onchange = pintarMotivos;
 }
