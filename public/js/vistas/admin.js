@@ -58,6 +58,17 @@ export const html = `
     </section>
   </div>
 
+  <section class="tarjeta" style="margin-top:1rem" id="caja-historico">
+    <header><h2>Cargar el histórico</h2>
+      <p>la semana que venía anotada a mano, antes de usar la aplicación</p></header>
+    <p class="solo-lectura" style="margin:0 0 .7rem" id="historico-texto"></p>
+    <form class="fila" id="form-historico">
+      <div class="campo corto"><label for="h-codigo">Código</label>
+        <input id="h-codigo" autocomplete="off" required></div>
+      <button class="primario">Cargar</button>
+    </form>
+  </section>
+
   <section class="tarjeta peligro" style="margin-top:1rem" id="caja-reinicio">
     <header><h2>Reiniciar estadísticas</h2>
       <p>borra todas las consultas cargadas para arrancar de cero</p></header>
@@ -104,7 +115,7 @@ export const html = `
 
 import {
   get, post, put, del, olvidar, avisar, escapar, puede,
-  etiquetaRol, etiquetaPuesto,
+  etiquetaRol, etiquetaPuesto, fechaCorta,
 } from '/js/api.js';
 
 const $ = (id) => document.getElementById(id);
@@ -118,6 +129,7 @@ export async function iniciar(ctx) {
     return;
   }
   $('caja-usuarios').classList.toggle('oculto', !puede(usuario, 'admin'));
+  $('caja-historico').classList.toggle('oculto', !puede(usuario, 'admin'));
   await recargar();
 
   enlazar('form-sector', () => post('/api/catalogos/sectores', {
@@ -134,6 +146,28 @@ export async function iniciar(ctx) {
     rol: $('u-rol').value, puesto: $('u-puesto').value,
   }));
 
+  $('form-historico').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const h = catalogos.historico;
+    if (!confirm(`Se van a cargar ${h.total} consultas del ${fechaCorta(h.desde)} al `
+      + `${fechaCorta(h.hasta)}.\n\nSe hace una sola vez. ¿Seguís?`)) return;
+    const boton = e.target.querySelector('button');
+    boton.disabled = true;
+    boton.textContent = 'Cargando…';
+    try {
+      const r = await post('/api/cargar-historico', { codigo: $('h-codigo').value });
+      $('h-codigo').value = '';
+      await recargar();
+      avisar($('aviso'), `Listo: entraron ${r.cargadas} consultas del ${fechaCorta(r.desde)} `
+        + `al ${fechaCorta(r.hasta)}. Ya se ven en Estadísticas.`, 'ok');
+    } catch (err) {
+      avisar($('aviso'), err.message, 'error');
+    } finally {
+      boton.disabled = false;
+      boton.textContent = 'Cargar';
+    }
+  });
+
   $('form-reinicio').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!confirm('Se van a borrar todas las consultas cargadas. Esto no se puede deshacer.\n\n¿Seguís?')) return;
@@ -145,6 +179,25 @@ export async function iniciar(ctx) {
   });
 
   $('m-filtro').onchange = pintarMotivos;
+}
+
+/**
+ * La tarjeta del histórico se explica sola: si ya entró lo dice y esconde el
+ * formulario, así nadie se queda con la duda de si apretó o no.
+ */
+function pintarHistorico() {
+  const h = catalogos.historico;
+  if (!h) return;
+  const cuando = `del ${fechaCorta(h.desde)} al ${fechaCorta(h.hasta)}`;
+  $('historico-texto').innerHTML = h.cargado
+    ? `Ya está cargado: las <b>${h.total}</b> consultas ${cuando} están en la base
+       y se ven en Estadísticas. No se puede volver a cargar.`
+    : `Son <b>${h.total}</b> consultas ${cuando}, las de las dos planillas que se
+       llevaban a mano: ${h.por_puesto.map(([n, c]) => `${c} de ${n.toLowerCase()}`).join(' y ')}.
+       Entran con su fecha y su hora reales, sin operador y sin resolver, porque
+       la planilla no registraba ni una cosa ni la otra.
+       <b>Se hace una sola vez.</b>`;
+  $('form-historico').classList.toggle('oculto', h.cargado);
 }
 
 function enlazar(idForm, accion) {
@@ -166,6 +219,8 @@ async function recargar() {
   dispatchEvent(new Event('catalogos-cambiados'));
   catalogos = await get('/api/catalogos');
   if (puede(usuario, 'admin')) usuarios = await get('/api/usuarios');
+
+  pintarHistorico();
 
   const opcionesSector = catalogos.sectores.filter((s) => s.activo)
     .map((s) => `<option value="${s.id}">${escapar(s.nombre)}</option>`).join('');

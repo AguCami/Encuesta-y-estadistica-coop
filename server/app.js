@@ -32,6 +32,7 @@ const RUTAS = [
   ['GET', '/api/salud', mantenimiento.salud, { publico: true }],
   ['GET', '/api/respaldo', mantenimiento.respaldo],
   ['POST', '/api/reiniciar', mantenimiento.reiniciar],
+  ['POST', '/api/cargar-historico', mantenimiento.cargarHistorico],
 
   ['GET', '/api/publico/encuesta', encuestas.publicoConfig, { publico: true }],
   ['POST', '/api/publico/encuesta', encuestas.publicoResponder, { publico: true }],

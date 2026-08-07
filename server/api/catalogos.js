@@ -3,12 +3,22 @@
 const { all, get, run } = require('../db');
 const { json, error, texto, enteroONull } = require('../util');
 const { requiere } = require('../auth');
+const HISTORICO = require('../datos/historico');
 
 /** Todo lo que la interfaz necesita para dibujar los selectores. */
 async function catalogos({ res }) {
   const primera = await get('SELECT MIN(fecha) AS f FROM consultas');
+  const cargado = await get("SELECT valor FROM meta WHERE clave = 'historico'");
   json(res, {
     primera_consulta: (primera && primera.f) || null,
+    // Para la tarjeta de Administración: qué trae el histórico y si ya entró.
+    historico: {
+      total: HISTORICO.TOTAL,
+      desde: HISTORICO.DESDE,
+      hasta: HISTORICO.HASTA,
+      por_puesto: HISTORICO.POR_PUESTO,
+      cargado: !!cargado,
+    },
     sectores: await all('SELECT id, nombre, detalle, orden, puesto, activo FROM sectores ORDER BY orden, nombre'),
     motivos: await all('SELECT id, sector_id, nombre, activo FROM motivos ORDER BY nombre'),
     canales: await all('SELECT id, nombre, orden, activo FROM canales ORDER BY orden, nombre'),
