@@ -17,7 +17,7 @@ const SECCIONES = new Set(['Luz comercial', 'TICs', 'Luz y agua familia']);
 const fechaONull = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : null);
 
 // Una nota vieja ya no le sirve a nadie: se muestran las del último mes.
-const listarNotas = requiere('operador', async ({ res }) => {
+const listarNotas = requiere('info', async ({ res }) => {
   json(res, await all(`
     SELECT n.*, u.nombre AS autor
       FROM notas n LEFT JOIN usuarios u ON u.id = n.usuario_id
@@ -54,7 +54,7 @@ const borrarNota = requiere('operador', async ({ res, params, usuario }) => {
   json(res, { ok: true });
 });
 
-const listarCortes = requiere('operador', async ({ res }) => {
+const listarCortes = requiere('info', async ({ res }) => {
   json(res, await all(`
     SELECT c.*, u.nombre AS autor
       FROM cortes c LEFT JOIN usuarios u ON u.id = c.usuario_id
@@ -87,14 +87,14 @@ const borrarCorte = requiere('operador', async ({ res, params, usuario }) => {
 // ------------------------------------------------------------ puntajes ---
 // Del juego escondido. Se guarda el mejor puntaje de cada uno, nada más.
 
-const listarPuntajes = requiere('operador', async ({ res }) => {
+const listarPuntajes = requiere('info', async ({ res }) => {
   json(res, await all(`
     SELECT nombre, MAX(puntos) AS puntos, MAX(nivel) AS nivel
       FROM puntajes GROUP BY usuario_id, nombre
      ORDER BY puntos DESC LIMIT 10`));
 });
 
-const guardarPuntaje = requiere('operador', async ({ res, body, usuario }) => {
+const guardarPuntaje = requiere('info', async ({ res, body, usuario }) => {
   const puntos = Math.max(0, Math.min(enteroONull(body.puntos) ?? 0, 9999999));
   const nivel = Math.max(1, Math.min(enteroONull(body.nivel) ?? 1, 99));
   await run('INSERT INTO puntajes (ts, usuario_id, nombre, puntos, nivel) VALUES (?,?,?,?,?)',
@@ -102,8 +102,57 @@ const guardarPuntaje = requiere('operador', async ({ res, body, usuario }) => {
   json(res, { ok: true }, 201);
 });
 
+// -------------------------------------------------------------- precios ---
+// Solo los renglones que se editaron desde Administración. La lista completa
+// viaja con la página; esto la pisa por encima, renglón por renglón.
+
+/** Lo lee cualquiera que entre: es lo que se muestra en pantalla. */
+const listarPrecios = async ({ res, usuario }) => {
+  if (!usuario) return error(res, 401, 'Sesion no iniciada');
+  const filas = await all('SELECT clave, valor, ts FROM precios');
+  json(res, Object.fromEntries(filas.map((f) => [f.clave, f.valor])));
+};
+
+/** Devuelve además quién y cuándo, para la pantalla de edición. */
+const detallePrecios = requiere('admin', async ({ res }) => {
+  json(res, await all(`
+    SELECT p.clave, p.valor, p.ts, u.nombre AS autor
+      FROM precios p LEFT JOIN usuarios u ON u.id = p.usuario_id
+     ORDER BY p.clave`));
+});
+
+/**
+ * Guarda los renglones que cambiaron. Llega `{ cambios: { clave: valor } }`;
+ * un valor vacío borra la edición y el renglón vuelve al precio de la lista.
+ */
+const guardarPrecios = requiere('admin', async ({ res, body, usuario }) => {
+  const cambios = body && body.cambios;
+  if (!cambios || typeof cambios !== 'object') return error(res, 400, 'No llegó ningún cambio');
+  const entradas = Object.entries(cambios).slice(0, 500);
+
+  let guardados = 0;
+  let borrados = 0;
+  for (const [claveCruda, valorCrudo] of entradas) {
+    const clave = texto(claveCruda, 300);
+    if (!clave) continue;
+    const valor = texto(valorCrudo, 120);
+    if (!valor) {
+      const r = await run('DELETE FROM precios WHERE clave = ?', [clave]);
+      borrados += r.cambios;
+      continue;
+    }
+    await run(`INSERT INTO precios (clave, valor, ts, usuario_id) VALUES (?,?,?,?)
+               ON CONFLICT(clave) DO UPDATE
+                  SET valor = excluded.valor, ts = excluded.ts, usuario_id = excluded.usuario_id`,
+    [clave, valor, partesFecha().ts, usuario.id]);
+    guardados += 1;
+  }
+  json(res, { ok: true, guardados, borrados });
+});
+
 module.exports = {
   listarNotas, crearNota, borrarNota,
   listarCortes, crearCorte, borrarCorte,
   listarPuntajes, guardarPuntaje,
+  listarPrecios, detallePrecios, guardarPrecios,
 };

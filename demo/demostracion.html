@@ -1371,8 +1371,22 @@ function distribucion(cont, datos, opciones = {}) {
  * requisitos de los servicios, el directorio de internos y los lugares de
  * pago. Vienen de la planilla que usa mesa de informes; se editan acá.
  *
- * Los precios cambian: cuando haya lista nueva se actualiza este archivo.
+ * Los precios cambian, y por eso no son la última palabra: cada renglón se
+ * puede editar desde Administración y lo editado se guarda en la base. Acá
+ * está la estructura —qué servicios hay, qué bloques y qué renglones— y el
+ * valor de arranque de cada uno; lo que se haya cambiado lo pisa por encima.
+ *
+ * Cambiar un precio no necesita publicar nada. Agregar o sacar un renglón sí,
+ * porque cambia la estructura.
  */
+
+/**
+ * Cómo se identifica un renglón de precio en la base. Va por nombre y no por
+ * posición para que reordenar la lista no mande un precio al renglón de al
+ * lado; si algún día se renombra un renglón, su valor editado queda huérfano
+ * y se ignora, que es la falla menos mala.
+ */
+const clavePrecio = (servicio, bloque, etiqueta) => `${servicio}||${bloque}||${etiqueta}`;
 
 const SERVICIOS = [
   {

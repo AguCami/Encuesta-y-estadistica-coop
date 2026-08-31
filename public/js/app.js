@@ -18,13 +18,15 @@ import {
 const $ = (id) => document.getElementById(id);
 
 const PANTALLAS = [
-  { ruta: '/rapido', texto: 'Atención rápida', modulo: () => import('/js/vistas/rapido.js') },
+  // Registrar una consulta es para quien atiende. Información útil la ve
+  // cualquiera que entre, incluso quien solo tiene ese permiso.
+  { ruta: '/rapido', texto: 'Atención rápida', rol: 'operador', catalogos: true, modulo: () => import('/js/vistas/rapido.js') },
   { ruta: '/informacion', texto: 'Información útil', modulo: () => import('/js/vistas/informacion.js') },
   // El historial, las estadísticas y la administración son solo para
   // administradores. Los operadores registran y consultan información útil.
-  { ruta: '/consultas', texto: 'Consultas', rol: 'admin', modulo: () => import('/js/vistas/consultas.js') },
-  { ruta: '/estadisticas', texto: 'Estadisticas', rol: 'admin', modulo: () => import('/js/vistas/panel.js') },
-  { ruta: '/administracion', texto: 'Administracion', rol: 'admin', modulo: () => import('/js/vistas/admin.js') },
+  { catalogos: true, ruta: '/consultas', texto: 'Consultas', rol: 'admin', modulo: () => import('/js/vistas/consultas.js') },
+  { catalogos: true, ruta: '/estadisticas', texto: 'Estadisticas', rol: 'admin', modulo: () => import('/js/vistas/panel.js') },
+  { catalogos: true, ruta: '/administracion', texto: 'Administracion', rol: 'admin', modulo: () => import('/js/vistas/admin.js') },
 ];
 
 // Las direcciones viejas siguen funcionando: alguien puede tenerlas guardadas.
@@ -36,7 +38,7 @@ const VIEJAS = {
   '/admin.html': '/administracion',
 };
 
-const NIVEL = { operador: 1, supervisor: 2, admin: 3 };
+const NIVEL = { info: 0, operador: 1, supervisor: 2, admin: 3 };
 const puede = (u, rol) => NIVEL[u.rol] >= NIVEL[rol];
 
 let usuario = null;
@@ -104,7 +106,7 @@ function destino() {
   const cruda = pedida && pedida.startsWith('/') ? pedida : location.pathname;
   const ruta = VIEJAS[cruda] || cruda;
   const existe = PANTALLAS.some((p) => p.ruta === ruta && (!p.rol || puede(usuario, p.rol)));
-  return existe ? ruta : '/rapido';
+  return existe ? ruta : primeraPermitida().ruta;
 }
 
 // ---------------------------------------------------------------- barra ---
@@ -169,8 +171,15 @@ addEventListener('filtros-cambiados', () => {
   if (usuario) ir(location.pathname, { reemplazar: true, sinTransicion: true });
 });
 
+/** La primera pantalla que este usuario tiene permitida. */
+const primeraPermitida = () => PANTALLAS.find((p) => !p.rol || puede(usuario, p.rol));
+
 async function ir(ruta, opciones = {}) {
-  const pantalla = PANTALLAS.find((p) => p.ruta === ruta) || PANTALLAS[0];
+  // Si la pantalla no existe, o no es para este usuario, se va a la primera
+  // que sí lo sea. Escribir la dirección a mano no alcanza para entrar.
+  const pedida = PANTALLAS.find((p) => p.ruta === ruta);
+  const pantalla = pedida && (!pedida.rol || puede(usuario, pedida.rol))
+    ? pedida : primeraPermitida();
   // Si ya se está armando otra pantalla, se anota esta y se atiende al
   // terminar: un clic apurado no se pierde, y gana el último.
   if (cargando) { pendiente = [ruta, opciones]; return; }
@@ -203,7 +212,10 @@ async function ir(ruta, opciones = {}) {
       cambiar();
     }
 
-    await modulo.iniciar({ usuario, catalogos: await catalogos() });
+    // Los catálogos (sectores, motivos, operadores) solo los necesitan las
+    // pantallas que los usan. Información útil no, y pedirlos ahí sería un
+    // viaje de más — y un error para quien no tiene permiso de leerlos.
+    await modulo.iniciar({ usuario, catalogos: pantalla.catalogos ? await catalogos() : null });
   } catch (e) {
     if (String(e.message).includes('sesion')) return location.reload();
     console.error(e);

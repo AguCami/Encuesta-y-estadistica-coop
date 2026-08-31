@@ -58,6 +58,28 @@ export const html = `
     </section>
   </div>
 
+  <section class="tarjeta" style="margin-top:1rem" id="caja-precios">
+    <header><h2>Precios de Información útil</h2>
+      <p>lo que ve el personal en la solapa Servicios</p></header>
+    <p class="solo-lectura" style="margin:0 0 .7rem">
+      Cambiá el precio que haga falta y guardá. Se ve al instante en Información
+      útil, sin publicar nada. Para que un renglón vuelva a su precio original,
+      borrá lo que tiene escrito y guardá.
+    </p>
+    <div class="fila" style="margin-bottom:.7rem;align-items:end">
+      <div class="campo" style="max-width:24rem"><label for="q-precios">Buscar</label>
+        <input type="search" id="q-precios" placeholder="Servicio, concepto o precio…"></div>
+      <label class="fila" style="gap:.4rem;align-items:center;margin:0 0 .45rem;white-space:nowrap">
+        <input type="checkbox" id="solo-editados" style="width:auto;margin:0">
+        <span>Solo los cambiados</span></label>
+    </div>
+    <div id="precios-lista" class="tabla-scroll" style="max-height:60vh;overflow-y:auto"></div>
+    <div class="fila" style="margin-top:.8rem;align-items:center">
+      <button class="primario" id="p-guardar">Guardar precios</button>
+      <span class="solo-lectura" id="p-estado"></span>
+    </div>
+  </section>
+
   <section class="tarjeta" style="margin-top:1rem" id="caja-historico">
     <header><h2>Cargar el histórico</h2>
       <p>la semana que venía anotada a mano, antes de usar la aplicación</p></header>
@@ -93,6 +115,7 @@ export const html = `
       <div class="campo corto"><label for="u-clave">Clave inicial</label><input id="u-clave" required></div>
       <div class="campo corto"><label for="u-rol">Rol</label>
         <select id="u-rol">
+          <option value="info">Solo Información útil</option>
           <option value="operador">Operador</option>
           <option value="supervisor">Supervisor</option>
           <option value="admin">Administrador</option>
@@ -117,9 +140,12 @@ import {
   get, post, put, del, olvidar, avisar, escapar, puede,
   etiquetaRol, etiquetaPuesto, fechaCorta,
 } from '/js/api.js';
+import { SERVICIOS, clavePrecio } from '/js/datos-info.js';
 
 const $ = (id) => document.getElementById(id);
 let catalogos, usuarios = [], usuario;
+// Los precios cambiados, tal como están guardados: { clave: valor }.
+let precios = {};
 
 
 export async function iniciar(ctx) {
@@ -130,7 +156,16 @@ export async function iniciar(ctx) {
   }
   $('caja-usuarios').classList.toggle('oculto', !puede(usuario, 'admin'));
   $('caja-historico').classList.toggle('oculto', !puede(usuario, 'admin'));
+  $('caja-precios').classList.toggle('oculto', !puede(usuario, 'admin'));
   await recargar();
+
+  if (puede(usuario, 'admin')) {
+    precios = await get('/api/precios').catch(() => ({}));
+    pintarPrecios();
+    $('q-precios').addEventListener('input', pintarPrecios);
+    $('solo-editados').addEventListener('change', pintarPrecios);
+    $('p-guardar').onclick = guardarPrecios;
+  }
 
   enlazar('form-sector', () => post('/api/catalogos/sectores', {
     nombre: $('s-nombre').value,
@@ -198,6 +233,97 @@ function pintarHistorico() {
        la planilla no registraba ni una cosa ni la otra.
        <b>Se hace una sola vez.</b>`;
   $('form-historico').classList.toggle('oculto', h.cargado);
+}
+
+// ------------------------------------------------------------- precios ---
+
+/** Cada renglón de precio de la lista, con el servicio y el bloque al que va. */
+const renglones = () => SERVICIOS.flatMap((s) => s.bloques.flatMap((b) => b.precios.map(
+  ([etiqueta, original]) => ({
+    clave: clavePrecio(s.titulo, b.titulo, etiqueta),
+    servicio: s.titulo, bloque: b.titulo, etiqueta, original,
+  }))));
+
+const sinAcentos = (s) => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+function pintarPrecios() {
+  const q = sinAcentos($('q-precios').value.trim());
+  const soloEditados = $('solo-editados').checked;
+  const filas = renglones().filter((r) => {
+    if (soloEditados && precios[r.clave] === undefined) return false;
+    if (!q) return true;
+    return sinAcentos(`${r.servicio} ${r.bloque} ${r.etiqueta} ${precios[r.clave] ?? r.original}`).includes(q);
+  });
+
+  // El resumen se escribe siempre, también cuando no queda nada que mostrar:
+  // si no, queda contando los renglones de la búsqueda anterior.
+  $('p-estado').textContent = `${filas.length} renglones · ${Object.keys(precios).length} cambiados`;
+
+  if (!filas.length) {
+    $('precios-lista').innerHTML = `<p class="solo-lectura">${
+      soloEditados && !Object.keys(precios).length
+        ? 'Todavía no cambiaste ningún precio.'
+        : 'No hay renglones que coincidan.'}</p>`;
+    return;
+  }
+
+  // Se agrupa por servicio y bloque para que se lea igual que en pantalla.
+  let servicio = null;
+  let bloque = null;
+  const partes = [];
+  for (const r of filas) {
+    if (r.servicio !== servicio) {
+      servicio = r.servicio; bloque = null;
+      partes.push(`<h3 style="margin:.9rem 0 .2rem">${escapar(servicio)}</h3>`);
+    }
+    if (r.bloque !== bloque) {
+      bloque = r.bloque;
+      partes.push(`<p class="solo-lectura" style="margin:.35rem 0 .1rem">${escapar(bloque)}</p>`);
+    }
+    const cambiado = precios[r.clave] !== undefined;
+    partes.push(`
+      <div class="fila" style="align-items:center;gap:.7rem;padding:.18rem 0">
+        <span style="width:20rem;flex:0 0 auto">${escapar(r.etiqueta)}</span>
+        <input data-clave="${escapar(r.clave)}" style="width:11rem;flex:0 0 auto"
+               value="${escapar(cambiado ? precios[r.clave] : r.original)}">
+        <small class="solo-lectura">${cambiado ? `antes: ${escapar(r.original)}` : ''}</small>
+      </div>`);
+  }
+  $('precios-lista').innerHTML = partes.join('');
+}
+
+async function guardarPrecios() {
+  // Se manda solo lo que difiere de la lista: si alguien deja el precio
+  // original, no hay nada que guardar y el renglón queda limpio.
+  const porClave = Object.fromEntries(renglones().map((r) => [r.clave, r.original]));
+  const cambios = {};
+  $('precios-lista').querySelectorAll('[data-clave]').forEach((i) => {
+    const { clave } = i.dataset;
+    const valor = i.value.trim();
+    const guardado = precios[clave];
+    const original = porClave[clave];
+    if (valor === original) { if (guardado !== undefined) cambios[clave] = ''; return; }
+    if (valor !== guardado) cambios[clave] = valor;
+  });
+
+  if (!Object.keys(cambios).length) {
+    return avisar($('aviso'), 'No cambiaste ningún precio.', 'ok');
+  }
+  const boton = $('p-guardar');
+  boton.disabled = true;
+  try {
+    const r = await post('/api/precios', { cambios });
+    precios = await get('/api/precios');
+    pintarPrecios();
+    const partes = [];
+    if (r.guardados) partes.push(`${r.guardados} precio${r.guardados === 1 ? '' : 's'} actualizado${r.guardados === 1 ? '' : 's'}`);
+    if (r.borrados) partes.push(`${r.borrados} vuelto${r.borrados === 1 ? '' : 's'} al original`);
+    avisar($('aviso'), `Listo: ${partes.join(' y ')}. Ya se ve en Información útil.`, 'ok');
+  } catch (err) {
+    avisar($('aviso'), err.message, 'error');
+  } finally {
+    boton.disabled = false;
+  }
 }
 
 function enlazar(idForm, accion) {

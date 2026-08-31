@@ -212,7 +212,21 @@ CREATE TABLE IF NOT EXISTS puntajes (
   puntos      INTEGER NOT NULL DEFAULT 0,
   nivel       INTEGER NOT NULL DEFAULT 1
 );
-CREATE INDEX IF NOT EXISTS ix_puntajes ON puntajes(puntos DESC)
+CREATE INDEX IF NOT EXISTS ix_puntajes ON puntajes(puntos DESC);
+
+-- Precios de Información útil que se cambiaron desde la aplicación.
+--
+-- Acá vive solo lo editado: la lista completa —qué servicios hay, qué bloques
+-- y qué renglones— sigue en public/js/datos-info.js, que es lo que se dibuja.
+-- Esta tabla la pisa por encima, renglón por renglón. Así cambiar un precio no
+-- necesita publicar nada, y si alguna vez se saca un renglón de la lista su
+-- valor editado queda huérfano y se ignora, en vez de aparecer donde no va.
+CREATE TABLE IF NOT EXISTS precios (
+  clave       TEXT PRIMARY KEY,          -- "Servicio||Bloque||Renglón"
+  valor       TEXT NOT NULL DEFAULT '',
+  ts          TEXT NOT NULL,
+  usuario_id  INTEGER REFERENCES usuarios(id)
+)
 `;
 
 // -------------------------------------------------------------------- seed ---
@@ -298,7 +312,7 @@ async function seed() {
  * una base que ya venía andando (una tabla, una columna, un catálogo que
  * cambia). Mientras coincida, no se toca nada.
  */
-const VERSION = '5';
+const VERSION = '6';
 
 /**
  * Prepara la base una sola vez por proceso.

@@ -51,7 +51,7 @@ export const html = `
 
   <!-- ----------------------------------------------------------- notas -->
   <section id="p-notas" hidden>
-    <div class="tarjeta" style="margin-bottom:1rem">
+    <div class="tarjeta solo-quien-carga" style="margin-bottom:1rem">
       <header><h2>Nueva nota</h2><p>queda a la vista del resto del personal</p></header>
       <div class="fila">
         <div class="campo"><label for="n-nombre">Nombre</label><input id="n-nombre"></div>
@@ -72,7 +72,7 @@ export const html = `
 
   <!-- ---------------------------------------------------------- cortes -->
   <section id="p-cortes" hidden>
-    <div class="tarjeta" style="margin-bottom:1rem">
+    <div class="tarjeta solo-quien-carga" style="margin-bottom:1rem">
       <header><h2>Registrar corte</h2><p>fechas de aviso, plazo y corte real</p></header>
       <div class="fila">
         <div class="campo corto"><label for="c-aviso">Fecha de aviso</label><input type="date" id="c-aviso"></div>
@@ -119,7 +119,7 @@ export const html = `
 import {
   get, post, del, escapar, avisar, fechaLarga, puede,
 } from '/js/api.js';
-import { SERVICIOS, INTERNOS, PAGOS } from '/js/datos-info.js';
+import { SERVICIOS, INTERNOS, PAGOS, clavePrecio } from '/js/datos-info.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -134,16 +134,31 @@ const SOLAPAS = [
 let usuario;
 let solapa = 'servicios';
 let sectorInternos = 'todos';
+// Los precios editados desde Administración, que pisan a los de la lista.
+let editados = {};
+// Quien solo tiene permiso de Información útil entra a mirar: ve todo, no
+// carga nada. Los formularios ni se le muestran.
+let soloLectura = false;
 
 
 export async function iniciar(ctx) {
   ({ usuario } = ctx);
+  soloLectura = !puede(usuario, 'operador');
+  document.querySelectorAll('.solo-quien-carga')
+    .forEach((n) => n.classList.toggle('oculto', soloLectura));
 
   pintarSolapas();
   pintarServicios();
   pintarSectores();
   pintarInternos();
   pintarPagos();
+
+  // Los precios que se hayan cambiado desde Administración. Se dibuja primero
+  // con los de la lista para que la pantalla no espere, y se repinta al
+  // llegar: si el servidor no contesta, quedan los de la lista y ya.
+  get('/api/precios')
+    .then((p) => { editados = p || {}; pintarServicios(); })
+    .catch(() => { /* se ven los precios que vinieron con la página */ });
 
   $('q-servicios').addEventListener('input', pintarServicios);
   $('q-internos').addEventListener('input', pintarInternos);
@@ -186,7 +201,7 @@ function pintarServicios() {
   $('servicios').innerHTML = visibles.map((s) => `
     <article class="tarjeta servicio">
       <header><h2>${s.icono ? `${s.icono} ` : ''}${escapar(s.titulo)}</h2></header>
-      ${s.bloques.map(bloque).join('')}
+      ${s.bloques.map((b) => bloque(b, s.titulo)).join('')}
       ${s.notas.map((n) => `<p class="nota-servicio">${escapar(n)}</p>`).join('')}
     </article>`).join('');
 
@@ -195,13 +210,23 @@ function pintarServicios() {
 
 const textoDelServicio = (s) => [
   s.titulo, s.etiquetas,
-  ...s.bloques.flatMap((b) => [b.titulo, ...b.precios.flat(), ...b.requisitos]),
+  ...s.bloques.flatMap((b) => [
+    b.titulo,
+    ...b.precios.flatMap(([e, v]) => [e, valorPrecio(s.titulo, b, e, v)]),
+    ...b.requisitos,
+  ]),
   ...s.notas,
 ].join(' ');
 
-function bloque(b) {
+const valorPrecio = (servicio, b, etiqueta, valor) => {
+  const puesto = editados[clavePrecio(servicio, b.titulo, etiqueta)];
+  return puesto === undefined ? valor : puesto;
+};
+
+function bloque(b, servicio) {
   const precios = b.precios.map(([etiqueta, valor]) => `
-    <div class="precio"><span>${escapar(etiqueta)}</span><b>${escapar(valor)}</b></div>`).join('');
+    <div class="precio"><span>${escapar(etiqueta)}</span>
+      <b>${escapar(valorPrecio(servicio, b, etiqueta, valor))}</b></div>`).join('');
   const reqs = b.requisitos.length
     ? `<ul class="requisitos">${b.requisitos.map((r) => `<li>${escapar(r)}</li>`).join('')}</ul>`
     : '';

@@ -83,7 +83,8 @@ export function olvidar(ruta) {
   try { sessionStorage.removeItem(`cache:${ruta}`); } catch { /* nada que hacer */ }
 }
 
-const NIVEL = { operador: 1, supervisor: 2, admin: 3 };
+// "info" es el mas chico: solo entra a Informacion util, y de lectura.
+const NIVEL = { info: 0, operador: 1, supervisor: 2, admin: 3 };
 export const puede = (usuario, rol) => NIVEL[usuario.rol] >= NIVEL[rol];
 
 // Hay un juego escondido: escribí "pacman" en cualquier pantalla. El archivo
@@ -106,7 +107,10 @@ export function aplicarTemaGuardado() {
 }
 aplicarTemaGuardado();
 
-const ROLES = { operador: 'Operador', supervisor: 'Supervisor', admin: 'Administrador' };
+const ROLES = {
+  info: 'Información útil', operador: 'Operador',
+  supervisor: 'Supervisor', admin: 'Administrador',
+};
 const PUESTOS = { call_center: 'Call center', mesa_informes: 'Mesa de informes', otro: 'Otro' };
 export const etiquetaRol = (r) => ROLES[r] || r;
 export const etiquetaPuesto = (p) => PUESTOS[p] || p;

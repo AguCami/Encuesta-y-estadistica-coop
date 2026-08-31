@@ -53,16 +53,26 @@ async function usuarioActual(req) {
   return { id: fila.id, usuario: fila.usuario, nombre: fila.nombre, rol: fila.rol, puesto: fila.puesto };
 }
 
-const esSupervisor = (u) => u && (u.rol === 'supervisor' || u.rol === 'admin');
-const esAdmin = (u) => u && u.rol === 'admin';
+// Los roles, de menor a mayor. "info" solo entra a Información útil y de
+// lectura: no registra consultas ni ve estadísticas.
+const NIVEL = { info: 0, operador: 1, supervisor: 2, admin: 3 };
+const alcanza = (u, nivel) => u && (NIVEL[u.rol] ?? -1) >= (NIVEL[nivel] ?? 0);
 
-/** Envuelve un handler exigiendo sesion (y opcionalmente un rol). */
+const esSupervisor = (u) => alcanza(u, 'supervisor');
+const esAdmin = (u) => alcanza(u, 'admin');
+
+const FALTA = {
+  operador: 'Esta parte no es para tu usuario',
+  supervisor: 'Requiere permisos de supervisor',
+  admin: 'Requiere permisos de administrador',
+};
+
+/** Envuelve un handler exigiendo sesion y el rol que se le pida. */
 function requiere(nivel, handler) {
   return async (ctx) => {
     const u = ctx.usuario;
     if (!u) return error(ctx.res, 401, 'Sesion no iniciada');
-    if (nivel === 'supervisor' && !esSupervisor(u)) return error(ctx.res, 403, 'Requiere permisos de supervisor');
-    if (nivel === 'admin' && !esAdmin(u)) return error(ctx.res, 403, 'Requiere permisos de administrador');
+    if (!alcanza(u, nivel)) return error(ctx.res, 403, FALTA[nivel] || 'Sin permiso');
     return handler(ctx);
   };
 }

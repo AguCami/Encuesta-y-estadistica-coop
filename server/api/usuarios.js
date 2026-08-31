@@ -5,7 +5,9 @@ const { json, error, texto, enteroONull, partesFecha } = require('../util');
 const { hashPassword, verifyPassword } = require('../auth-hash');
 const { requiere } = require('../auth');
 
-const ROLES = new Set(['operador', 'supervisor', 'admin']);
+// "info" es el más chico de todos: solo entra a Información útil, y de lectura.
+// No registra consultas ni ve estadísticas.
+const ROLES = new Set(['info', 'operador', 'supervisor', 'admin']);
 const PUESTOS = new Set(['call_center', 'mesa_informes', 'otro']);
 
 const listar = requiere('admin', async ({ res }) => {
@@ -53,7 +55,9 @@ const editar = requiere('admin', async ({ res, body, params, usuario }) => {
 });
 
 /** Cada usuario puede cambiar su propia clave. */
-const cambiarClave = requiere('operador', async ({ res, body, usuario }) => {
+// La clave propia la cambia cualquiera que pueda entrar, sea cual sea su rol:
+// es la suya, y la clave inicial hay que poder cambiarla el primer día.
+const cambiarClave = requiere('info', async ({ res, body, usuario }) => {
   const fila = await get('SELECT * FROM usuarios WHERE id = ?', [usuario.id]);
   if (!verifyPassword(String(body.actual || ''), fila.hash)) return error(res, 401, 'La clave actual no coincide');
   const nueva = String(body.nueva || '');
