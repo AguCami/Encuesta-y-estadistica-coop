@@ -311,12 +311,25 @@ function estadisticas() {
     };
   }).filter((s) => s.total).sort((a, b) => b.total - a.total);
 
-  const porMotivo = [...agrupar(filas, (c) => c.motivo_id)]
-    .map(([id, n]) => {
-      const m = motivoDe(id);
-      return { id, nombre: m.nombre, sector: sectorDe(m.sector_id).nombre, total: n };
-    })
-    .sort((a, b) => b.total - a.total).slice(0, 15);
+  // Todos los motivos con consultas, con el mismo corte por resultado que los
+  // sectores. Sin tope: el detalle completo es lo que se mira.
+  const porMotivoFilas = new Map();
+  for (const c of filas) {
+    if (!porMotivoFilas.has(c.motivo_id)) porMotivoFilas.set(c.motivo_id, []);
+    porMotivoFilas.get(c.motivo_id).push(c);
+  }
+  const porMotivo = [...porMotivoFilas].map(([id, cs]) => {
+    const m = motivoDe(id);
+    return {
+      id,
+      nombre: m.nombre,
+      sector: sectorDe(m.sector_id).nombre,
+      total: cs.length,
+      pendientes: cs.filter((c) => c.estado === 'pendiente').length,
+      derivadas: cs.filter((c) => c.estado === 'derivada').length,
+      reclamos: cs.filter((c) => c.estado === 'reclamo').length,
+    };
+  }).sort((a, b) => b.total - a.total);
 
   const porCanal = [...agrupar(filas, (c) => c.canal_id)]
     .map(([id, n]) => ({ id, nombre: canalDe(id).nombre, total: n }))
@@ -645,19 +658,44 @@ function pintarPanel() {
   })));
 
   const p = paleta();
-  apiladas($('g-estado-sector'), d.por_sector.map((s) => ({
-    etiqueta: s.nombre,
-    partes: [
-      { nombre: 'Otros', valor: s.pendientes, color: p.estado.pendiente },
-      { nombre: 'Solucionadas', valor: s.total - s.pendientes, color: p.estado.resuelta },
-    ],
-  })), { leyenda: [
-    { nombre: 'Otros', color: p.estado.pendiente },
-    { nombre: 'Solucionadas', color: p.estado.resuelta },
-  ] });
+  // El mismo corte por resultado para los sectores y para los motivos.
+  const NOMBRE_PARTE = {
+    pendiente: 'Otros', derivada: 'Derivada', reclamo: 'Reclamo generado', resuelta: 'Solucionadas',
+  };
+  const partesDe = (s) => [
+    { estado: 'pendiente', valor: s.pendientes || 0 },
+    { estado: 'derivada', valor: s.derivadas || 0 },
+    { estado: 'reclamo', valor: s.reclamos || 0 },
+    { estado: 'resuelta', valor: s.total - (s.derivadas || 0) - (s.pendientes || 0) - (s.reclamos || 0) },
+  ].map((x) => ({ ...x, nombre: NOMBRE_PARTE[x.estado], color: p.estado[x.estado] }));
 
-  barras($('g-motivos'), d.por_motivo.map((m) => ({ etiqueta: m.nombre, valor: m.total, detalle: m.sector })),
-    { maxEtiqueta: 30 });
+  const usadosSector = new Set();
+  for (const s of d.por_sector) for (const x of partesDe(s)) if (x.valor) usadosSector.add(x.estado);
+  apiladas($('g-estado-sector'), d.por_sector.map((s) => ({ etiqueta: s.nombre, partes: partesDe(s) })),
+    { leyenda: partesDe(d.por_sector[0] || { total: 0 }).filter((x) => usadosSector.has(x.estado)) });
+
+  const usadosMotivo = new Set();
+  for (const m of d.por_motivo) for (const x of partesDe(m)) if (x.valor) usadosMotivo.add(x.estado);
+  const repetidos = new Set();
+  const vistos = new Set();
+  for (const m of d.por_motivo) {
+    if (vistos.has(m.nombre)) repetidos.add(m.nombre);
+    vistos.add(m.nombre);
+  }
+  apiladas($('g-motivos'), d.por_motivo.map((m) => ({
+    etiqueta: repetidos.has(m.nombre) && m.sector ? `${m.nombre} (${m.sector})` : m.nombre,
+    detalle: m.sector || '',
+    partes: partesDe(m),
+  })), {
+    maxEtiqueta: 38,
+    leyenda: partesDe(d.por_motivo[0] || { total: 0, derivadas: 0, pendientes: 0, reclamos: 0 })
+      .filter((x) => usadosMotivo.has(x.estado)),
+  });
+  const subMotivos = $('sub-motivos');
+  if (subMotivos) {
+    subMotivos.textContent = `los ${d.por_motivo.length} motivos con consultas en el período `
+      + '· lo verde se resolvió en el momento';
+  }
   barras($('g-puesto'), d.por_puesto.map((c) => ({ etiqueta: etiquetaPuesto(c.nombre), valor: c.total })));
 
   calor($('g-calor'), d.heatmap);

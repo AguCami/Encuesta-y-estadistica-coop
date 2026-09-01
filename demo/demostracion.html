@@ -773,16 +773,15 @@ body.sin-ingresar .pie-demo { display: none !important; }
     </section>
   </div>
 
-  <div class="grilla g2" style="margin-top:1rem">
-    <section class="tarjeta">
-      <header><h2>Motivos más consultados</h2><p>top 15 del período</p></header>
-      <div id="g-motivos"></div>
-    </section>
-    <section class="tarjeta" id="caja-puesto">
-      <header><h2>Puesto de atención</h2><p>call center y mesa de informes</p></header>
-      <div id="g-puesto"></div>
-    </section>
-  </div>
+  <section class="tarjeta" style="margin-top:1rem">
+    <header><h2>Motivos consultados</h2><p id="sub-motivos">qué se pregunta y qué parte se resolvió en el momento</p></header>
+    <div id="g-motivos"></div>
+  </section>
+
+  <section class="tarjeta" style="margin-top:1rem" id="caja-puesto">
+    <header><h2>Puesto de atención</h2><p>call center y mesa de informes</p></header>
+    <div id="g-puesto"></div>
+  </section>
 
   <section class="tarjeta" style="margin-top:1rem">
     <header><h2>Demanda por día y hora</h2><p id="sub-calor">para dimensionar el personal en cada franja</p></header>
@@ -1004,10 +1003,15 @@ function barras(cont, datos, opciones = {}) {
 function apiladas(cont, datos, opciones = {}) {
   if (!datos || !datos.length) return vacio(cont);
   const leyenda = opciones.leyenda || [];
+  const maxEtiqueta = opciones.maxEtiqueta || 24;
 
   responsivo(cont, (ancho) => {
     const p = paleta();
-    const anchoEtiqueta = Math.min(200, Math.max(90, ...datos.map((d) => recortar(d.etiqueta, 24).length * 6.6)));
+    // La columna de etiquetas no pasa de un tercio del ancho: con nombres
+    // largos, si no, no queda lugar para la barra.
+    const tope = Math.min(300, Math.max(120, ancho / 3));
+    const anchoEtiqueta = Math.min(tope,
+      Math.max(90, ...datos.map((d) => recortar(d.etiqueta, maxEtiqueta).length * 6.6)));
     const alturaBarra = 18, gap = 12;
     const alto = datos.length * (alturaBarra + gap) + 6;
     const x0 = anchoEtiqueta + 10;
@@ -1020,7 +1024,7 @@ function apiladas(cont, datos, opciones = {}) {
       const total = d.partes.reduce((a, b) => a + b.valor, 0);
       svg.appendChild(el('text', {
         x: anchoEtiqueta, y: y + alturaBarra / 2 + 4, 'text-anchor': 'end', 'font-size': 12.5, fill: p.ink2,
-      }, recortar(d.etiqueta, 24)));
+      }, recortar(d.etiqueta, maxEtiqueta)));
 
       let x = x0;
       d.partes.filter((s) => s.valor > 0).forEach((s, j, arr) => {
@@ -1031,7 +1035,9 @@ function apiladas(cont, datos, opciones = {}) {
           rx: primera || ultima ? 4 : 0, fill: s.color,
         });
         r.addEventListener('mousemove', (e) => mostrarTip(e,
-          `<b>${esc(d.etiqueta)}</b><br>${esc(s.nombre)}: ${fmt.format(s.valor)} (${Math.round(s.valor / total * 100)}%)`));
+          `<b>${esc(d.etiqueta)}</b>${d.detalle ? `<br><span style="color:var(--muted)">${esc(d.detalle)}</span>` : ''}`
+          + `<br>${esc(s.nombre)}: ${fmt.format(s.valor)} (${Math.round(s.valor / total * 100)}%)`
+          + `<br><span style="color:var(--muted)">${fmt.format(total)} en total</span>`));
         r.addEventListener('mouseleave', ocultarTip);
         svg.appendChild(r);
         x += w;
@@ -3755,12 +3761,25 @@ function estadisticas() {
     };
   }).filter((s) => s.total).sort((a, b) => b.total - a.total);
 
-  const porMotivo = [...agrupar(filas, (c) => c.motivo_id)]
-    .map(([id, n]) => {
-      const m = motivoDe(id);
-      return { id, nombre: m.nombre, sector: sectorDe(m.sector_id).nombre, total: n };
-    })
-    .sort((a, b) => b.total - a.total).slice(0, 15);
+  // Todos los motivos con consultas, con el mismo corte por resultado que los
+  // sectores. Sin tope: el detalle completo es lo que se mira.
+  const porMotivoFilas = new Map();
+  for (const c of filas) {
+    if (!porMotivoFilas.has(c.motivo_id)) porMotivoFilas.set(c.motivo_id, []);
+    porMotivoFilas.get(c.motivo_id).push(c);
+  }
+  const porMotivo = [...porMotivoFilas].map(([id, cs]) => {
+    const m = motivoDe(id);
+    return {
+      id,
+      nombre: m.nombre,
+      sector: sectorDe(m.sector_id).nombre,
+      total: cs.length,
+      pendientes: cs.filter((c) => c.estado === 'pendiente').length,
+      derivadas: cs.filter((c) => c.estado === 'derivada').length,
+      reclamos: cs.filter((c) => c.estado === 'reclamo').length,
+    };
+  }).sort((a, b) => b.total - a.total);
 
   const porCanal = [...agrupar(filas, (c) => c.canal_id)]
     .map(([id, n]) => ({ id, nombre: canalDe(id).nombre, total: n }))
@@ -4089,19 +4108,44 @@ function pintarPanel() {
   })));
 
   const p = paleta();
-  apiladas($('g-estado-sector'), d.por_sector.map((s) => ({
-    etiqueta: s.nombre,
-    partes: [
-      { nombre: 'Otros', valor: s.pendientes, color: p.estado.pendiente },
-      { nombre: 'Solucionadas', valor: s.total - s.pendientes, color: p.estado.resuelta },
-    ],
-  })), { leyenda: [
-    { nombre: 'Otros', color: p.estado.pendiente },
-    { nombre: 'Solucionadas', color: p.estado.resuelta },
-  ] });
+  // El mismo corte por resultado para los sectores y para los motivos.
+  const NOMBRE_PARTE = {
+    pendiente: 'Otros', derivada: 'Derivada', reclamo: 'Reclamo generado', resuelta: 'Solucionadas',
+  };
+  const partesDe = (s) => [
+    { estado: 'pendiente', valor: s.pendientes || 0 },
+    { estado: 'derivada', valor: s.derivadas || 0 },
+    { estado: 'reclamo', valor: s.reclamos || 0 },
+    { estado: 'resuelta', valor: s.total - (s.derivadas || 0) - (s.pendientes || 0) - (s.reclamos || 0) },
+  ].map((x) => ({ ...x, nombre: NOMBRE_PARTE[x.estado], color: p.estado[x.estado] }));
 
-  barras($('g-motivos'), d.por_motivo.map((m) => ({ etiqueta: m.nombre, valor: m.total, detalle: m.sector })),
-    { maxEtiqueta: 30 });
+  const usadosSector = new Set();
+  for (const s of d.por_sector) for (const x of partesDe(s)) if (x.valor) usadosSector.add(x.estado);
+  apiladas($('g-estado-sector'), d.por_sector.map((s) => ({ etiqueta: s.nombre, partes: partesDe(s) })),
+    { leyenda: partesDe(d.por_sector[0] || { total: 0 }).filter((x) => usadosSector.has(x.estado)) });
+
+  const usadosMotivo = new Set();
+  for (const m of d.por_motivo) for (const x of partesDe(m)) if (x.valor) usadosMotivo.add(x.estado);
+  const repetidos = new Set();
+  const vistos = new Set();
+  for (const m of d.por_motivo) {
+    if (vistos.has(m.nombre)) repetidos.add(m.nombre);
+    vistos.add(m.nombre);
+  }
+  apiladas($('g-motivos'), d.por_motivo.map((m) => ({
+    etiqueta: repetidos.has(m.nombre) && m.sector ? `${m.nombre} (${m.sector})` : m.nombre,
+    detalle: m.sector || '',
+    partes: partesDe(m),
+  })), {
+    maxEtiqueta: 38,
+    leyenda: partesDe(d.por_motivo[0] || { total: 0, derivadas: 0, pendientes: 0, reclamos: 0 })
+      .filter((x) => usadosMotivo.has(x.estado)),
+  });
+  const subMotivos = $('sub-motivos');
+  if (subMotivos) {
+    subMotivos.textContent = `los ${d.por_motivo.length} motivos con consultas en el período `
+      + '· lo verde se resolvió en el momento';
+  }
   barras($('g-puesto'), d.por_puesto.map((c) => ({ etiqueta: etiquetaPuesto(c.nombre), valor: c.total })));
 
   calor($('g-calor'), d.heatmap);

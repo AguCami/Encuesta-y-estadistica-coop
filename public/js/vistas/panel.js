@@ -37,16 +37,15 @@ export const html = `
     </section>
   </div>
 
-  <div class="grilla g2" style="margin-top:1rem">
-    <section class="tarjeta">
-      <header><h2>Motivos más consultados</h2><p>top 15 del período</p></header>
-      <div id="g-motivos"></div>
-    </section>
-    <section class="tarjeta" id="caja-puesto">
-      <header><h2>Puesto de atención</h2><p>call center y mesa de informes</p></header>
-      <div id="g-puesto"></div>
-    </section>
-  </div>
+  <section class="tarjeta" style="margin-top:1rem">
+    <header><h2>Motivos consultados</h2><p id="sub-motivos">qué se pregunta y qué parte se resolvió en el momento</p></header>
+    <div id="g-motivos"></div>
+  </section>
+
+  <section class="tarjeta" style="margin-top:1rem" id="caja-puesto">
+    <header><h2>Puesto de atención</h2><p>call center y mesa de informes</p></header>
+    <div id="g-puesto"></div>
+  </section>
 
   <section class="tarjeta" style="margin-top:1rem">
     <header class="fila" style="align-items:baseline;gap:.8rem">
@@ -290,10 +289,30 @@ function pintar(d) {
     { leyenda: partesDe(d.por_sector[0] || { total: 0, derivadas: 0, pendientes: 0, reclamos: 0 })
       .filter((x) => usados.has(x.estado)) });
 
-  // --- motivos, canal y puesto
-  barras($('g-motivos'), d.por_motivo.map((m) => ({
-    etiqueta: m.nombre, valor: m.total, detalle: m.sector || '',
-  })), { maxEtiqueta: 30 });
+  // --- motivos: todos, con el mismo corte por resultado que los sectores
+  const usadosMotivo = new Set();
+  for (const m of d.por_motivo) for (const x of partesDe(m)) if (x.valor) usadosMotivo.add(x.estado);
+  // Dos sectores pueden tener un motivo con el mismo nombre —"Reclamos" está
+  // en TIC y en mesa de informes—. Al que se repite se le agrega el sector,
+  // que si no aparecen dos renglones iguales y no se sabe cuál es cuál.
+  const repetidos = new Set();
+  const vistos = new Set();
+  for (const m of d.por_motivo) {
+    if (vistos.has(m.nombre)) repetidos.add(m.nombre);
+    vistos.add(m.nombre);
+  }
+  apiladas($('g-motivos'), d.por_motivo.map((m) => ({
+    etiqueta: repetidos.has(m.nombre) && m.sector ? `${m.nombre} (${m.sector})` : m.nombre,
+    detalle: m.sector || '',
+    partes: partesDe(m),
+  })), {
+    maxEtiqueta: 38,
+    leyenda: partesDe(d.por_motivo[0] || { total: 0, derivadas: 0, pendientes: 0, reclamos: 0 })
+      .filter((x) => usadosMotivo.has(x.estado)),
+  });
+  $('sub-motivos').textContent = d.por_motivo.length
+    ? `los ${d.por_motivo.length} motivos con consultas en el período · lo verde se resolvió en el momento`
+    : 'qué se pregunta y qué parte se resolvió en el momento';
 
   barras($('g-puesto'), d.por_puesto.map((c) => ({ etiqueta: etiquetaPuesto(c.nombre), valor: c.total })));
 

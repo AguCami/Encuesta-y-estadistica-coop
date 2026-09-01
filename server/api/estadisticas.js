@@ -72,11 +72,18 @@ const general = requiere('admin', async ({ res, query }) => {
       FROM consultas c JOIN sectores s ON s.id = c.sector_id
      WHERE ${W} GROUP BY s.id ORDER BY total DESC`, P);
 
+  // Todos los motivos que tuvieron al menos una consulta, con el mismo corte
+  // por resultado que los sectores. Sin tope: el detalle completo es
+  // justamente lo que se mira para saber que se pregunta.
   const porMotivo = await all(`
-    SELECT m.id, m.nombre, s.nombre AS sector, COUNT(*) AS total
+    SELECT m.id, m.nombre, s.nombre AS sector,
+           COUNT(*) AS total,
+           SUM(CASE WHEN c.estado = 'pendiente' THEN 1 ELSE 0 END) AS pendientes,
+           SUM(CASE WHEN c.estado = 'derivada'  THEN 1 ELSE 0 END) AS derivadas,
+           SUM(CASE WHEN c.estado = 'reclamo'   THEN 1 ELSE 0 END) AS reclamos
       FROM consultas c JOIN motivos m ON m.id = c.motivo_id
       LEFT JOIN sectores s ON s.id = m.sector_id
-     WHERE ${W} GROUP BY m.id ORDER BY total DESC LIMIT 15`, P);
+     WHERE ${W} GROUP BY m.id ORDER BY total DESC`, P);
 
   const porCanal = await all(`
     SELECT ca.id, ca.nombre, COUNT(*) AS total

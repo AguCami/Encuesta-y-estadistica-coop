@@ -182,10 +182,15 @@ export function barras(cont, datos, opciones = {}) {
 export function apiladas(cont, datos, opciones = {}) {
   if (!datos || !datos.length) return vacio(cont);
   const leyenda = opciones.leyenda || [];
+  const maxEtiqueta = opciones.maxEtiqueta || 24;
 
   responsivo(cont, (ancho) => {
     const p = paleta();
-    const anchoEtiqueta = Math.min(200, Math.max(90, ...datos.map((d) => recortar(d.etiqueta, 24).length * 6.6)));
+    // La columna de etiquetas no pasa de un tercio del ancho: con nombres
+    // largos, si no, no queda lugar para la barra.
+    const tope = Math.min(300, Math.max(120, ancho / 3));
+    const anchoEtiqueta = Math.min(tope,
+      Math.max(90, ...datos.map((d) => recortar(d.etiqueta, maxEtiqueta).length * 6.6)));
     const alturaBarra = 18, gap = 12;
     const alto = datos.length * (alturaBarra + gap) + 6;
     const x0 = anchoEtiqueta + 10;
@@ -198,7 +203,7 @@ export function apiladas(cont, datos, opciones = {}) {
       const total = d.partes.reduce((a, b) => a + b.valor, 0);
       svg.appendChild(el('text', {
         x: anchoEtiqueta, y: y + alturaBarra / 2 + 4, 'text-anchor': 'end', 'font-size': 12.5, fill: p.ink2,
-      }, recortar(d.etiqueta, 24)));
+      }, recortar(d.etiqueta, maxEtiqueta)));
 
       let x = x0;
       d.partes.filter((s) => s.valor > 0).forEach((s, j, arr) => {
@@ -209,7 +214,9 @@ export function apiladas(cont, datos, opciones = {}) {
           rx: primera || ultima ? 4 : 0, fill: s.color,
         });
         r.addEventListener('mousemove', (e) => mostrarTip(e,
-          `<b>${esc(d.etiqueta)}</b><br>${esc(s.nombre)}: ${fmt.format(s.valor)} (${Math.round(s.valor / total * 100)}%)`));
+          `<b>${esc(d.etiqueta)}</b>${d.detalle ? `<br><span style="color:var(--muted)">${esc(d.detalle)}</span>` : ''}`
+          + `<br>${esc(s.nombre)}: ${fmt.format(s.valor)} (${Math.round(s.valor / total * 100)}%)`
+          + `<br><span style="color:var(--muted)">${fmt.format(total)} en total</span>`));
         r.addEventListener('mouseleave', ocultarTip);
         svg.appendChild(r);
         x += w;
