@@ -413,10 +413,100 @@ dialog .pie { padding: .7rem 1rem; border-top: 1px solid var(--border); display:
 .oculto { display: none !important; }
 .solo-lectura { color: var(--muted); font-size: .82rem; }
 
+/* ----------------------------------------------------------- impresión */
+/*
+ * El reporte impreso es un papel que termina sobre un escritorio, muchas
+ * veces lejos de quien lo genero. Tiene que decir de que cooperativa es, de
+ * que periodo y con que filtros, y no puede perder ni una columna de las
+ * tablas: eso es lo que se mira.
+ */
+
+.solo-impresion { display: none; }
+
 @media print {
-  .barra, .filtros, button, .boton { display: none !important; }
-  body { background: #fff; }
-  .tarjeta { break-inside: avoid; box-shadow: none; }
+  /* Se imprime siempre en claro, aunque se este mirando en oscuro: si no,
+     sale una hoja negra que ademas no se lee. */
+  :root, :root[data-theme="dark"] {
+    color-scheme: light;
+    --surface-1: #fff; --plane: #fff; --elevado: #fff;
+    --ink: #000; --ink-2: #333; --muted: #555;
+    --grid: #d8d8d2; --axis: #999; --border: #c9c9c2;
+    --sombra: none; --sombra-elevada: none; --borde-elevado: #c9c9c2;
+  }
+
+  /* Las barras y el mapa de calor son el dato, no un adorno: sin los fondos
+     el reporte queda en blanco. */
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+  body { background: #fff; font-size: 10.5pt; }
+  main { max-width: none; padding: 0; margin: 0; }
+
+  /* Lo que no tiene sentido en papel. */
+  .barra, #cargando, .tip, #pelotas, #polvo, .bienvenida,
+  button, .boton, .segmentado, #filtros, dialog,
+  /* Buscadores y campos de fecha: en papel no se puede escribir. */
+  input[type="search"], input[type="date"], .no-imprimir { display: none !important; }
+
+  .solo-impresion { display: block; }
+
+  /* Las tarjetas se apilan: en dos columnas las tablas quedan tan angostas
+     que se comen columnas enteras. */
+  .grilla, .grilla.g2, .grilla.g3 { display: block; }
+  .grilla > * + * { margin-top: .5rem; }
+
+  .tarjeta {
+    break-inside: avoid; box-shadow: none;
+    border: 1px solid var(--border); background: #fff;
+    padding: .6rem .7rem; margin-bottom: .5rem;
+  }
+  /* La de motivos es mas alta que una hoja: si se le prohibe cortarse, se
+     empuja entera a la pagina siguiente y deja media pagina en blanco. */
+  .tarjeta.parte { break-inside: auto; }
+
+  h1 { font-size: 15pt; margin: 0 0 .3rem; }
+  h2 { font-size: 11.5pt; break-after: avoid; }
+  header { break-after: avoid; }
+
+  /* Nada de scroll en papel: la tabla entra entera o no entra. */
+  .tabla-scroll { overflow: visible !important; max-height: none !important; }
+  table { width: 100%; font-size: 9pt; break-inside: auto; }
+  thead { display: table-header-group; }   /* el encabezado se repite por hoja */
+  tr { break-inside: avoid; }
+  th, td { padding: .18rem .3rem; }
+
+  .kpis { grid-template-columns: repeat(4, 1fr); gap: .4rem; }
+  .kpi { padding: .4rem .5rem; }
+  .kpi .valor { font-size: 15pt; }
+
+  .viz { max-width: 100%; height: auto; }
+  .vacio { padding: .4rem 0; }
+
+  /* Encabezado del reporte. Va solo en la primera hoja; el navegador repite
+     su propio pie con la fecha y el numero de pagina. */
+  #cabecera-impresion { margin-bottom: .5rem; }
+  .cabecera-papel {
+    display: flex; align-items: center; gap: .7rem;
+    padding-bottom: .4rem; border-bottom: 2px solid #000;
+  }
+  .cabecera-papel img { width: 34px; height: 34px; object-fit: contain; }
+  .cabecera-papel .quien { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+  .cabecera-papel .quien b { font-size: 12pt; line-height: 1.15; }
+  .cabecera-papel .quien span { font-size: 9pt; color: var(--ink-2); }
+  .cabecera-papel .cuando { text-align: right; display: flex; flex-direction: column; }
+  .cabecera-papel .cuando b { font-size: 10pt; }
+  .cabecera-papel .cuando span { font-size: 8.5pt; color: var(--ink-2); }
+
+  .recorte-papel {
+    display: flex; flex-wrap: wrap; gap: .2rem .9rem;
+    padding: .3rem 0 .5rem; font-size: 8.5pt; color: var(--ink-2);
+  }
+  .recorte-papel i { font-style: normal; color: var(--muted); }
+  .recorte-papel .emitido { margin-left: auto; }
+
+  /* El titulo y los botones de la pantalla los reemplaza el encabezado. */
+  .encabezado-pantalla, .canal-barra { display: none !important; }
+
+  @page { margin: 12mm 10mm; }
 }
 
 /* Barrita de carga: avisa que algo está viniendo del servidor. */

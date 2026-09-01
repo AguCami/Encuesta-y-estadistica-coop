@@ -4,7 +4,9 @@ export const TITULO = 'Estadísticas de consultas';
 
 export const html = `
 <main>
-  <div class="fila" style="align-items:baseline">
+  <div class="solo-impresion" id="cabecera-impresion"></div>
+
+  <div class="fila encabezado-pantalla" style="align-items:baseline">
     <h1>Estadísticas de consultas</h1>
     <span style="flex:1"></span>
     <a id="exp-detalle" class="boton chico" href="#">CSV detallado</a>
@@ -37,7 +39,7 @@ export const html = `
     </section>
   </div>
 
-  <section class="tarjeta" style="margin-top:1rem">
+  <section class="tarjeta parte" style="margin-top:1rem">
     <header><h2>Motivos consultados</h2><p id="sub-motivos">qué se pregunta y qué parte se resolvió en el momento</p></header>
     <div id="g-motivos"></div>
   </section>
@@ -84,7 +86,7 @@ export const html = `
 
 import {
   get, montarFiltros, leerFiltros, escribirFiltros, qs,
-  escapar, num, dec, pct, fechaLarga, etiquetaEstado, etiquetaPuesto,
+  escapar, num, dec, pct, fechaLarga, hoyISO, etiquetaEstado, etiquetaPuesto,
 } from '/js/api.js';
 import { barras, apiladas, lineas, multiplos, calor, paleta, DIAS } from '/js/charts.js';
 
@@ -113,7 +115,7 @@ const paraPedir = (f) => { const { puesto, ...resto } = f; return puesto === TOD
 
 export async function iniciar(ctx) {
   // Las dos en paralelo: en la nube cada una es una ida y vuelta.
-  const { usuario, catalogos } = ctx;
+  const { usuario, catalogos, config } = ctx;
   filtros = leerFiltros();
   // Cada puesto se mira por separado; "los dos juntos" es una opción explícita.
   if (filtros.puesto === undefined) filtros.puesto = usuario.puesto === 'mesa_informes' ? 'mesa_informes' : 'call_center';
@@ -133,7 +135,48 @@ export async function iniciar(ctx) {
   const pedido = qs(paraPedir(filtros));
   $('exp-detalle').href = `/api/consultas/export?${pedido}`;
   $('exp-resumen').href = `/api/estadisticas/export?${pedido}`;
-  pintar(await get(`/api/estadisticas?${pedido}`));
+  const datos = await get(`/api/estadisticas?${pedido}`);
+  pintar(datos);
+  pintarCabeceraImpresion(config, catalogos, usuario, datos);
+}
+
+/**
+ * Lo que va arriba de la primera hoja. En pantalla no se ve: ahi el puesto,
+ * las fechas y los filtros estan a la vista en sus controles. En papel no
+ * queda ninguno, y un reporte sin decir de que cooperativa es, de que periodo
+ * y con que recorte no sirve para nada.
+ */
+function pintarCabeceraImpresion(config, catalogos, usuario, d) {
+  const org = (config && config.org) || 'Cooperativa';
+  const puesto = PUESTOS_PANEL.find(([id]) => id === filtros.puesto);
+  const nombre = (lista, id) => {
+    const x = (catalogos[lista] || []).find((e) => String(e.id) === String(id));
+    return x ? x.nombre : null;
+  };
+
+  const recorte = [
+    ['Puesto', puesto ? puesto[1] : 'Todos'],
+    ['Sector', filtros.sector_id ? nombre('sectores', filtros.sector_id) : 'Todos'],
+    ['Estado', filtros.estado ? nombre('estados', filtros.estado) : 'Todos'],
+    ['Operador', filtros.operador_id ? nombre('operadores', filtros.operador_id) : 'Todos'],
+  ].filter(([, v]) => v);
+
+  $('cabecera-impresion').innerHTML = `
+    <div class="cabecera-papel">
+      <img src="/img/logo.png" alt="" onerror="this.remove()">
+      <div class="quien">
+        <b>${escapar(org)}</b>
+        <span>Estadísticas de consultas</span>
+      </div>
+      <div class="cuando">
+        <b>${fechaLarga(d.periodo.desde)} al ${fechaLarga(d.periodo.hasta)}</b>
+        <span>${num(d.periodo.dias)} día${d.periodo.dias === 1 ? '' : 's'} · ${num(d.resumen.total)} consultas</span>
+      </div>
+    </div>
+    <div class="recorte-papel">
+      ${recorte.map(([k, v]) => `<span><i>${k}:</i> ${escapar(v)}</span>`).join('')}
+      <span class="emitido">Emitido el ${fechaLarga(hoyISO())} por ${escapar(usuario.nombre)}</span>
+    </div>`;
 }
 
 // ------------------------------------------- demanda por dia y hora ---

@@ -282,7 +282,11 @@ export function lineas(cont, series, opciones = {}) {
     // etiquetas del eje X (hasta 7, sin encimarse)
     const cada = Math.max(1, Math.ceil(n / Math.min(7, Math.max(2, Math.floor(w / 70)))));
     ejeX.forEach((x, i) => {
-      if (i % cada && i !== n - 1) return;
+      const ultima = i === n - 1;
+      if (i % cada && !ultima) return;
+      // La ultima fecha siempre se escribe; si la anterior le queda encima,
+      // esa se saltea. Con periodos cortos el ultimo paso cae muy cerca.
+      if (!ultima && px(n - 1) - px(i) < 46) return;
       svg.appendChild(el('text', {
         x: px(i), y: altoTotal - 8, 'text-anchor': 'middle', 'font-size': 11, fill: p.muted,
       }, etiquetaX(x)));

@@ -6,7 +6,7 @@ export const html = `
 <main>
   <h1>Información útil</h1>
 
-  <div class="tarjeta" style="margin-bottom:1rem">
+  <div class="tarjeta no-imprimir" style="margin-bottom:1rem">
     <div class="segmentado" id="pestanas"></div>
   </div>
 
@@ -14,7 +14,7 @@ export const html = `
 
   <!-- ------------------------------------------------------- servicios -->
   <section id="p-servicios">
-    <div class="tarjeta" style="margin-bottom:1rem">
+    <div class="tarjeta no-imprimir" style="margin-bottom:1rem">
       <label for="q-servicios">Buscar</label>
       <input type="search" id="q-servicios" placeholder="Servicio, requisito o precio…">
     </div>
@@ -24,7 +24,7 @@ export const html = `
 
   <!-- -------------------------------------------------------- internos -->
   <section id="p-internos" hidden>
-    <div class="tarjeta" style="margin-bottom:1rem">
+    <div class="tarjeta no-imprimir" style="margin-bottom:1rem">
       <label for="q-internos">Buscar</label>
       <input type="search" id="q-internos" placeholder="Nombre, sector o número de interno…">
       <div class="segmentado ajustable" id="sectores" style="margin-top:.7rem"></div>

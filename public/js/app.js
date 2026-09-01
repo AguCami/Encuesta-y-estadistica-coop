@@ -215,7 +215,7 @@ async function ir(ruta, opciones = {}) {
     // Los catálogos (sectores, motivos, operadores) solo los necesitan las
     // pantallas que los usan. Información útil no, y pedirlos ahí sería un
     // viaje de más — y un error para quien no tiene permiso de leerlos.
-    await modulo.iniciar({ usuario, catalogos: pantalla.catalogos ? await catalogos() : null });
+    await modulo.iniciar({ usuario, config, catalogos: pantalla.catalogos ? await catalogos() : null });
   } catch (e) {
     if (String(e.message).includes('sesion')) return location.reload();
     console.error(e);
