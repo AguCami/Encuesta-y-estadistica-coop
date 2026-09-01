@@ -170,7 +170,7 @@ function pintarCabeceraImpresion(config, catalogos, usuario, d) {
       </div>
       <div class="cuando">
         <b>${fechaLarga(d.periodo.desde)} al ${fechaLarga(d.periodo.hasta)}</b>
-        <span>${num(d.periodo.dias)} día${d.periodo.dias === 1 ? '' : 's'} · ${num(d.resumen.total)} consultas</span>
+        <span>${diasAtendidos(d)} · ${num(d.resumen.total)} consultas</span>
       </div>
     </div>
     <div class="recorte-papel">
@@ -193,14 +193,15 @@ function pintarCabeceraImpresion(config, catalogos, usuario, d) {
  */
 const ORDEN_DOW = [1, 2, 3, 4, 5, 6, 0];   // la semana arranca el lunes
 
-/** Cuantas veces cae cada dia de semana entre las dos fechas, inclusive. */
-function vecesPorDia(desde, hasta) {
+/**
+ * Cuantos lunes, martes... tuvieron atencion en el periodo. Los que no
+ * tuvieron ninguna consulta no se cuentan: fue feriado o fin de semana, y
+ * meterlos en el divisor bajaria el promedio de los que si se trabajo.
+ */
+function vecesPorDia(d) {
   const veces = {};
-  for (const d of ORDEN_DOW) veces[d] = 0;
-  const fin = new Date(`${hasta}T12:00:00Z`);
-  for (let f = new Date(`${desde}T12:00:00Z`); f <= fin; f.setUTCDate(f.getUTCDate() + 1)) {
-    veces[f.getUTCDay()] = (veces[f.getUTCDay()] || 0) + 1;
-  }
+  for (const dow of ORDEN_DOW) veces[dow] = 0;
+  for (const x of d.dias_por_dow || []) veces[x.dow] = x.dias;
   return veces;
 }
 
@@ -223,7 +224,7 @@ function montarModoCalor() {
 
 function pintarCalor() {
   const d = ultimoPanel;
-  const veces = vecesPorDia(d.periodo.desde, d.periodo.hasta);
+  const veces = vecesPorDia(d);
   const promedio = modoCalor === 'promedio' && sePuedeElegir();
   const datos = d.heatmap.map((c) => ({
     ...c,
@@ -249,9 +250,9 @@ function pintarCalor() {
   }
   $('sub-calor').textContent = promedio
     ? `promedio de cada día · pico: ${dia} ${hora} con ${dec(pico.total, 1)} consultas, `
-      + `sobre ${cuantosDias}`
+      + `sobre ${cuantosDias} con atención`
     : `suma del período · pico: ${dia} ${hora} con ${num(pico.total)} consultas `
-      + `entre ${cuantosDias}`;
+      + `entre ${cuantosDias} con atención`;
 }
 
 /** Lunes a viernes no cambian en plural; sábado y domingo sí. */
@@ -267,6 +268,20 @@ function montarPuestos() {
   });
 }
 
+/*
+ * Los dias sin ninguna consulta se toman como feriados o fin de semana: no se
+ * atendio, asi que no entran en ningun promedio. Dividir por los dias del
+ * calendario daba un numero mas bajo que lo que entra un dia de trabajo real,
+ * y era el que se miraba para decidir cuanta gente hace falta.
+ */
+function diasAtendidos(d) {
+  const n = d.periodo.dias_con_atencion;
+  if (!n) return 'sin atención en el período';
+  const texto = `${num(n)} día${n === 1 ? '' : 's'} con atención`;
+  // Si se atendio todos los dias del periodo, aclararlo sobra.
+  return n === d.periodo.dias ? texto : `${texto} de ${num(d.periodo.dias)}`;
+}
+
 function pintar(d) {
   ultimoPanel = d;
   const r = d.resumen;
@@ -276,10 +291,10 @@ function pintar(d) {
   $('kpis').innerHTML = `
     <div class="kpi"><div class="etiqueta">Consultas</div>
       <div class="valor">${num(r.total)}</div>
-      <div class="pie">${variacion || `${d.periodo.dias} días`}</div></div>
+      <div class="pie">${variacion || diasAtendidos(d)}</div></div>
     <div class="kpi"><div class="etiqueta">Promedio por día</div>
       <div class="valor">${dec(r.promedio_dia)}</div>
-      <div class="pie">${num(d.periodo.dias)} día${d.periodo.dias === 1 ? '' : 's'} del período</div></div>
+      <div class="pie">sobre ${diasAtendidos(d)}</div></div>
     <div class="kpi"><div class="etiqueta">Solucionadas</div>
       <div class="valor">${pct(r.pct_primer_contacto)}</div>
       <div class="pie">${num(r.resueltas)} resueltas en el momento</div></div>

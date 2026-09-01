@@ -45,10 +45,15 @@ const general = requiere('admin', async ({ res, query }) => {
            SUM(c.primer_contacto) AS primer_contacto,
            SUM(CASE WHEN c.duracion_seg > 0 THEN 1 ELSE 0 END) AS con_duracion,
            SUM(c.duracion_seg) AS duracion_total,
-           COUNT(DISTINCT c.socio_nro) AS socios
+           COUNT(DISTINCT c.socio_nro) AS socios,
+           COUNT(DISTINCT c.fecha) AS dias_con_atencion
       FROM consultas c WHERE ${W}`, P);
 
   const total = resumen.total || 0;
+  // Los dias sin ninguna consulta son feriados o fin de semana: no se atendio,
+  // asi que no cuentan para el promedio. Dividir por los dias del calendario
+  // daba un promedio mas bajo que lo que entra un dia de trabajo real.
+  const diasConAtencion = resumen.dias_con_atencion || 0;
 
   // Periodo inmediatamente anterior de igual longitud, para la variacion.
   const anterior = await (async () => {
@@ -120,6 +125,12 @@ const general = requiere('admin', async ({ res, query }) => {
     SELECT c.dow, c.hora, COUNT(*) AS total
       FROM consultas c WHERE ${W} GROUP BY c.dow, c.hora`, P);
 
+  // Cuantos lunes, martes... tuvieron atencion. Es el divisor honesto para
+  // promediar el mapa: si un lunes fue feriado, no se cuenta.
+  const diasPorDow = await all(`
+    SELECT c.dow, COUNT(DISTINCT c.fecha) AS dias
+      FROM consultas c WHERE ${W} GROUP BY c.dow`, P);
+
   // Evolucion de los 6 sectores con mas consultas (se dibuja en pequenos multiplos).
   const topSectores = porSector.slice(0, 6).map((s) => s.id);
   let serieSector = [];
@@ -144,10 +155,17 @@ const general = requiere('admin', async ({ res, query }) => {
       FROM encuestas e WHERE ${fe.sql}`, fe.params);
 
   json(res, {
-    periodo: { desde: f.desde, hasta: f.hasta, dias, granularidad: gran },
+    periodo: {
+      desde: f.desde,
+      hasta: f.hasta,
+      dias,
+      dias_con_atencion: diasConAtencion,
+      granularidad: gran,
+    },
     resumen: {
       total,
-      promedio_dia: redondear(total / dias, 1),
+      // Sobre los dias que hubo atencion, no sobre los del calendario.
+      promedio_dia: diasConAtencion ? redondear(total / diasConAtencion, 1) : null,
       resueltas: resumen.resueltas || 0,
       derivadas: resumen.derivadas || 0,
       pendientes: resumen.pendientes || 0,
@@ -181,6 +199,7 @@ const general = requiere('admin', async ({ res, query }) => {
     serie,
     serie_sector: serieSector,
     heatmap: heat,
+    dias_por_dow: diasPorDow,
   });
 });
 

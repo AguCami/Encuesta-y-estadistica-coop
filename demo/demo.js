@@ -283,6 +283,7 @@ function estadisticas() {
   const filas = consultasFiltradas();
   const total = filas.length;
   const dias = diasEntre(desde, HOY);
+  const diasConAtencion = new Set(filas.map((c) => c.fecha)).size;
   const gran = granularidad(dias);
 
   const cuenta = (fn) => filas.filter(fn).length;
@@ -372,10 +373,12 @@ function estadisticas() {
   }
 
   return {
-    periodo: { desde, hasta: HOY, dias, granularidad: gran },
+    periodo: { desde, hasta: HOY, dias, dias_con_atencion: diasConAtencion, granularidad: gran },
     resumen: {
       total,
-      promedio_dia: redondear(total / dias, 1),
+      // Los dias sin ninguna consulta son feriados o fin de semana: no entran
+      // en el promedio, que si no queda mas bajo que un dia de trabajo real.
+      promedio_dia: diasConAtencion ? redondear(total / diasConAtencion, 1) : null,
       resueltas: cuenta((c) => c.estado === 'resuelta'),
       derivadas: cuenta((c) => c.estado === 'derivada'),
       pendientes: cuenta((c) => c.estado === 'pendiente'),
@@ -620,13 +623,21 @@ function pintarPanel() {
   const variacion = r.variacion_pct === null ? ''
     : `<span class="${r.variacion_pct >= 0 ? 'sube' : 'baja'}">${r.variacion_pct >= 0 ? '▲' : '▼'} ${dec(Math.abs(r.variacion_pct))}%</span> vs. período anterior`;
 
+  // Los dias sin ninguna consulta son feriados o fin de semana: no cuentan.
+  const diasAtendidos = (x) => {
+    const n = x.periodo.dias_con_atencion;
+    if (!n) return 'sin atención en el período';
+    const texto = `${num(n)} día${n === 1 ? '' : 's'} con atención`;
+    return n === x.periodo.dias ? texto : `${texto} de ${num(x.periodo.dias)}`;
+  };
+
   $('kpis').innerHTML = `
     <div class="kpi"><div class="etiqueta">Consultas</div>
       <div class="valor">${num(r.total)}</div>
-      <div class="pie">${variacion || `${d.periodo.dias} días`}</div></div>
+      <div class="pie">${variacion || diasAtendidos(d)}</div></div>
     <div class="kpi"><div class="etiqueta">Promedio por día</div>
       <div class="valor">${dec(r.promedio_dia)}</div>
-      <div class="pie">${num(d.periodo.dias)} día${d.periodo.dias === 1 ? '' : 's'} del período</div></div>
+      <div class="pie">sobre ${diasAtendidos(d)}</div></div>
     <div class="kpi"><div class="etiqueta">Solucionadas</div>
       <div class="valor">${pct(r.pct_primer_contacto)}</div>
       <div class="pie">${num(r.resueltas)} resueltas en el momento</div></div>
