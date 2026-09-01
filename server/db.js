@@ -80,6 +80,11 @@ CREATE TABLE IF NOT EXISTS motivos (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
   sector_id INTEGER REFERENCES sectores(id) ON DELETE CASCADE,
   nombre    TEXT NOT NULL,
+  -- Hay consultas que por su naturaleza se resuelven siempre en el momento:
+  -- pedir una boleta o un estado de cuenta se atiende y se termina ahi. Se
+  -- marcan una vez y el servidor las guarda solucionadas sin que el personal
+  -- tenga que acordarse.
+  siempre_resuelta INTEGER NOT NULL DEFAULT 0,
   activo    INTEGER NOT NULL DEFAULT 1,
   UNIQUE (sector_id, nombre)
 );
@@ -256,6 +261,14 @@ const MOTIVOS = {
     'Reconexiones', 'Apros', 'Prórroga'],
 };
 
+// Motivos que se resuelven siempre en el momento: pedir una boleta o un estado
+// de cuenta se atiende y se termina ahi. Se marcan solos la primera vez; de ahi
+// en adelante la marca se maneja desde Administracion y no se vuelve a tocar.
+const SIEMPRE_RESUELTA = [
+  ['Mesa de informes', 'Boletas'],
+  ['Mesa de informes', 'Estados de cuenta'],
+];
+
 // Un canal por puesto y nada más: el call center atiende por teléfono y la
 // mesa de informes en el mostrador.
 const CANALES = [['Telefonico', 10], ['Presencial', 20]];
@@ -285,6 +298,17 @@ async function seed() {
     }
   }
 
+  // Solo la primera vez, para no pisar lo que se haya decidido despues.
+  if (!(await get("SELECT valor FROM meta WHERE clave = 'siempre_resuelta'"))) {
+    for (const [sector, motivo] of SIEMPRE_RESUELTA) {
+      await run(`UPDATE motivos SET siempre_resuelta = 1
+                  WHERE nombre = ?
+                    AND sector_id = (SELECT id FROM sectores WHERE nombre = ?)`, [motivo, sector]);
+    }
+    await run("INSERT INTO meta (clave, valor) VALUES ('siempre_resuelta', 'listo') "
+      + 'ON CONFLICT(clave) DO NOTHING');
+  }
+
   if (!(await get('SELECT COUNT(*) AS n FROM canales')).n) {
     for (const [nombre, orden] of CANALES) {
       await run('INSERT INTO canales (nombre, orden) VALUES (?, ?)', [nombre, orden]);
@@ -308,11 +332,30 @@ async function seed() {
 }
 
 /**
+ * Columnas agregadas despues de la primera version. El esquema de arriba las
+ * crea en una base nueva, pero `CREATE TABLE IF NOT EXISTS` no toca una tabla
+ * que ya existe: para esas hace falta el ALTER, que falla si la columna ya
+ * esta y por eso se ignora el error.
+ */
+async function migrar() {
+  const columnas = [
+    ['motivos', 'siempre_resuelta', 'INTEGER NOT NULL DEFAULT 0'],
+  ];
+  for (const [tabla, columna, tipo] of columnas) {
+    try {
+      await run(`ALTER TABLE ${tabla} ADD COLUMN ${columna} ${tipo}`);
+    } catch {
+      // Ya estaba: es lo normal salvo la primera vez.
+    }
+  }
+}
+
+/**
  * Versión de la preparación. Se sube cuando hay algo nuevo que aplicar sobre
  * una base que ya venía andando (una tabla, una columna, un catálogo que
  * cambia). Mientras coincida, no se toca nada.
  */
-const VERSION = '6';
+const VERSION = '7';
 
 /**
  * Prepara la base una sola vez por proceso.
@@ -333,6 +376,7 @@ function iniciar() {
       // Todavía no existe ni la tabla meta: es una base nueva.
     }
     await ejecutar(SCHEMA);
+    await migrar();
     await seed();
     await run("INSERT INTO meta (clave, valor) VALUES ('version', ?) "
       + 'ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor', [VERSION]);

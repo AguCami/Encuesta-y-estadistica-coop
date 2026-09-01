@@ -223,19 +223,22 @@ async function registrar(motivoId, ficha) {
  * a cargarla.
  */
 function mostrarConfirmacion(consulta, titulo) {
+  // Hay motivos que se resuelven siempre en el momento y el servidor ya los
+  // guardó solucionados: ofrecer el botón no tendría sentido.
+  const yaResuelta = consulta.estado === 'resuelta';
   const caja = $('brindis');
   caja.className = 'brindis visible';
   caja.innerHTML = `
     <div class="linea">
-      <b>Registrada</b> · ${escapar(titulo)}
+      <b>Registrada</b> · ${escapar(titulo)}${yaResuelta ? ' · <b>solucionada</b>' : ''}
       <span class="cuenta" id="cuenta">${SEGUNDOS_DESHACER}</span>
     </div>
     <div class="acciones">
-      <button type="button" id="solucionada">Solucionada</button>
+      ${yaResuelta ? '' : '<button type="button" id="solucionada">Solucionada</button>'}
       <button type="button" id="deshacer">Deshacer <small>(Esc)</small></button>
     </div>`;
 
-  caja.querySelector('#solucionada').onclick = marcarSolucionada;
+  if (!yaResuelta) caja.querySelector('#solucionada').onclick = marcarSolucionada;
   caja.querySelector('#deshacer').onclick = deshacer;
 
   clearInterval(temporizador);

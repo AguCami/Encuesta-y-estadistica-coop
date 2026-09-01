@@ -20,7 +20,7 @@ async function catalogos({ res }) {
       cargado: !!cargado,
     },
     sectores: await all('SELECT id, nombre, detalle, orden, puesto, activo FROM sectores ORDER BY orden, nombre'),
-    motivos: await all('SELECT id, sector_id, nombre, activo FROM motivos ORDER BY nombre'),
+    motivos: await all('SELECT id, sector_id, nombre, siempre_resuelta, activo FROM motivos ORDER BY nombre'),
     canales: await all('SELECT id, nombre, orden, activo FROM canales ORDER BY orden, nombre'),
     localidades: await all('SELECT id, nombre, activo FROM localidades ORDER BY nombre'),
     operadores: await all("SELECT id, usuario, nombre, rol, puesto, activo FROM usuarios ORDER BY nombre"),
@@ -45,7 +45,7 @@ async function catalogos({ res }) {
 
 const TABLAS = {
   sectores: { campos: ['nombre', 'detalle', 'orden', 'puesto', 'activo'] },
-  motivos: { campos: ['sector_id', 'nombre', 'activo'] },
+  motivos: { campos: ['sector_id', 'nombre', 'siempre_resuelta', 'activo'] },
   canales: { campos: ['nombre', 'orden', 'activo'] },
   localidades: { campos: ['nombre', 'activo'] },
 };
@@ -57,6 +57,11 @@ function normalizar(tabla, body) {
   if (body.orden !== undefined) d.orden = enteroONull(body.orden) ?? 100;
   if (body.activo !== undefined) d.activo = body.activo ? 1 : 0;
   if (tabla === 'motivos' && body.sector_id !== undefined) d.sector_id = enteroONull(body.sector_id);
+  // Los motivos que se resuelven siempre en el momento: el servidor les pone
+  // el estado al registrarlos, sin preguntar.
+  if (tabla === 'motivos' && body.siempre_resuelta !== undefined) {
+    d.siempre_resuelta = body.siempre_resuelta ? 1 : 0;
+  }
   // El puesto decide en qué tablero de atención rápida aparece el grupo.
   if (tabla === 'sectores' && body.puesto !== undefined) {
     d.puesto = ['call_center', 'mesa_informes', 'ambos'].includes(body.puesto) ? body.puesto : 'ambos';

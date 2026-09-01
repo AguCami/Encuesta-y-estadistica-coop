@@ -56,14 +56,20 @@ const crear = requiere('operador', async ({ res, body, usuario }) => {
     return error(res, 400, 'Elegi un canal de contacto');
   }
   const motivoId = enteroONull(body.motivo_id);
+  // Hay motivos que se resuelven siempre en el momento (pedir una boleta, un
+  // estado de cuenta). Se marcan en Administración y el estado lo pone el
+  // servidor: así no depende de que el personal se acuerde de tocar nada.
+  let siempreResuelta = false;
   if (motivoId) {
-    const m = await get('SELECT sector_id FROM motivos WHERE id = ?', [motivoId]);
+    const m = await get('SELECT sector_id, siempre_resuelta FROM motivos WHERE id = ?', [motivoId]);
     if (!m) return error(res, 400, 'Motivo inexistente');
     if (m.sector_id !== sectorId) return error(res, 400, 'El motivo no pertenece al sector elegido');
+    siempreResuelta = !!m.siempre_resuelta;
   }
 
   const p = partesFecha();
-  const estado = ESTADOS.has(body.estado) ? body.estado : 'resuelta';
+  const estado = siempreResuelta ? 'resuelta'
+    : (ESTADOS.has(body.estado) ? body.estado : 'resuelta');
   // El puesto no lo elige el navegador: lo manda el del usuario. Solo quien
   // no tiene uno fijo ('otro', como el administrador) puede elegir.
   const puesto = usuario.puesto === 'call_center' || usuario.puesto === 'mesa_informes'
@@ -80,7 +86,8 @@ const crear = requiere('operador', async ({ res, body, usuario }) => {
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [p.ts, p.fecha, p.hora, p.dow, usuario.id, puesto, canalId, sectorId, motivoId,
       enteroONull(body.localidad_id), texto(body.socio_nro, 30), texto(body.socio_nombre, 120),
-      texto(body.contacto, 120), estado, prioridad, body.primer_contacto === false ? 0 : 1, duracion,
+      texto(body.contacto, 120), estado, prioridad,
+      siempreResuelta || body.primer_contacto !== false ? 1 : 0, duracion,
       texto(body.reclamo_nro, 40), texto(body.observaciones, 2000),
       estado === 'resuelta' ? p.ts : null, estado === 'resuelta' ? usuario.id : null]);
 

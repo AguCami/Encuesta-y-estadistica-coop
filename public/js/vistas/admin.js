@@ -367,14 +367,24 @@ const PUESTOS_SECTOR = [
 ];
 
 /** `conPuesto` agrega el selector que decide en qué tablero aparece el sector. */
-function pintarCatalogo(destino, tabla, filas, columnas, conPuesto = false) {
+/**
+ * `opciones.casilla` agrega una columna con un tilde que se guarda solo:
+ * { campo, titulo } sobre el mismo catálogo.
+ */
+function pintarCatalogo(destino, tabla, filas, columnas, conPuesto = false, opciones = {}) {
   const cont = $(destino);
+  const casilla = opciones.casilla;
   if (!filas.length) { cont.innerHTML = '<p class="vacio">Todavía no hay registros</p>'; return; }
   cont.innerHTML = `
-    <table><tbody>
+    <table>
+      ${casilla ? `<thead><tr>${columnas.map(() => '<th></th>').join('')}
+        <th style="font-weight:600">${escapar(casilla.titulo)}</th><th></th></tr></thead>` : ''}
+      <tbody>
       ${filas.map((f) => `
         <tr data-id="${f.id}" style="${f.activo ? '' : 'opacity:.5'}">
           ${columnas.map((c) => `<td>${escapar(f[c])}</td>`).join('')}
+          ${casilla ? `<td style="text-align:center"><input type="checkbox" data-casilla
+            style="width:auto;margin:0"${f[casilla.campo] ? ' checked' : ''}></td>` : ''}
           ${conPuesto ? `<td><select data-puesto style="width:auto">
             ${PUESTOS_SECTOR.map(([v, t]) => `<option value="${v}"${(f.puesto || 'ambos') === v ? ' selected' : ''}>${t}</option>`).join('')}
           </select></td>` : ''}
@@ -384,6 +394,16 @@ function pintarCatalogo(destino, tabla, filas, columnas, conPuesto = false) {
           </td>
         </tr>`).join('')}
     </tbody></table>`;
+
+  cont.querySelectorAll('[data-casilla]').forEach((c) => {
+    c.onchange = async () => {
+      try {
+        await put(`/api/catalogos/${tabla}/${c.closest('tr').dataset.id}`,
+          { [casilla.campo]: c.checked });
+        await recargar();
+      } catch (err) { c.checked = !c.checked; avisar($('aviso'), err.message, 'error'); }
+    };
+  });
 
   cont.querySelectorAll('[data-puesto]').forEach((sel) => {
     sel.onchange = async () => {
@@ -417,7 +437,8 @@ function pintarCatalogo(destino, tabla, filas, columnas, conPuesto = false) {
 function pintarMotivos() {
   const sectorId = Number($('m-filtro').value);
   const filas = catalogos.motivos.filter((m) => m.sector_id === sectorId);
-  pintarCatalogo('t-motivos', 'motivos', filas, ['nombre']);
+  pintarCatalogo('t-motivos', 'motivos', filas, ['nombre'], false,
+    { casilla: { campo: 'siempre_resuelta', titulo: 'Siempre solucionada' } });
 }
 
 function pintarUsuarios() {
