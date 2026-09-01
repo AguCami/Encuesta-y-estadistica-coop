@@ -49,7 +49,12 @@ export const html = `
   </div>
 
   <section class="tarjeta" style="margin-top:1rem">
-    <header><h2>Demanda por día y hora</h2><p id="sub-calor">para dimensionar el personal en cada franja</p></header>
+    <header class="fila" style="align-items:baseline;gap:.8rem">
+      <div style="flex:1">
+        <h2>Demanda por día y hora</h2><p id="sub-calor">para dimensionar el personal en cada franja</p>
+      </div>
+      <div class="segmentado" id="modo-calor"></div>
+    </header>
     <div id="g-calor"></div>
   </section>
 
@@ -131,6 +136,84 @@ export async function iniciar(ctx) {
   $('exp-resumen').href = `/api/estadisticas/export?${pedido}`;
   pintar(await get(`/api/estadisticas?${pedido}`));
 }
+
+// ------------------------------------------- demanda por dia y hora ---
+
+/*
+ * El mapa junta todos los lunes del periodo en una sola fila, todos los
+ * martes en otra, y asi. Eso es lo que se quiere para dimensionar el
+ * personal —"los lunes al mediodia hay cola"— pero mirando un mes entero el
+ * numero suma cuatro o cinco lunes, y leido como si fuera una semana da
+ * cuatro veces de mas.
+ *
+ * Por eso hay dos modos. Con mas de una semana a la vista arranca en
+ * promedio, que es el que se puede comparar entre periodos distintos.
+ */
+const ORDEN_DOW = [1, 2, 3, 4, 5, 6, 0];   // la semana arranca el lunes
+
+/** Cuantas veces cae cada dia de semana entre las dos fechas, inclusive. */
+function vecesPorDia(desde, hasta) {
+  const veces = {};
+  for (const d of ORDEN_DOW) veces[d] = 0;
+  const fin = new Date(`${hasta}T12:00:00Z`);
+  for (let f = new Date(`${desde}T12:00:00Z`); f <= fin; f.setUTCDate(f.getUTCDate() + 1)) {
+    veces[f.getUTCDay()] = (veces[f.getUTCDay()] || 0) + 1;
+  }
+  return veces;
+}
+
+// Lo que eligió quien mira, que se respeta mientras dure la sesión aunque de
+// paso mire un período de una semana, donde no se puede elegir.
+let modoCalor = 'promedio';
+
+/** Con una semana o menos, promediar y sumar dan lo mismo: no se ofrece elegir. */
+const sePuedeElegir = () => ultimoPanel.periodo.dias > 7;
+
+function montarModoCalor() {
+  if (!sePuedeElegir()) { $('modo-calor').innerHTML = ''; return; }
+  $('modo-calor').innerHTML = [['promedio', 'Promedio'], ['total', 'Total']]
+    .map(([id, texto]) => `<button type="button" data-modo="${id}"${
+      modoCalor === id ? ' aria-pressed="true"' : ''}>${texto}</button>`).join('');
+  $('modo-calor').querySelectorAll('[data-modo]').forEach((b) => {
+    b.onclick = () => { modoCalor = b.dataset.modo; montarModoCalor(); pintarCalor(); };
+  });
+}
+
+function pintarCalor() {
+  const d = ultimoPanel;
+  const veces = vecesPorDia(d.periodo.desde, d.periodo.hasta);
+  const promedio = modoCalor === 'promedio' && sePuedeElegir();
+  const datos = d.heatmap.map((c) => ({
+    ...c,
+    total: promedio ? c.total / Math.max(1, veces[c.dow] || 1) : c.total,
+  }));
+
+  calor($('g-calor'), datos, promedio
+    ? { formato: (v) => dec(v, 1), unidad: () => 'consultas en promedio' }
+    : {});
+
+  const pico = datos.slice().sort((a, b) => b.total - a.total)[0];
+  if (!pico) { $('sub-calor').textContent = 'para dimensionar el personal en cada franja'; return; }
+
+  const dia = DIAS[ORDEN_DOW.indexOf(pico.dow)];
+  const hora = `${String(pico.hora).padStart(2, '0')}:00`;
+  const cuantos = veces[pico.dow] || 1;
+  const cuantosDias = `${cuantos} ${plural(dia, cuantos).toLowerCase()}`;
+
+  if (cuantos === 1) {
+    // Una sola semana: aclarar sobre cuántos lunes se promedia no aporta nada.
+    $('sub-calor').textContent = `pico: ${dia} ${hora} con ${num(pico.total)} consultas`;
+    return;
+  }
+  $('sub-calor').textContent = promedio
+    ? `promedio de cada día · pico: ${dia} ${hora} con ${dec(pico.total, 1)} consultas, `
+      + `sobre ${cuantosDias}`
+    : `suma del período · pico: ${dia} ${hora} con ${num(pico.total)} consultas `
+      + `entre ${cuantosDias}`;
+}
+
+/** Lunes a viernes no cambian en plural; sábado y domingo sí. */
+const plural = (dia, n) => (n === 1 || dia.endsWith('s') ? dia : `${dia}s`);
 
 function montarPuestos() {
   $('puesto-panel').innerHTML = PUESTOS_PANEL.map(([id, texto]) => `
@@ -215,11 +298,8 @@ function pintar(d) {
   barras($('g-puesto'), d.por_puesto.map((c) => ({ etiqueta: etiquetaPuesto(c.nombre), valor: c.total })));
 
   // --- demanda por dia y hora
-  calor($('g-calor'), d.heatmap);
-  const pico = d.heatmap.slice().sort((a, b) => b.total - a.total)[0];
-  if (pico) {
-    $('sub-calor').textContent = `pico: ${DIAS[[1, 2, 3, 4, 5, 6, 0].indexOf(pico.dow)]} ${String(pico.hora).padStart(2, '0')}:00 con ${num(pico.total)} consultas`;
-  }
+  montarModoCalor();
+  pintarCalor();
 
   // --- evolucion comparada por sector
   const porId = new Map(d.por_sector.map((s) => [s.id, s.nombre]));

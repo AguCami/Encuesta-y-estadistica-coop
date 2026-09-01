@@ -232,8 +232,8 @@ function filas() {
       ts,
       fecha: ts.slice(0, 10),
       hora: Number(ts.slice(11, 13)),
-      // Lunes 1 ... domingo 7, como el resto de la aplicacion.
-      dow: d.getUTCDay() === 0 ? 7 : d.getUTCDay(),
+      // Domingo 0 ... sabado 6, como lo guarda el resto de la aplicacion.
+      dow: d.getUTCDay(),
       puesto,
       sector,
       motivo,

@@ -440,8 +440,16 @@ const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', '
 const ORDEN_DOW = [1, 2, 3, 4, 5, 6, 0]; // la semana arranca el lunes
 
 /** datos: [{ dow, hora, total }] — magnitud continua: una sola tinta, clara a oscura. */
+/**
+ * Mapa de demanda por dia de semana y hora.
+ *
+ * `opciones.formato` decide como se escribe cada valor: sumando el periodo
+ * entero son consultas enteras, pero promediando salen decimales.
+ */
 export function calor(cont, datos, opciones = {}) {
   if (!datos || !datos.length) return vacio(cont);
+  const escribir = opciones.formato || ((v) => fmt.format(v));
+  const unidad = opciones.unidad || ((v) => `consulta${v === 1 ? '' : 's'}`);
   const horas = [];
   const desdeHora = Math.min(...datos.map((d) => d.hora));
   const hastaHora = Math.max(...datos.map((d) => d.hora));
@@ -476,7 +484,7 @@ export function calor(cont, datos, opciones = {}) {
         const x = anchoEtiqueta + col * (celda + gap);
         const r = el('rect', { x, y, width: celda, height: alturaFila, rx: 3, fill: tinta(v), opacity: v ? 1 : .5 });
         r.addEventListener('mousemove', (e) => mostrarTip(e,
-          `<b>${DIAS[fila]} ${String(h).padStart(2, '0')}:00</b><br>${fmt.format(v)} consulta${v === 1 ? '' : 's'}`));
+          `<b>${DIAS[fila]} ${String(h).padStart(2, '0')}:00</b><br>${escribir(v)} ${unidad(v)}`));
         r.addEventListener('mouseleave', ocultarTip);
         svg.appendChild(r);
       });
@@ -495,7 +503,7 @@ export function calor(cont, datos, opciones = {}) {
     const l = document.createElement('div');
     l.className = 'leyenda';
     l.innerHTML = `<span>Menos</span>${p.secuencial.map((c) =>
-      `<i style="background:${c};width:16px;height:10px;border-radius:2px"></i>`).join('')}<span>Más (${fmt.format(max)})</span>`;
+      `<i style="background:${c};width:16px;height:10px;border-radius:2px"></i>`).join('')}<span>Más (${escribir(max)})</span>`;
     caja.appendChild(l);
     cont.replaceChildren(caja);
   });
