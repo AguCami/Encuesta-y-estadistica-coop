@@ -173,9 +173,9 @@ const verDesahogo = requiere('operador', async ({ res, usuario }) => {
 const sumarDesahogo = requiere('operador', async ({ res, body, usuario }) => {
   if (!esCallCenter(usuario)) return error(res, 403, 'Esto es del call center');
   // Llega el saldo de varios toques juntos, no uno solo: quien lo aprieta diez
-  // veces seguidas genera un pedido y no diez. Un toque largo manda -1, por si
-  // alguien se paso: el numero lo ven todos. Nunca baja de cero.
-  const delta = Math.max(-99, Math.min(enteroONull(body.delta) ?? 1, 99));
+  // veces seguidas genera un pedido y no diez. Solo suma; el numero de un dia
+  // no baja nunca.
+  const delta = Math.max(0, Math.min(enteroONull(body.delta) ?? 1, 99));
   const hoy = partesFecha().fecha;
   await run(`INSERT INTO desahogo (fecha, veces) VALUES (?, MAX(0, ?))
              ON CONFLICT(fecha) DO UPDATE SET veces = MAX(0, veces + ?)`,

@@ -29,7 +29,7 @@ export const html = `
   <div class="zona-desahogo oculto" id="zona-desahogo">
     <div class="envoltorio-desahogo">
       <button type="button" class="boton-desahogo" id="desahogo"
-              title="Solo para descargar. No registra ninguna consulta ni entra en las estadísticas. Mantené apretado para restar uno.">
+              title="Solo para descargar. No registra ninguna consulta ni entra en las estadísticas.">
         <span class="rotulo">Llamadas<br>de idiotas</span>
         <span class="cuenta" id="desahogo-cuenta">—</span>
       </button>
@@ -89,7 +89,6 @@ async function recargar() {
 let desahogoVeces = 0;
 let desahogoDelta = 0;          // toques que todavia no llegaron al servidor
 let desahogoPendiente = null;
-let desahogoMantenido = false;
 
 function montarDesahogo() {
   // Solo en el tablero del call center. Mesa de informes no lo tiene.
@@ -102,31 +101,16 @@ function montarDesahogo() {
     .then((d) => { desahogoVeces = d.veces; $('desahogo-cuenta').textContent = num(d.veces); })
     .catch(() => { $('desahogo-cuenta').textContent = '0'; });
 
-  const boton = $('desahogo');
-  // Un toque largo resta uno, por si alguien apreto de mas.
-  let reloj = null;
-  const arrancar = () => {
-    desahogoMantenido = false;
-    reloj = setTimeout(() => { desahogoMantenido = true; tocarDesahogo(-1); }, 550);
-  };
-  const soltar = () => { clearTimeout(reloj); };
-  boton.addEventListener('pointerdown', arrancar);
-  boton.addEventListener('pointerup', soltar);
-  boton.addEventListener('pointerleave', soltar);
-  boton.addEventListener('pointercancel', soltar);
-  boton.addEventListener('click', () => {
-    if (desahogoMantenido) { desahogoMantenido = false; return; }
-    tocarDesahogo(1);
-  });
+  $('desahogo').addEventListener('click', () => tocarDesahogo());
 }
 
-function tocarDesahogo(paso) {
+function tocarDesahogo() {
   // El numero se mueve en el acto; el servidor se entera despues. Para un
   // boton que se aprieta a repeticion, esperar la respuesta se siente mal.
-  desahogoVeces = Math.max(0, desahogoVeces + paso);
-  desahogoDelta += paso;
+  desahogoVeces += 1;
+  desahogoDelta += 1;
   $('desahogo-cuenta').textContent = num(desahogoVeces);
-  animarDesahogo(paso);
+  animarDesahogo();
 
   // Se manda el saldo despues del ultimo toque: diez toques son un viaje y no
   // diez. Va el saldo y no un toque suelto, porque si no el servidor sumaria
@@ -153,7 +137,7 @@ function tocarDesahogo(paso) {
 }
 
 /** El temblor, la onda, el salto del numero y el vapor. */
-function animarDesahogo(paso) {
+function animarDesahogo() {
   const boton = $('desahogo');
   const cuenta = $('desahogo-cuenta');
   const quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -168,9 +152,7 @@ function animarDesahogo(paso) {
   relanzar(cuenta, 'golpe');
   relanzar($('desahogo-onda'), 'viva');
 
-  const mas = $('desahogo-mas');
-  mas.textContent = paso < 0 ? '−1' : '+1';
-  relanzar(mas, 'viva');
+  relanzar($('desahogo-mas'), 'viva');
 
   boton.classList.add('apretado');
   setTimeout(() => boton.classList.remove('apretado'), 110);
