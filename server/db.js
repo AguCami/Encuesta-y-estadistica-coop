@@ -231,6 +231,14 @@ CREATE TABLE IF NOT EXISTS precios (
   valor       TEXT NOT NULL DEFAULT '',
   ts          TEXT NOT NULL,
   usuario_id  INTEGER REFERENCES usuarios(id)
+);
+
+-- El boton de desahogo del call center. Una fila por dia, un numero y nada
+-- mas: no se guarda quien apreto ni a que hora, y no tiene ninguna relacion
+-- con la tabla de consultas. No entra en ninguna estadistica, a proposito.
+CREATE TABLE IF NOT EXISTS desahogo (
+  fecha   TEXT PRIMARY KEY,                 -- 'YYYY-MM-DD'
+  veces   INTEGER NOT NULL DEFAULT 0
 )
 `;
 
@@ -355,7 +363,7 @@ async function migrar() {
  * una base que ya venía andando (una tabla, una columna, un catálogo que
  * cambia). Mientras coincida, no se toca nada.
  */
-const VERSION = '7';
+const VERSION = '8';
 
 /**
  * Prepara la base una sola vez por proceso.

@@ -71,6 +71,9 @@ const RUTAS = [
   ['GET', '/api/puntajes', informacion.listarPuntajes],
   ['POST', '/api/puntajes', informacion.guardarPuntaje],
 
+  ['GET', '/api/desahogo', informacion.verDesahogo],
+  ['POST', '/api/desahogo', informacion.sumarDesahogo],
+
   ['GET', '/api/precios/detalle', informacion.detallePrecios],
   ['GET', '/api/precios', informacion.listarPrecios],
   ['POST', '/api/precios', informacion.guardarPrecios],

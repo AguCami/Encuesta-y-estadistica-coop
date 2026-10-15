@@ -24,6 +24,20 @@ export const html = `
     Todavía no hay sectores ni motivos cargados. Pedile a un supervisor que los cargue
     en Administración.
   </p>
+
+  <!-- Va al final de todo y separado: no es un motivo, no registra nada. -->
+  <div class="zona-desahogo oculto" id="zona-desahogo">
+    <div class="envoltorio-desahogo">
+      <button type="button" class="boton-desahogo" id="desahogo"
+              title="Solo para descargar. No registra ninguna consulta ni entra en las estadísticas. Mantené apretado para restar uno.">
+        <span class="rotulo">Llamadas<br>de idiotas</span>
+        <span class="cuenta" id="desahogo-cuenta">—</span>
+      </button>
+      <span class="onda" id="desahogo-onda" aria-hidden="true"></span>
+      <span class="mas-uno" id="desahogo-mas" aria-hidden="true">+1</span>
+    </div>
+    <span class="pie-desahogo">entre todos, hoy</span>
+  </div>
 </main>
 
 <div class="brindis" id="brindis" role="status" aria-live="polite"></div>
@@ -62,7 +76,129 @@ async function recargar() {
   pintarFrecuentes();
   pintarSectores();
   pintarContador();
+  montarDesahogo();
 }
+
+// ------------------------------------------------------------- desahogo ---
+/*
+ * El boton rojo del final. No registra una consulta, no guarda quien lo
+ * apreto y no lo lee ninguna estadistica: el numero sube, tiembla la pantalla
+ * y listo. Es compartido por todo el call center y arranca de cero cada dia.
+ */
+
+let desahogoVeces = 0;
+let desahogoDelta = 0;          // toques que todavia no llegaron al servidor
+let desahogoPendiente = null;
+let desahogoMantenido = false;
+
+function montarDesahogo() {
+  // Solo en el tablero del call center. Mesa de informes no lo tiene.
+  const suyo = puestoActual === 'call_center';
+  $('zona-desahogo').classList.toggle('oculto', !suyo);
+  if (!suyo || $('desahogo').dataset.listo) return;
+  $('desahogo').dataset.listo = '1';
+
+  get('/api/desahogo')
+    .then((d) => { desahogoVeces = d.veces; $('desahogo-cuenta').textContent = num(d.veces); })
+    .catch(() => { $('desahogo-cuenta').textContent = '0'; });
+
+  const boton = $('desahogo');
+  // Un toque largo resta uno, por si alguien apreto de mas.
+  let reloj = null;
+  const arrancar = () => {
+    desahogoMantenido = false;
+    reloj = setTimeout(() => { desahogoMantenido = true; tocarDesahogo(-1); }, 550);
+  };
+  const soltar = () => { clearTimeout(reloj); };
+  boton.addEventListener('pointerdown', arrancar);
+  boton.addEventListener('pointerup', soltar);
+  boton.addEventListener('pointerleave', soltar);
+  boton.addEventListener('pointercancel', soltar);
+  boton.addEventListener('click', () => {
+    if (desahogoMantenido) { desahogoMantenido = false; return; }
+    tocarDesahogo(1);
+  });
+}
+
+function tocarDesahogo(paso) {
+  // El numero se mueve en el acto; el servidor se entera despues. Para un
+  // boton que se aprieta a repeticion, esperar la respuesta se siente mal.
+  desahogoVeces = Math.max(0, desahogoVeces + paso);
+  desahogoDelta += paso;
+  $('desahogo-cuenta').textContent = num(desahogoVeces);
+  animarDesahogo(paso);
+
+  // Se manda el saldo despues del ultimo toque: diez toques son un viaje y no
+  // diez. Va el saldo y no un toque suelto, porque si no el servidor sumaria
+  // uno donde el navegador ya sumo diez.
+  clearTimeout(desahogoPendiente);
+  desahogoPendiente = setTimeout(async () => {
+    const delta = desahogoDelta;
+    if (!delta) return;
+    desahogoDelta = 0;
+    try {
+      const d = await post('/api/desahogo', { delta });
+      // Si alguien siguio apretando mientras viajaba, manda lo que se ve en
+      // pantalla: la proxima tanda lo acomoda.
+      if (!desahogoDelta) {
+        desahogoVeces = d.veces;
+        $('desahogo-cuenta').textContent = num(d.veces);
+      }
+    } catch {
+      // Si falla, se vuelve a intentar con el proximo toque. Esto no es un
+      // dato serio: que no moleste con un error en pantalla.
+      desahogoDelta += delta;
+    }
+  }, 400);
+}
+
+/** El temblor, la onda, el salto del numero y el vapor. */
+function animarDesahogo(paso) {
+  const boton = $('desahogo');
+  const cuenta = $('desahogo-cuenta');
+  const quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (quieto) return;
+
+  const relanzar = (nodo, clase) => {
+    nodo.classList.remove(clase);
+    void nodo.offsetWidth;
+    nodo.classList.add(clase);
+  };
+
+  relanzar(cuenta, 'golpe');
+  relanzar($('desahogo-onda'), 'viva');
+
+  const mas = $('desahogo-mas');
+  mas.textContent = paso < 0 ? '−1' : '+1';
+  relanzar(mas, 'viva');
+
+  boton.classList.add('apretado');
+  setTimeout(() => boton.classList.remove('apretado'), 110);
+
+  // Tres volutas de vapor con desvios distintos, si no salen todas en fila.
+  const envoltorio = boton.parentElement;
+  for (let i = 0; i < 3; i++) {
+    const v = document.createElement('span');
+    v.className = 'vapor';
+    v.style.setProperty('--desvio', `${(Math.random() * 46 - 23).toFixed(0)}px`);
+    v.style.animationDelay = `${i * 70}ms`;
+    envoltorio.appendChild(v);
+    void v.offsetWidth;
+    v.classList.add('viva');
+    v.addEventListener('animationend', () => v.remove());
+  }
+
+  // Y el temblor de toda la pantalla, que es la parte que descarga. La clase
+  // se saca al terminar: mientras esta puesta, la pagina va recortada de los
+  // costados para que el temblor no haga aparecer una barra de scroll.
+  clearTimeout(temblor);
+  document.body.classList.remove('temblando');
+  void document.body.offsetWidth;
+  document.body.classList.add('temblando');
+  temblor = setTimeout(() => document.body.classList.remove('temblando'), 460);
+}
+
+let temblor = null;
 
 const PUESTOS = [
   { id: 'call_center', nombre: 'Call center', canal: 'telefonico' },
@@ -312,4 +448,8 @@ export function limpiar() {
   document.removeEventListener('keydown', atajos);
   clearInterval(temporizador);
   ultima = null;
+  // Si se cambia de pantalla a mitad del temblor, que no quede nada puesto.
+  clearTimeout(temblor);
+  clearTimeout(desahogoPendiente);
+  document.body.classList.remove('temblando');
 }

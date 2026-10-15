@@ -416,6 +416,113 @@ dialog .pie { padding: .7rem 1rem; border-top: 1px solid var(--border); display:
 .oculto { display: none !important; }
 .solo-lectura { color: var(--muted); font-size: .82rem; }
 
+/* ------------------------------------------------------------- desahogo */
+/*
+ * El boton rojo del final de Atencion rapida. No registra nada: es un numero
+ * compartido por el call center que arranca de cero cada dia. Redondo y rojo
+ * contra fichas cuadradas y blancas, a proposito: la diferencia de forma es
+ * lo que evita el toque equivocado.
+ */
+
+.zona-desahogo {
+  display: flex; flex-direction: column; align-items: flex-end; gap: .35rem;
+  margin-top: 1.6rem; padding-top: 1.1rem;
+  border-top: 1px dashed var(--axis);
+}
+.envoltorio-desahogo { position: relative; display: flex; }
+
+.boton-desahogo {
+  position: relative; z-index: 1;
+  width: 104px; height: 104px; border-radius: 50%;
+  border: 0; cursor: pointer; color: #fff; padding: 0 .6rem;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; text-align: center;
+  background: radial-gradient(circle at 34% 30%, #e05454, #a82b2b 74%);
+  box-shadow: 0 4px 0 #a82b2b, 0 7px 16px rgba(168, 43, 43, .34),
+    inset 0 2px 5px rgba(255, 255, 255, .26);
+  transition: transform .07s ease, box-shadow .07s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;       /* el toque largo no abre el menu del movil */
+  user-select: none;
+}
+.boton-desahogo:hover { transform: translateY(-1px); }
+.boton-desahogo.apretado {
+  transform: translateY(5px) scaleY(.94);
+  box-shadow: 0 0 0 #a82b2b, 0 2px 8px rgba(168, 43, 43, .3),
+    inset 0 3px 9px rgba(0, 0, 0, .3);
+}
+.boton-desahogo:focus-visible { outline: 3px solid var(--s1); outline-offset: 4px; }
+.boton-desahogo .rotulo {
+  font-size: .63rem; font-weight: 700; line-height: 1.12;
+  text-transform: uppercase; letter-spacing: .01em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .25);
+}
+.boton-desahogo .cuenta {
+  display: inline-block; margin-top: .05rem;
+  font-size: 1.75rem; font-weight: 700; line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.boton-desahogo .cuenta.golpe { animation: desahogo-golpe .32s ease-out; }
+@keyframes desahogo-golpe {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.38); }
+  100% { transform: scale(1); }
+}
+
+.pie-desahogo { font-size: .74rem; color: var(--muted); }
+
+.zona-desahogo .onda {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 3px solid #e05454; opacity: 0; pointer-events: none;
+}
+.zona-desahogo .onda.viva { animation: desahogo-onda .55s cubic-bezier(.2, .7, .3, 1) forwards; }
+@keyframes desahogo-onda {
+  from { transform: scale(.9); opacity: .7; }
+  to { transform: scale(1.75); opacity: 0; }
+}
+
+.zona-desahogo .mas-uno {
+  position: absolute; left: 50%; top: -4px; pointer-events: none;
+  color: var(--critico); font-weight: 700; font-size: 1.05rem; opacity: 0;
+}
+.zona-desahogo .mas-uno.viva { animation: desahogo-sube .75s ease-out forwards; }
+@keyframes desahogo-sube {
+  0% { transform: translate(-50%, 0); opacity: 1; }
+  100% { transform: translate(-50%, -44px); opacity: 0; }
+}
+
+.zona-desahogo .vapor {
+  position: absolute; left: 50%; top: 6px;
+  width: 13px; height: 13px; border-radius: 50%;
+  background: color-mix(in srgb, var(--muted) 70%, transparent);
+  opacity: 0; pointer-events: none;
+}
+.zona-desahogo .vapor.viva { animation: desahogo-vapor .85s ease-out forwards; }
+@keyframes desahogo-vapor {
+  0% { transform: translate(-50%, 0) scale(.5); opacity: .75; }
+  100% { transform: translate(calc(-50% + var(--desvio)), -58px) scale(1.9); opacity: 0; }
+}
+
+/* El temblor de toda la pantalla: corto y fuerte, que es la parte que descarga. */
+body.temblando { animation: temblor .42s cubic-bezier(.36, .07, .19, .97); }
+/* Mover la pagina unos pixeles hace aparecer y desaparecer una barra de scroll
+   horizontal durante medio segundo. `clip` la evita sin volver al html un
+   contenedor de scroll, asi lo pegajoso y lo fijo siguen funcionando. */
+html:has(body.temblando) { overflow-x: clip; }
+@keyframes temblor {
+  10%, 90% { transform: translate(-2px, 1px) rotate(-.22deg); }
+  20%, 80% { transform: translate(4px, -2px) rotate(.3deg); }
+  30%, 50%, 70% { transform: translate(-6px, 2px) rotate(-.38deg); }
+  40%, 60% { transform: translate(6px, -1px) rotate(.38deg); }
+  100% { transform: translate(0, 0) rotate(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.temblando { animation: none; }
+  .zona-desahogo .onda, .zona-desahogo .mas-uno, .zona-desahogo .vapor,
+  .boton-desahogo .cuenta.golpe { animation: none; }
+}
+
 /* ----------------------------------------------------------- impresión */
 /*
  * El reporte impreso es un papel que termina sobre un escritorio, muchas
@@ -448,7 +555,8 @@ dialog .pie { padding: .7rem 1rem; border-top: 1px solid var(--border); display:
   .barra, #cargando, .tip, #pelotas, #polvo, .bienvenida,
   button, .boton, .segmentado, #filtros, dialog,
   /* Buscadores y campos de fecha: en papel no se puede escribir. */
-  input[type="search"], input[type="date"], .no-imprimir { display: none !important; }
+  input[type="search"], input[type="date"], .no-imprimir,
+  .zona-desahogo { display: none !important; }
 
   .solo-impresion { display: block; }
 

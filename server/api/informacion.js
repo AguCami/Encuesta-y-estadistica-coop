@@ -11,7 +11,7 @@
 
 const { all, get, run } = require('../db');
 const { json, error, texto, enteroONull, partesFecha } = require('../util');
-const { requiere, esSupervisor } = require('../auth');
+const { requiere, esSupervisor, esAdmin } = require('../auth');
 
 const SECCIONES = new Set(['Luz comercial', 'TICs', 'Luz y agua familia']);
 const fechaONull = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : null);
@@ -150,7 +150,42 @@ const guardarPrecios = requiere('admin', async ({ res, body, usuario }) => {
   json(res, { ok: true, guardados, borrados });
 });
 
+// ------------------------------------------------------------- desahogo ---
+/*
+ * El boton rojo del call center. Es exactamente lo que parece: un numero que
+ * sube cuando alguien lo aprieta, compartido por todo el turno y en cero cada
+ * medianoche.
+ *
+ * No crea una consulta, no guarda quien apreto ni cuando, y no lo lee ninguna
+ * estadistica. Vive en su propia tabla justamente para que no pueda colarse
+ * en un reporte por accidente.
+ */
+
+const esCallCenter = (u) => u.puesto === 'call_center' || esAdmin(u);
+
+const verDesahogo = requiere('operador', async ({ res, usuario }) => {
+  if (!esCallCenter(usuario)) return error(res, 403, 'Esto es del call center');
+  const hoy = partesFecha().fecha;
+  const fila = await get('SELECT veces FROM desahogo WHERE fecha = ?', [hoy]);
+  json(res, { fecha: hoy, veces: (fila && fila.veces) || 0 });
+});
+
+const sumarDesahogo = requiere('operador', async ({ res, body, usuario }) => {
+  if (!esCallCenter(usuario)) return error(res, 403, 'Esto es del call center');
+  // Llega el saldo de varios toques juntos, no uno solo: quien lo aprieta diez
+  // veces seguidas genera un pedido y no diez. Un toque largo manda -1, por si
+  // alguien se paso: el numero lo ven todos. Nunca baja de cero.
+  const delta = Math.max(-99, Math.min(enteroONull(body.delta) ?? 1, 99));
+  const hoy = partesFecha().fecha;
+  await run(`INSERT INTO desahogo (fecha, veces) VALUES (?, MAX(0, ?))
+             ON CONFLICT(fecha) DO UPDATE SET veces = MAX(0, veces + ?)`,
+  [hoy, delta, delta]);
+  const fila = await get('SELECT veces FROM desahogo WHERE fecha = ?', [hoy]);
+  json(res, { fecha: hoy, veces: (fila && fila.veces) || 0 });
+});
+
 module.exports = {
+  verDesahogo, sumarDesahogo,
   listarNotas, crearNota, borrarNota,
   listarCortes, crearCorte, borrarCorte,
   listarPuntajes, guardarPuntaje,
